@@ -1,0 +1,20 @@
+[
+  {
+    "substance_name": "Red 40",
+    "substance": "FD&C Red No. 40",
+    "other_names": [
+      "Allura Red",
+      "Red No. 40",
+      "E129"
+    ]
+  },
+  {
+    "substance_name": "Caramel Color",
+    "substance": "Caramel coloring",
+    "other_names": [
+      "Caramel E150",
+      "E150a",
+      "E150b"
+    ]
+  }
+]

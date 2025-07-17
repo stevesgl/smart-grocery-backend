@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barcode Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            border: 2px solid #4CAF50;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            padding: 15px;
+        }
+        #reader__dashboard_section_csr {
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-top: 1px solid #4CAF50;
+            font-size: 0.9em;
+            color: #333;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            font-size: 1.1em;
+            color: #333;
+            min-height: 50px; /* Ensure space for results */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #result strong {
+            color: #28a745;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4CAF50;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin-top: 10px;
+            display: none; /* Hidden by default */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .success-message {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scan Product Barcode</h1>
+    <div id="reader"></div>
+    <div id="result">
+        <div class="loading-spinner" id="loadingSpinner"></div>
+        <span id="resultText">Scan a barcode to get product info...</span>
+    </div>
+
+    <script type="text/javascript">
+        // IMPORTANT: Replace this with YOUR Vercel Serverless Function URL
+        const VERCEL_API_ENDPOINT = "https://grocery-product-8gmic8s6q-steves-projects-96024ab9.vercel.app/api/gtin-lookup"; 
+        // Example: "https://smart-grocery-lens-api.vercel.app/api/gtin-lookup"
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Code matched = ${decodedText}`, decodedResult);
+            document.getElementById('resultText').innerText = 'Processing GTIN...';
+            document.getElementById('loadingSpinner').style.display = 'block'; // Show spinner
+
+            // Send the GTIN to your Vercel Serverless Function
+            fetch(VERCEL_API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ gtin: decodedText })
+            })
+            .then(response => {
+                document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
+                if (!response.ok) {
+                    // If response is not 2xx, throw an error
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('API Response:', data);
+                let resultMessage = `GTIN: <strong>${data.gtin}</strong><br>`;
+                if (data.status === "found_in_cache") {
+                    resultMessage += `<span class="success-message">Found in Cache!</span><br>`;
+                } else if (data.status === "pulled_from_usda_and_cached") {
+                    resultMessage += `<span class="success-message">Pulled from USDA & Cached!</span><br>`;
+                } else if (data.status === "not_found") {
+                    resultMessage += `<span class="error-message">Product Not Found!</span><br>`;
+                }
+                resultMessage += `Description: ${data.data ? data.data.description : 'N/A'}<br>`;
+                resultMessage += `Ingredients: ${data.data ? data.data.ingredients : 'N/A'}`;
+                document.getElementById('resultText').innerHTML = resultMessage;
+            })
+            .catch(error => {
+                document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
+                console.error('Error:', error);
+                document.getElementById('resultText').innerHTML = `<span class="error-message">Error: ${error.message}</span>`;
+            });
+        }
+
+        function onScanFailure(error) {
+            // handle scan failure, usually better to ignore and keep scanning.
+            // console.warn(`Code scan error = ${error}`);
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: {width: 250, height: 250} });
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+</body>
+</html>
