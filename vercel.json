@@ -8,7 +8,7 @@
   ],
   "functions": {
     "api/gtin-lookup.py": {
-      "runtime": "python3.9"
+      "runtime": "@vercel/python@3.9" // FIX: Specify runtime with builder version
     }
   }
 }
