@@ -1,20 +1,21 @@
-{
-  "version": 2,
-  "builds": [
     {
-      "src": "api/gtin-lookup.py",
-      "use": "@vercel/python"
+      "version": 2,
+      "builds": [
+        {
+          "src": "api/gtin-lookup.py",
+          "use": "@vercel/python"
+        }
+      ],
+      "routes": [
+        {
+          "src": "/api/(.*)",
+          "dest": "/api/$1"
+        }
+      ],
+      "functions": {
+        "api/gtin-lookup.py": {
+          "runtime": "python3.9"
+        }
+      }
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
-  ],
-  "functions": {
-    "api/gtin-lookup.py": {
-      "runtime": "python3.9"
-    }
-  }
-}
+    
