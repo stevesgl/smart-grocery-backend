@@ -14,7 +14,7 @@
   ],
   "functions": {
     "api/gtin-lookup.py": {
-      "runtime": "python3.9" // Specify Python runtime version
+      "runtime": "python3.9"
     }
   }
 }
