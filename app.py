@@ -1,25 +1,22 @@
 import os
 import json
-import re
+import re # Import re for regex operations
 from flask import Flask, request, jsonify
 from flask_cors import CORS # Import Flask-Cors
 import requests # For making HTTP requests to USDA
 from airtable import Airtable # For interacting with Airtable
 from datetime import datetime
-from pprint import pprint # Import pprint for pretty printing dictionaries
+from pprint import pprint # For debugging, can be removed later
 
 # --- Configuration ---
 # Load environment variables for sensitive API keys and IDs
-# In a production environment, these would be set as environment variables
-# For local testing, you might load them from a .env file (e.g., using python-dotenv)
-# For Render deployment, you'll set these in Render's environment variables.
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
 AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME', 'GTIN Cache') # Default table name
 USDA_API_KEY = os.environ.get('USDA_API_KEY')
 
 # Path to your full additives JSON file
-# Assumes 'all_fda_substances_full.json' is in a 'data' subdirectory
+# Assumes 'all_fda_substances_full.json' is in a 'data' subdirectory relative to app.py
 ADDITIVES_DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'all_fda_substances_full.json')
 # Path to your common ingredients JSON file
 COMMON_INGREDIENTS_DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'common_ingredients.json')
@@ -29,38 +26,31 @@ AIRTABLE_MAX_ROWS = 1000
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
-# Enable CORS for all routes. This is the preferred way to handle CORS with Flask-Cors.
-# In production, you might restrict this to your frontend's domain: CORS(app, resources={r"/api/*": {"origins": "https://your-frontend-domain.vercel.app"}})
-CORS(app) 
+# Enable CORS for all routes. In production, you might restrict this to your frontend's domain.
+CORS(app)
 
-# --- Global Lookups (will be populated once on app startup) ---
-ADDITIVES_LOOKUP = {}
-COMMON_INGREDIENTS_LOOKUP = set() # Changed to a set for faster lookup and correct usage
-
-# Initialize Airtable client
+# Initialize Airtable client globally
 airtable = None
 if AIRTABLE_BASE_ID and AIRTABLE_TABLE_NAME and AIRTABLE_API_KEY:
     try:
         airtable = Airtable(AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME, AIRTABLE_API_KEY)
+        print("Airtable client initialized successfully.")
     except Exception as e:
         print(f"Error initializing Airtable client: {e}")
 
 # USDA API search URL
 USDA_SEARCH_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search'
 
-# ===================================================================
-# Data Loading and Ingredient Analysis Functions (from test_analyzer.py)
-# ===================================================================
+# --- Global Additives Lookup Dictionary (will be populated once on app startup) ---
+ADDITIVES_LOOKUP = {}
+COMMON_INGREDIENTS_LOOKUP = set() # Using a set for common ingredients for faster lookup
 
-def load_data_lookups():
+def load_additives_data():
     """
-    Loads the additive data and common ingredients data from JSON files
-    and builds the optimized lookup dictionaries/sets.
+    Loads the additive data from the JSON file and builds the optimized lookup dictionary.
     This function should be called once at application startup.
     """
     global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP
-
-    # Load additive data
     print(f"Attempting to load additives data from: {ADDITIVES_DATA_FILE}")
     try:
         with open(ADDITIVES_DATA_FILE, 'r', encoding='utf-8') as f:
@@ -69,48 +59,49 @@ def load_data_lookups():
         for entry in additives_raw:
             canonical_name = entry.get("Substance Name (Heading)")
             if not canonical_name:
-                continue
+                continue # Skip entries without a canonical name
 
-            normalized_canonical_name_for_key = re.sub(r'[^a-z0-9\s\&\.\-#]', '', canonical_name.lower()).strip()
-            normalized_canonical_name_for_key = re.sub(r'\s+', ' ', normalized_canonical_name_for_key)
-            normalized_canonical_name_for_key = normalized_canonical_name_for_key.replace('no.', 'no ')
+            # Normalize the canonical name once for lookup keys
+            normalized_canonical_name = re.sub(r'[^a-z0-9\s\&\.\-#]', '', canonical_name.lower()).strip()
+            normalized_canonical_name = re.sub(r'\s+', ' ', normalized_canonical_name)
+            normalized_canonical_name = normalized_canonical_name.replace('no.', 'no ')
 
             names_to_add = set()
             if entry.get("Substance"):
                 names_to_add.add(entry.get("Substance"))
-            names_to_add.add(canonical_name) 
-            names_to_add.add(normalized_canonical_name_for_key) 
+            names_to_add.add(canonical_name)
             names_to_add.update(entry.get("Other Names", []))
 
-            if "fd&c red no 40" in normalized_canonical_name_for_key:
+            # --- Explicitly add common aliases for problematic cases ---
+            if "fd&c red no 40" in normalized_canonical_name:
                 names_to_add.add("red 40")
                 names_to_add.add("red #40")
-            if "fd&c yellow no 5" in normalized_canonical_name_for_key:
+            if "fd&c yellow no 5" in normalized_canonical_name:
                 names_to_add.add("yellow 5")
                 names_to_add.add("yellow #5")
-            if "fd&c blue no 1" in normalized_canonical_name_for_key:
+            if "fd&c blue no 1" in normalized_canonical_name:
                 names_to_add.add("blue 1")
                 names_to_add.add("blue #1")
             
-            if "caramel" in normalized_canonical_name_for_key:
+            if "caramel" in normalized_canonical_name:
                 names_to_add.add("caramel color")
-            if "phosphoric acid" in normalized_canonical_name_for_key:
+            if "phosphoric acid" in normalized_canonical_name:
                 names_to_add.add("phosphoric acid")
-            if "sodium bicarbonate" in normalized_canonical_name_for_key:
+            if "sodium bicarbonate" in normalized_canonical_name:
                 names_to_add.add("baking soda")
-            if "sucrose" in normalized_canonical_name_for_key:
+            if "sucrose" in normalized_canonical_name:
                 names_to_add.add("sugar")
                 names_to_add.add("cane sugar")
                 names_to_add.add("pure cane sugar")
-            if "sodium chloride" in normalized_canonical_name_for_key:
+            if "sodium chloride" in normalized_canonical_name:
                 names_to_add.add("salt")
-            if "mono- and diglycerides" in normalized_canonical_name_for_key:
+            if "mono- and diglycerides" in normalized_canonical_name:
                 names_to_add.add("mono and diglycerides")
-            if "cellulose gum" in normalized_canonical_name_for_key:
+            if "cellulose gum" in normalized_canonical_name:
                 names_to_add.add("cellulose gum")
                 names_to_add.add("carboxymethylcellulose")
                 names_to_add.add("cmc")
-            if "annatto" in normalized_canonical_name_for_key:
+            if "annatto" in normalized_canonical_name:
                 names_to_add.add("annatto (color)")
 
             for name in names_to_add:
@@ -120,7 +111,7 @@ def load_data_lookups():
                     normalized_alias = normalized_alias.replace('no.', 'no ')
 
                     if normalized_alias:
-                        ADDITIVES_LOOKUP[normalized_alias] = normalized_canonical_name_for_key
+                        ADDITIVES_LOOKUP[normalized_alias] = normalized_canonical_name
 
         print(f"✅ Successfully loaded {len(additives_raw)} additives and built lookup with {len(ADDITIVES_LOOKUP)} aliases.")
     except FileNotFoundError:
@@ -139,7 +130,7 @@ def load_data_lookups():
         for ingredient in common_ingredients_raw:
             normalized_ingredient = re.sub(r'[^a-z0-9\s\&\.\-#\(\)]', '', ingredient.lower()).strip()
             normalized_ingredient = re.sub(r'\s+', ' ', normalized_ingredient)
-            COMMON_INGREDIENTS_LOOKUP.add(normalized_ingredient) # Added to set
+            COMMON_INGREDIENTS_LOOKUP.add(normalized_ingredient)
         print(f"✅ Successfully loaded {len(common_ingredients_raw)} common ingredients into lookup.")
     except FileNotFoundError:
         print(f"❌ Error: Common ingredients data file not found at '{COMMON_INGREDIENTS_DATA_FILE}'. Common ingredient lookup will not work.")
@@ -148,7 +139,7 @@ def load_data_lookups():
     except Exception as e:
         print(f"❌ An unexpected error occurred while loading common ingredient data: {e}")
 
-# --- Ingredient Analysis Function ---
+# --- Ingredient Analysis Function (Revised for Data Score) ---
 def analyze_ingredients(ingredients_string):
     """
     Analyzes an ingredient string to identify FDA-regulated substances and common ingredients.
@@ -160,13 +151,13 @@ def analyze_ingredients(ingredients_string):
     truly_unidentified_ingredients = set()
 
     if not ingredients_string:
-        return [], [], [], 100.0, "High"
+        return [], [], [], 100.0, "High" # No ingredients, assume 100% data completeness
 
     # Step 1: Initial cleanup and pre-processing
     cleaned_string = re.sub(r'^(?:ingredients|contains|ingredient list|ingredients list):?\s*', '', ingredients_string, flags=re.IGNORECASE).strip()
     cleaned_string = re.sub(r'\s+and/or\s+', ', ', cleaned_string, flags=re.IGNORECASE)
+
     # Remove common parenthetical descriptors that are not part of the substance name
-    # This is updated to be more comprehensive and prevent 'COLOR' from being left behind
     cleaned_string = re.sub(r'\s*\((?:color|flavour|flavor|emulsifier|stabilizer|thickener|preservative|antioxidant|acidifier|sweetener|gelling agent|firming agent|nutrient|vitamin [a-z0-9]+)\)\s*', '', cleaned_string, flags=re.IGNORECASE)
     cleaned_string = re.sub(r'\s*\[vitamin b\d\]\s*', '', cleaned_string, flags=re.IGNORECASE) # Remove [VITAMIN B#]
 
@@ -188,14 +179,9 @@ def analyze_ingredients(ingredients_string):
     categorized_items_count = 0
 
     for original_component in components:
-        # Normalize the component for matching, allowing relevant special characters
-        # Also, strip trailing punctuation like periods
         normalized_component = re.sub(r'[^a-z0-9\s\&\.\-#\(\)]', '', original_component.lower()).strip()
         normalized_component = re.sub(r'\s+', ' ', normalized_component)
         normalized_component = normalized_component.replace('no.', 'no ')
-        # NEW: Strip trailing non-alphanumeric characters (like periods)
-        normalized_component = re.sub(r'[^\w\s\&\.\-#\(\)]+$', '', normalized_component).strip()
-
 
         if not normalized_component:
             continue
@@ -272,7 +258,7 @@ def generate_data_report_markdown(identified_fda_substances, identified_common_i
 
     report += "\n### Truly Unidentified Ingredients/Phrases:\n"
     if truly_unidentified_ingredients:
-        report += "The following components were not matched against our database of FDA-regulated substances or common ingredients. This means our system couldn't fully categorize them. These could be:\n"
+        report += "The following components were not matched against our database of FDA-regulated substances or common ingredients. These could be:\n"
         report += "* **Complex phrasing** not yet fully parsed.\n"
         report += "* **Obscure ingredients** not in our current database.\n"
         report += "* **Potential misspellings**.\n"
@@ -291,11 +277,11 @@ def check_airtable_cache(gtin):
     Checks if a GTIN exists in the Airtable cache.
     If found, it updates the lookup_count and last_access fields for that record.
     """
+    print(f"  [Render Backend] Checking Airtable cache for GTIN: {gtin}...")
     if not airtable:
-        print("Airtable client not initialized. Skipping cache check.")
+        print("  [Render Backend] Airtable client not initialized. Skipping cache check.")
         return None
     
-    print(f"  Checking Airtable cache for GTIN: {gtin}...")
     try:
         results = airtable.search('gtin_upc', gtin)
         
@@ -313,10 +299,10 @@ def check_airtable_cache(gtin):
             }
             
             airtable.update(record_id, update_data)
-            print(f"  ✅ Found in Airtable cache. Updated lookup_count to {new_lookup_count}.")
+            print(f"  [Render Backend] ✅ Found in Airtable cache. Updated lookup_count to {new_lookup_count}.")
             return current_fields
     except Exception as e:
-        print(f"  ⚠️ Error in check_airtable_cache for GTIN {gtin}: {e}")
+        print(f"  [Render Backend] ⚠️ Error in check_airtable_cache for GTIN {gtin}: {e}")
     return None
 
 def fetch_from_usda_api(gtin):
@@ -324,11 +310,11 @@ def fetch_from_usda_api(gtin):
     Queries the USDA FoodData Central API using the GTIN.
     Returns the first matching food item's data if found, otherwise None.
     """
+    print(f"  [Render Backend] Querying USDA API for GTIN: {gtin}...")
     if not USDA_API_KEY:
-        print("USDA API Key not set. Skipping USDA API fetch.")
+        print("  [Render Backend] USDA API Key not set. Skipping USDA API fetch.")
         return None
 
-    print(f"  Querying USDA API for GTIN: {gtin}...")
     params = {
         'query': gtin,
         'api_key': USDA_API_KEY,
@@ -342,14 +328,14 @@ def fetch_from_usda_api(gtin):
         data = response.json()
         
         if data.get('foods'):
-            print("  📥 Pulled from USDA API.")
+            print("  [Render Backend] 📥 Pulled from USDA API.")
             return data['foods'][0]
     except requests.exceptions.RequestException as e:
-        print(f"  ❌ Error fetching from USDA API for GTIN {gtin}: {e}")
+        print(f"  [Render Backend] ❌ Error fetching from USDA API for GTIN {gtin}: {e}")
     except json.JSONDecodeError:
-        print(f"  ❌ JSON Decode Error from USDA API for GTIN {gtin}. Response: {response.text.strip()}")
+        print(f"  [Render Backend] ❌ JSON Decode Error from USDA API for GTIN {gtin}. Response: {response.text.strip()}")
     except Exception as e:
-        print(f"  ❌ Unexpected Error fetching from USDA: {e}")
+        print(f"  [Render Backend] ❌ Unexpected Error fetching from USDA: {e}")
             
     return None
 
@@ -358,11 +344,11 @@ def store_to_airtable(gtin, usda_data, data_report_markdown):
     Stores product data pulled from USDA API into the Airtable cache,
     including the generated data report markdown.
     """
+    print(f"  [Render Backend] Attempting to store GTIN {gtin} to Airtable...")
     if not airtable:
-        print("Airtable client not initialized. Skipping store to Airtable.")
+        print("  [Render Backend] Airtable client not initialized. Skipping store to Airtable.")
         return
         
-    print(f"  Attempting to store GTIN {gtin} to Airtable...")
     fields = {
         "gtin_upc": gtin,
         "fdc_id": str(usda_data.get("fdcId", "")),
@@ -379,22 +365,22 @@ def store_to_airtable(gtin, usda_data, data_report_markdown):
     
     try:
         airtable.insert(fields)
-        print(f"  ✅ Stored to Airtable: {fields.get('description', gtin)}")
+        print(f"  [Render Backend] ✅ Stored to Airtable: {fields.get('description', gtin)}")
     except Exception as e:
-        print(f"  ❌ Failed to store to Airtable for GTIN {gtin}: {e}")
+        print(f"  [Render Backend] ❌ Failed to store to Airtable for GTIN {gtin}: {e}")
 
 def count_airtable_rows():
     """Counts the total number of records in the Airtable table."""
+    print("  [Render Backend] Counting Airtable rows...")
     if not airtable:
-        print("Airtable client not initialized. Skipping row count.")
+        print("  [Render Backend] Airtable client not initialized. Skipping row count.")
         return 0
         
-    print("  Counting Airtable rows...")
     try:
         records = airtable.get_all() # FIX: Removed fields=['id']
         return len(records)
     except Exception as e:
-        print(f"  ⚠️ Error counting Airtable rows: {e}")
+        print(f"  [Render Backend] ⚠️ Error counting Airtable rows: {e}")
         return 0
 
 def delete_least_valuable_row():
@@ -402,11 +388,11 @@ def delete_least_valuable_row():
     Deletes the least valuable record in Airtable based on lookup_count and last_access.
     Least valuable = lowest lookup_count, then oldest last_access for ties.
     """
+    print("  [Render Backend] Checking for least valuable row to evict...")
     if not airtable:
-        print("Airtable client not initialized. Skipping row deletion.")
+        print("  [Render Backend] Airtable client not initialized. Skipping row deletion.")
         return
         
-    print("  Checking for least valuable row to evict...")
     try:
         records = airtable.get_all(fields=['lookup_count', 'last_access'])
         
@@ -420,13 +406,13 @@ def delete_least_valuable_row():
             record_id_to_delete = least_valuable_record['id']
             
             airtable.delete(record_id_to_delete)
-            print(f"  🗑️ Deleted least valuable entry (ID: {record_id_to_delete}, "
+            print(f"  [Render Backend] 🗑️ Deleted least valuable entry (ID: {record_id_to_delete}, "
                   f"Lookup: {least_valuable_record['fields'].get('lookup_count', 0)}, "
                   f"Last Access: {least_valuable_record['fields'].get('last_access', 'N/A')}).")
         else:
-            print("  No records to evict.")
+            print("  [Render Backend] No records to evict.")
     except Exception as e:
-        print(f"  ❌ Error deleting least valuable row: {e}")
+        print(f"  [Render Backend] ❌ Error deleting least valuable row: {e}")
 
 # --- Flask API Endpoint ---
 @app.route('/api/gtin-lookup', methods=['POST', 'OPTIONS'])
@@ -444,16 +430,21 @@ def gtin_lookup_api():
     }
 
     if request.method == 'OPTIONS':
+        print("[Render Backend] Received OPTIONS request.")
         return '', 204, headers
 
     if request.method != 'POST':
+        print(f"[Render Backend] Received {request.method} request, expected POST.")
         return jsonify({"error": "Method Not Allowed", "message": "Only POST requests are supported."}), 405, headers
 
     try:
+        print("[Render Backend] Attempting to get JSON from request.")
         request_data = request.get_json()
         gtin = request_data.get('gtin')
+        print(f"[Render Backend] Received GTIN: {gtin}")
 
         if not gtin:
+            print("[Render Backend] GTIN is missing from request.")
             return jsonify({"error": "Bad Request", "message": "GTIN is required in the request body."}), 400, headers
 
         product_description = "N/A"
@@ -462,14 +453,15 @@ def gtin_lookup_api():
         status = "not_found"
 
         # 1. Check Airtable Cache
+        print(f"[Render Backend] Calling check_airtable_cache for GTIN: {gtin}")
         cached_data = check_airtable_cache(gtin)
         if cached_data:
-            print(f"DEBUG: Data found in cache for GTIN {gtin}. Fields: {cached_data.keys()}")
+            print(f"[Render Backend] DEBUG: Data found in cache for GTIN {gtin}. Fields: {cached_data.keys()}")
             product_description = cached_data.get('description', "N/A")
             product_ingredients = cached_data.get('ingredients', "N/A")
             data_report_markdown = cached_data.get('data_report_markdown', "N/A")
             status = "found_in_cache"
-            print(f"DEBUG: Returning cached data for GTIN {gtin}")
+            print(f"[Render Backend] Returning cached data for GTIN {gtin}")
             return jsonify({
                 "gtin": gtin,
                 "description": product_description,
@@ -479,6 +471,7 @@ def gtin_lookup_api():
             }), 200, headers
 
         # 2. If not in cache, fetch from USDA API
+        print(f"[Render Backend] Calling fetch_from_usda_api for GTIN: {gtin}")
         usda_product_data = fetch_from_usda_api(gtin)
         
         if usda_product_data:
@@ -486,20 +479,23 @@ def gtin_lookup_api():
             product_ingredients = usda_product_data.get('ingredients', "N/A")
 
             # Analyze ingredients and generate data report
+            print(f"[Render Backend] Analyzing ingredients for GTIN: {gtin}")
             identified_fda_substances, identified_common_ingredients, truly_unidentified_ingredients, data_score, data_completeness_level = analyze_ingredients(product_ingredients)
             data_report_markdown = generate_data_report_markdown(identified_fda_substances, identified_common_ingredients, truly_unidentified_ingredients, data_score, data_completeness_level)
             status = "pulled_from_usda_and_cached"
 
             # Check if cache is full before adding new entry
+            print(f"[Render Backend] Checking Airtable row count for eviction logic.")
             current_row_count = count_airtable_rows()
             if current_row_count >= AIRTABLE_MAX_ROWS:
-                print(f"Cache is full ({current_row_count} rows). Evicting least valuable entry.")
+                print(f"[Render Backend] Cache is full ({current_row_count} rows). Evicting least valuable entry.")
                 delete_least_valuable_row()
             
             # Store the new product data to Airtable, including the data report
+            print(f"[Render Backend] Storing to Airtable for GTIN: {gtin}")
             store_to_airtable(gtin, usda_product_data, data_report_markdown)
             
-            print(f"DEBUG: Returning USDA data for GTIN {gtin}")
+            print(f"[Render Backend] Returning USDA data for GTIN {gtin}")
             return jsonify({
                 "gtin": gtin,
                 "description": product_description,
@@ -508,7 +504,7 @@ def gtin_lookup_api():
                 "status": status
             }), 200, headers
         else:
-            print(f"DEBUG: Product not found for GTIN {gtin}")
+            print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
             return jsonify({
                 "gtin": gtin,
                 "description": "N/A",
@@ -518,16 +514,19 @@ def gtin_lookup_api():
             }), 404, headers
 
     except requests.exceptions.RequestException as e:
-        print(f"Network or USDA API error: {e}")
+        print(f"[Render Backend] Network or USDA API error caught: {e}")
         return jsonify({"error": "Failed to connect to USDA FoodData Central or network issue.", "details": str(e)}), 500, headers
     except Exception as e:
-        print(f"An unexpected error occurred in gtin_lookup_api: {e}")
+        print(f"[Render Backend] An unexpected error occurred in gtin_lookup_api: {e}")
+        # Print the full traceback for better debugging on Render
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500, headers
 
 # Standard way to run Flask app for local testing
 if __name__ == '__main__':
     # Load additive data when the app starts
-    load_data_lookups() # Changed from load_additives_data to load_data_lookups
+    load_additives_data()
     # This block is for local development only. Render will run the app via Gunicorn or similar.
     if not all([AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY]):
         print("WARNING: Missing one or more environment variables (AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY).")
