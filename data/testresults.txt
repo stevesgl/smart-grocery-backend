@@ -1,0 +1,874 @@
+Attempting to load additives data from: C:\Users\steve\OneDrive\Documents\MyGroceryScanner\backend\data\all_fda_substances_full.json
+✅ Successfully loaded 3971 additives and built lookup with 22454 aliases.
+DEBUG: Checking specific ADDITIVES_LOOKUP keys:
+'fd&c red no 40' in lookup: True
+Value for 'fd&c red no 40': fd&c red no  40
+'fd&c yellow no 5' in lookup: True
+Value for 'fd&c yellow no 5': fd&c yellow no  5
+'fd&c blue no 1' in lookup: True
+Value for 'fd&c blue no 1': fd&c blue no  1
+Attempting to load common ingredients data from: C:\Users\steve\OneDrive\Documents\MyGroceryScanner\backend\data\common_ingredients.json
+✅ Successfully loaded 313 common ingredients into lookup.
+
+--- Test Case 1 ---
+Input Ingredients: 'water, sugar, citric acid, natural flavors, red 40'
+DEBUG: Original: 'water', Normalized: 'water'
+DEBUG: Original: 'sugar', Normalized: 'sugar'
+DEBUG: Original: 'citric acid', Normalized: 'citric acid'
+DEBUG: Original: 'natural flavors', Normalized: 'natural flavors'
+DEBUG: Original: 'red 40', Normalized: 'red 40'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['citric acid', 'sucrose acetate isobutyrate']
+  Identified Common Food Ingredients:
+['red 40', 'natural flavors', 'water']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Citric Acid
+* Sucrose Acetate Isobutyrate
+
+### Identified Common Food Ingredients:
+* Natural Flavors
+* Red 40
+* Water
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 2 ---
+Input Ingredients: 'INGREDIENTS: ENRICHED FLOUR (WHEAT FLOUR, NIACIN, REDUCED IRON, THIAMIN MONONITRATE [VITAMIN B1], RIBOFLAVIN [VITAMIN B2], FOLIC ACID), SUGAR, VEGETABLE OIL (SOYBEAN, PALM AND PALM KERNEL OIL WITH TBHQ FOR FRESHNESS), HIGH FRUCTOSE CORN SYRUP, CONTAINS TWO PERCENT OR LESS OF SALT, CORNSTARCH, BAKING SODA, SOY LECITHIN, ARTIFICIAL FLAVOR, YELLOW 5, BLUE 1.'''
+DEBUG: Original: 'ENRICHED FLOUR', Normalized: 'enriched flour'
+DEBUG: Original: 'SUGAR', Normalized: 'sugar'
+DEBUG: Original: 'VEGETABLE OIL', Normalized: 'vegetable oil'
+DEBUG: Original: 'HIGH FRUCTOSE CORN SYRUP', Normalized: 'high fructose corn syrup'
+DEBUG: Original: 'CONTAINS TWO PERCENT OR LESS OF SALT', Normalized: 'contains two percent or less of salt'
+DEBUG: Original: 'CORNSTARCH', Normalized: 'cornstarch'
+DEBUG: Original: 'BAKING SODA', Normalized: 'baking soda'
+DEBUG: Original: 'SOY LECITHIN', Normalized: 'soy lecithin'
+DEBUG: Original: 'ARTIFICIAL FLAVOR', Normalized: 'artificial flavor'
+DEBUG: Original: 'YELLOW 5', Normalized: 'yellow 5'
+DEBUG: Original: 'BLUE 1.''', Normalized: 'blue 1'
+DEBUG: Original: 'WHEAT FLOUR', Normalized: 'wheat flour'
+DEBUG: Original: 'NIACIN', Normalized: 'niacin'
+DEBUG: Original: 'REDUCED IRON', Normalized: 'reduced iron'
+DEBUG: Original: 'THIAMIN MONONITRATE', Normalized: 'thiamin mononitrate'
+DEBUG: Original: 'RIBOFLAVIN', Normalized: 'riboflavin'
+DEBUG: Original: 'FOLIC ACID', Normalized: 'folic acid'
+DEBUG: Original: 'SOYBEAN', Normalized: 'soybean'
+DEBUG: Original: 'PALM AND PALM KERNEL OIL WITH TBHQ FOR FRESHNESS', Normalized: 'palm and palm kernel oil with tbhq for freshness'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['sodium bicarbonate',
+ 'cornstarch',
+ 'folic acid',
+ 'niacin',
+ 'sodium chloride',
+ 'high fructose corn syrup',
+ 'thiamine',
+ 'riboflavin',
+ 'sucrose acetate isobutyrate',
+ 'tert-butylhydroquinone',
+ 'iron elemental',
+ 'lecithin']
+  Identified Common Food Ingredients:
+['wheat flour',
+ 'soybean',
+ 'yellow 5',
+ 'blue 1',
+ 'enriched flour',
+ 'vegetable oil',
+ 'artificial flavor']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Cornstarch
+* Folic Acid
+* High Fructose Corn Syrup
+* Iron Elemental
+* Lecithin
+* Niacin
+* Riboflavin
+* Sodium Bicarbonate
+* Sodium Chloride
+* Sucrose Acetate Isobutyrate
+* Tert-Butylhydroquinone
+* Thiamine
+
+### Identified Common Food Ingredients:
+* Artificial Flavor
+* Blue 1
+* Enriched Flour
+* Soybean
+* Vegetable Oil
+* Wheat Flour
+* Yellow 5
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 3 ---
+Input Ingredients: 'Potatoes, Vegetable Oil (Sunflower, Corn, and/or Canola Oil), Salt'
+DEBUG: Original: 'Potatoes', Normalized: 'potatoes'
+DEBUG: Original: 'Vegetable Oil', Normalized: 'vegetable oil'
+DEBUG: Original: 'Salt', Normalized: 'salt'
+DEBUG: Original: 'Sunflower', Normalized: 'sunflower'
+DEBUG: Original: 'Corn', Normalized: 'corn'
+DEBUG: Original: 'Canola Oil', Normalized: 'canola oil'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['rapeseed oil low erucic acid', 'sodium chloride']
+  Identified Common Food Ingredients:
+['corn', 'vegetable oil', 'potatoes', 'sunflower']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Rapeseed Oil Low Erucic Acid
+* Sodium Chloride
+
+### Identified Common Food Ingredients:
+* Corn
+* Potatoes
+* Sunflower
+* Vegetable Oil
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 4 ---
+Input Ingredients: 'Milk, Cream, Sugar, Vanilla Extract'
+DEBUG: Original: 'Milk', Normalized: 'milk'
+DEBUG: Original: 'Cream', Normalized: 'cream'
+DEBUG: Original: 'Sugar', Normalized: 'sugar'
+DEBUG: Original: 'Vanilla Extract', Normalized: 'vanilla extract'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['vanilla extract vanilla spp.', 'sucrose acetate isobutyrate']
+  Identified Common Food Ingredients:
+['cream', 'milk']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Sucrose Acetate Isobutyrate
+* Vanilla Extract Vanilla Spp.
+
+### Identified Common Food Ingredients:
+* Cream
+* Milk
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 5 ---
+Input Ingredients: 'Water, High Fructose Corn Syrup, Carbon Dioxide, Caramel Color, Phosphoric Acid, Natural Flavors, Caffeine'
+DEBUG: Original: 'Water', Normalized: 'water'
+DEBUG: Original: 'High Fructose Corn Syrup', Normalized: 'high fructose corn syrup'
+DEBUG: Original: 'Carbon Dioxide', Normalized: 'carbon dioxide'
+DEBUG: Original: 'Caramel Color', Normalized: 'caramel color'
+DEBUG: Original: 'Phosphoric Acid', Normalized: 'phosphoric acid'
+DEBUG: Original: 'Natural Flavors', Normalized: 'natural flavors'
+DEBUG: Original: 'Caffeine', Normalized: 'caffeine'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['carbon dioxide',
+ 'caramel',
+ 'caffeine',
+ 'high fructose corn syrup',
+ 'phosphoric acid']
+  Identified Common Food Ingredients:
+['natural flavors', 'water']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Caffeine
+* Caramel
+* Carbon Dioxide
+* High Fructose Corn Syrup
+* Phosphoric Acid
+
+### Identified Common Food Ingredients:
+* Natural Flavors
+* Water
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 6 ---
+Input Ingredients: 'Pure Cane Sugar'
+DEBUG: Original: 'Pure Cane Sugar', Normalized: 'pure cane sugar'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['sucrose acetate isobutyrate']
+  Identified Common Food Ingredients:
+[]
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Sucrose Acetate Isobutyrate
+
+### Identified Common Food Ingredients:
+* No common food ingredients identified (beyond FDA-regulated substances).
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 7 ---
+Input Ingredients: 'Citric Acid, Sodium Bicarbonate'
+DEBUG: Original: 'Citric Acid', Normalized: 'citric acid'
+DEBUG: Original: 'Sodium Bicarbonate', Normalized: 'sodium bicarbonate'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['sodium bicarbonate', 'citric acid']
+  Identified Common Food Ingredients:
+[]
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Citric Acid
+* Sodium Bicarbonate
+
+### Identified Common Food Ingredients:
+* No common food ingredients identified (beyond FDA-regulated substances).
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 8 ---
+Input Ingredients: 'Unrecognized Ingredient XYZ, Water, Sugar'
+DEBUG: Original: 'Unrecognized Ingredient XYZ', Normalized: 'unrecognized ingredient xyz'
+DEBUG: Original: 'Water', Normalized: 'water'
+DEBUG: Original: 'Sugar', Normalized: 'sugar'
+
+Analysis Results:
+  Data Score: 66.7% (Low)
+  Identified FDA-Regulated Substances:
+['sucrose acetate isobutyrate']
+  Identified Common Food Ingredients:
+['water']
+  Truly Unidentified Ingredients/Phrases:
+['Unrecognized Ingredient XYZ']
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 66.7% (Low)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Sucrose Acetate Isobutyrate
+
+### Identified Common Food Ingredients:
+* Water
+
+### Truly Unidentified Ingredients/Phrases:
+The following components were not matched against our database of FDA-regulated substances or common ingredients. This means our system couldn't fully categorize them. These could be:
+* **Complex phrasing** not yet fully parsed.
+* **Obscure ingredients** not yet in our database.
+* **Potential misspellings** from the label.
+
+We'll keep improving. The more you use, the better we get!!
+* Unrecognized Ingredient Xyz
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 9 ---
+Input Ingredients: ''
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+[]
+  Identified Common Food Ingredients:
+[]
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* No specific FDA-regulated substances (additives) identified.
+
+### Identified Common Food Ingredients:
+* No common food ingredients identified (beyond FDA-regulated substances).
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 10 ---
+Input Ingredients: 'just water'
+DEBUG: Original: 'just water', Normalized: 'just water'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+[]
+  Identified Common Food Ingredients:
+['water']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* No specific FDA-regulated substances (additives) identified.
+
+### Identified Common Food Ingredients:
+* Water
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 11 ---
+Input Ingredients: 'Contains: Water, High-Fructose Corn Syrup, Phosphoric Acid, Caramel Color, Natural Flavors, Caffeine, Sodium Benzoate, Potassium Sorbate, Ascorbic Acid'
+DEBUG: Original: 'Water', Normalized: 'water'
+DEBUG: Original: 'High-Fructose Corn Syrup', Normalized: 'high-fructose corn syrup'
+DEBUG: Original: 'Phosphoric Acid', Normalized: 'phosphoric acid'
+DEBUG: Original: 'Caramel Color', Normalized: 'caramel color'
+DEBUG: Original: 'Natural Flavors', Normalized: 'natural flavors'
+DEBUG: Original: 'Caffeine', Normalized: 'caffeine'
+DEBUG: Original: 'Sodium Benzoate', Normalized: 'sodium benzoate'
+DEBUG: Original: 'Potassium Sorbate', Normalized: 'potassium sorbate'
+DEBUG: Original: 'Ascorbic Acid', Normalized: 'ascorbic acid'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['ascorbic acid',
+ 'potassium sorbate',
+ 'caramel',
+ 'sodium benzoate',
+ 'caffeine',
+ 'phosphoric acid',
+ 'corn syrup']
+  Identified Common Food Ingredients:
+['natural flavors', 'water']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Ascorbic Acid
+* Caffeine
+* Caramel
+* Corn Syrup
+* Phosphoric Acid
+* Potassium Sorbate
+* Sodium Benzoate
+
+### Identified Common Food Ingredients:
+* Natural Flavors
+* Water
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 12 ---
+Input Ingredients: 'Ingredients: Enriched Bleached Flour (Wheat Flour, Niacin, Reduced Iron, Thiamin Mononitrate, Riboflavin, Folic Acid), Sugar, Corn Syrup, Leavening (Baking Soda, Calcium Phosphate, Sodium Aluminum Phosphate), Partially Hydrogenated Soybean Oil, Dextrose, Corn Starch, Salt, Artificial Flavor, Yellow 5, Red 40, Blue 1.'
+DEBUG: Original: 'Enriched Bleached Flour', Normalized: 'enriched bleached flour'
+DEBUG: Original: 'Sugar', Normalized: 'sugar'
+DEBUG: Original: 'Corn Syrup', Normalized: 'corn syrup'
+DEBUG: Original: 'Leavening', Normalized: 'leavening'
+DEBUG: Original: 'Partially Hydrogenated Soybean Oil', Normalized: 'partially hydrogenated soybean oil'
+DEBUG: Original: 'Dextrose', Normalized: 'dextrose'
+DEBUG: Original: 'Corn Starch', Normalized: 'corn starch'
+DEBUG: Original: 'Salt', Normalized: 'salt'
+DEBUG: Original: 'Artificial Flavor', Normalized: 'artificial flavor'
+DEBUG: Original: 'Yellow 5', Normalized: 'yellow 5'
+DEBUG: Original: 'Red 40', Normalized: 'red 40'
+DEBUG: Original: 'Blue 1.', Normalized: 'blue 1'
+DEBUG: Original: 'Wheat Flour', Normalized: 'wheat flour'
+DEBUG: Original: 'Niacin', Normalized: 'niacin'
+DEBUG: Original: 'Reduced Iron', Normalized: 'reduced iron'
+DEBUG: Original: 'Thiamin Mononitrate', Normalized: 'thiamin mononitrate'
+DEBUG: Original: 'Riboflavin', Normalized: 'riboflavin'
+DEBUG: Original: 'Folic Acid', Normalized: 'folic acid'
+DEBUG: Original: 'Baking Soda', Normalized: 'baking soda'
+DEBUG: Original: 'Calcium Phosphate', Normalized: 'calcium phosphate'
+DEBUG: Original: 'Sodium Aluminum Phosphate', Normalized: 'sodium aluminum phosphate'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['sodium bicarbonate',
+ 'cornstarch',
+ 'folic acid',
+ 'niacin',
+ 'sodium chloride',
+ 'sodium aluminum phosphate acidic or basic',
+ 'iron elemental',
+ 'thiamine',
+ 'riboflavin',
+ 'sucrose acetate isobutyrate',
+ 'corn syrup',
+ 'dextrose']
+  Identified Common Food Ingredients:
+['wheat flour',
+ 'calcium phosphate',
+ 'yellow 5',
+ 'red 40',
+ 'blue 1',
+ 'leavening',
+ 'partially hydrogenated soybean oil',
+ 'artificial flavor',
+ 'enriched bleached flour']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Corn Syrup
+* Cornstarch
+* Dextrose
+* Folic Acid
+* Iron Elemental
+* Niacin
+* Riboflavin
+* Sodium Aluminum Phosphate Acidic Or Basic
+* Sodium Bicarbonate
+* Sodium Chloride
+* Sucrose Acetate Isobutyrate
+* Thiamine
+
+### Identified Common Food Ingredients:
+* Artificial Flavor
+* Blue 1
+* Calcium Phosphate
+* Enriched Bleached Flour
+* Leavening
+* Partially Hydrogenated Soybean Oil
+* Red 40
+* Wheat Flour
+* Yellow 5
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 13 ---
+Input Ingredients: 'MILK, CREAM, SUGAR, CORN SYRUP, WHEY, MONO AND DIGLYCERIDES, CELLULOSE GUM, GUAR GUM, CARRAGEENAN, ARTIFICIAL FLAVOR, ANNATTO (COLOR), VITAMIN A PALMITATE.'
+DEBUG: Original: 'MILK', Normalized: 'milk'
+DEBUG: Original: 'CREAM', Normalized: 'cream'
+DEBUG: Original: 'SUGAR', Normalized: 'sugar'
+DEBUG: Original: 'CORN SYRUP', Normalized: 'corn syrup'
+DEBUG: Original: 'WHEY', Normalized: 'whey'
+DEBUG: Original: 'MONO AND DIGLYCERIDES', Normalized: 'mono and diglycerides'
+DEBUG: Original: 'CELLULOSE GUM', Normalized: 'cellulose gum'
+DEBUG: Original: 'GUAR GUM', Normalized: 'guar gum'
+DEBUG: Original: 'CARRAGEENAN', Normalized: 'carrageenan'
+DEBUG: Original: 'ARTIFICIAL FLAVOR', Normalized: 'artificial flavor'
+DEBUG: Original: 'ANNATTO', Normalized: 'annatto'
+DEBUG: Original: 'VITAMIN A PALMITATE.', Normalized: 'vitamin a palmitate'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['whey',
+ 'carrageenan',
+ 'sucrose acetate isobutyrate',
+ 'mono- and diglycerides ethoxylated',
+ 'corn syrup',
+ 'guar gum cyamopsis tetragonolobus l.',
+ 'vitamin a palmitate']
+  Identified Common Food Ingredients:
+['annatto', 'cream', 'cellulose gum', 'artificial flavor', 'milk']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Carrageenan
+* Corn Syrup
+* Guar Gum Cyamopsis Tetragonolobus L.
+* Mono- And Diglycerides Ethoxylated
+* Sucrose Acetate Isobutyrate
+* Vitamin A Palmitate
+* Whey
+
+### Identified Common Food Ingredients:
+* Annatto
+* Artificial Flavor
+* Cellulose Gum
+* Cream
+* Milk
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 14 ---
+Input Ingredients: 'FD&C Red No. 40, FD&C Yellow No. 5, FD&C Blue No. 1'
+DEBUG: Original: 'FD&C Red No. 40', Normalized: 'fd&c red no  40'
+DEBUG: Original: 'FD&C Yellow No. 5', Normalized: 'fd&c yellow no  5'
+DEBUG: Original: 'FD&C Blue No. 1', Normalized: 'fd&c blue no  1'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['fd&c blue no  1', 'fd&c yellow no  5', 'fd&c red no  40']
+  Identified Common Food Ingredients:
+[]
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Fd&C Blue No  1
+* Fd&C Red No  40
+* Fd&C Yellow No  5
+
+### Identified Common Food Ingredients:
+* No common food ingredients identified (beyond FDA-regulated substances).
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 15 ---
+Input Ingredients: 'Mono- and Diglycerides, Polysorbate 80'
+DEBUG: Original: 'Mono- and Diglycerides', Normalized: 'mono- and diglycerides'
+DEBUG: Original: 'Polysorbate 80', Normalized: 'polysorbate 80'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['mono- and diglycerides', 'polysorbate 80']
+  Identified Common Food Ingredients:
+[]
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Mono- And Diglycerides
+* Polysorbate 80
+
+### Identified Common Food Ingredients:
+* No common food ingredients identified (beyond FDA-regulated substances).
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 16 ---
+Input Ingredients: 'Salt, Sugar, Water, Natural Flavor'
+DEBUG: Original: 'Salt', Normalized: 'salt'
+DEBUG: Original: 'Sugar', Normalized: 'sugar'
+DEBUG: Original: 'Water', Normalized: 'water'
+DEBUG: Original: 'Natural Flavor', Normalized: 'natural flavor'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['sodium chloride', 'sucrose acetate isobutyrate']
+  Identified Common Food Ingredients:
+['natural flavor', 'water']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Sodium Chloride
+* Sucrose Acetate Isobutyrate
+
+### Identified Common Food Ingredients:
+* Natural Flavor
+* Water
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 17 ---
+Input Ingredients: 'Vegetable Oil (Soybean, Palm, Palm Kernel Oil)'
+DEBUG: Original: 'Vegetable Oil', Normalized: 'vegetable oil'
+DEBUG: Original: 'Soybean', Normalized: 'soybean'
+DEBUG: Original: 'Palm', Normalized: 'palm'
+DEBUG: Original: 'Palm Kernel Oil', Normalized: 'palm kernel oil'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+[]
+  Identified Common Food Ingredients:
+['soybean', 'vegetable oil', 'palm', 'palm kernel oil']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* No specific FDA-regulated substances (additives) identified.
+
+### Identified Common Food Ingredients:
+* Palm
+* Palm Kernel Oil
+* Soybean
+* Vegetable Oil
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 18 ---
+Input Ingredients: 'Enriched Flour (Wheat Flour, Niacin, Reduced Iron)'
+DEBUG: Original: 'Enriched Flour', Normalized: 'enriched flour'
+DEBUG: Original: 'Wheat Flour', Normalized: 'wheat flour'
+DEBUG: Original: 'Niacin', Normalized: 'niacin'
+DEBUG: Original: 'Reduced Iron', Normalized: 'reduced iron'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['niacin', 'iron elemental']
+  Identified Common Food Ingredients:
+['wheat flour', 'enriched flour']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Iron Elemental
+* Niacin
+
+### Identified Common Food Ingredients:
+* Enriched Flour
+* Wheat Flour
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Test Case 19 ---
+Input Ingredients: 'Water, Dextrose, Citric Acid, Natural and Artificial Flavors, Salt, Potassium Citrate, Sodium Citrate, Modified Food Starch, Glycerol Ester of Rosin, Sucrose Acetate Isobutyrate, Yellow 5, Red 40.'
+DEBUG: Original: 'Water', Normalized: 'water'
+DEBUG: Original: 'Dextrose', Normalized: 'dextrose'
+DEBUG: Original: 'Citric Acid', Normalized: 'citric acid'
+DEBUG: Original: 'Natural and Artificial Flavors', Normalized: 'natural and artificial flavors'
+DEBUG: Original: 'Salt', Normalized: 'salt'
+DEBUG: Original: 'Potassium Citrate', Normalized: 'potassium citrate'
+DEBUG: Original: 'Sodium Citrate', Normalized: 'sodium citrate'
+DEBUG: Original: 'Modified Food Starch', Normalized: 'modified food starch'
+DEBUG: Original: 'Glycerol Ester of Rosin', Normalized: 'glycerol ester of rosin'
+DEBUG: Original: 'Sucrose Acetate Isobutyrate', Normalized: 'sucrose acetate isobutyrate'
+DEBUG: Original: 'Yellow 5', Normalized: 'yellow 5'
+DEBUG: Original: 'Red 40.', Normalized: 'red 40'
+
+Analysis Results:
+  Data Score: 100.0% (High)
+  Identified FDA-Regulated Substances:
+['starch unmodified',
+ 'sodium chloride',
+ 'rosin glycerol ester',
+ 'sucrose acetate isobutyrate',
+ 'potassium citrate',
+ 'dextrose',
+ 'citric acid',
+ 'trisodium citrate']
+  Identified Common Food Ingredients:
+['red 40', 'natural and artificial flavors', 'water', 'yellow 5']
+  Truly Unidentified Ingredients/Phrases:
+[]
+
+--- Generated Data Report Markdown ---
+## Ingredient Data Report
+
+**Data Score:** 100.0% (High)
+
+The Data Score indicates the percentage of ingredients our system could categorize.
+
+### Identified FDA-Regulated Substances:
+* Citric Acid
+* Dextrose
+* Potassium Citrate
+* Rosin Glycerol Ester
+* Sodium Chloride
+* Starch Unmodified
+* Sucrose Acetate Isobutyrate
+* Trisodium Citrate
+
+### Identified Common Food Ingredients:
+* Natural And Artificial Flavors
+* Red 40
+* Water
+* Yellow 5
+
+### Truly Unidentified Ingredients/Phrases:
+* All ingredient components were successfully categorized!
+
+---
+*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*
+
+--- Local Data Score Analyzer Test Complete ---
