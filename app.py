@@ -2,7 +2,7 @@ import os
 import json
 import re
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS # Import Flask-Cors
 import requests # For making HTTP requests to USDA
 from airtable import Airtable # For interacting with Airtable
 
@@ -22,7 +22,9 @@ ADDITIVES_DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'all_fda_s
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
-CORS(app) # Enable Cross-Origin Resource Sharing for frontend communication
+# Enable CORS for all routes. This is the preferred way to handle CORS with Flask-Cors.
+# In production, you might restrict this to your frontend's domain: CORS(app, resources={r"/api/*": {"origins": "https://your-frontend-domain.vercel.app"}})
+CORS(app) 
 
 # --- Global Additives Lookup Dictionary ---
 # This dictionary will store our pre-processed additive data for fast lookups.
@@ -160,7 +162,7 @@ airtable = Airtable(AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME, api_key=AIRTABLE_API_
 def home():
     return "Backend is running. Use /api/gtin-lookup for GTIN lookups."
 
-@app.route('/api/gtin-lookup', methods=['POST'])
+@app.route('/api/gtin-lookup', methods=['POST']) # Removed 'OPTIONS' as Flask-Cors handles it
 def gtin_lookup():
     try:
         data = request.get_json()
@@ -177,121 +179,4 @@ def gtin_lookup():
             if cached_record:
                 # Assuming 'cached_record' is a list and we take the first match
                 product_data = cached_record[0]['fields']
-                print(f"GTIN {gtin} found in cache.")
-                # Return cached data including the trust report if it exists
-                return jsonify({
-                    "gtin": gtin,
-                    "description": product_data.get('Description'),
-                    "ingredients": product_data.get('Ingredients'),
-                    "trust_report_markdown": product_data.get('Trust Report Markdown'), # Fetch existing trust report
-                    "status": "found_in_cache"
-                })
-        except Exception as e:
-            print(f"Error checking Airtable cache: {e}")
-            # Continue to USDA if cache check fails
-
-        # 2. If not in cache, lookup from USDA FoodData Central
-        print(f"GTIN {gtin} not in cache. Looking up from USDA...")
-        usda_url = f"https://api.nal.usda.gov/fdc/v1/foods/search?api_key={USDA_API_KEY}&query={gtin}"
-        
-        response = requests.get(usda_url)
-        response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
-        usda_data = response.json()
-
-        product_description = "N/A"
-        product_ingredients = "N/A"
-        
-        # Parse USDA response to find product details
-        if usda_data and usda_data.get('foods'):
-            # Iterate through foods to find a match, prioritizing exact GTIN if possible
-            for food in usda_data['foods']:
-                if food.get('gtinUpc') == gtin:
-                    product_description = food.get('description', 'N/A')
-                    # Ingredients can be in different fields, common ones are 'ingredients' or 'householdServingFullText'
-                    product_ingredients = food.get('ingredients', food.get('householdServingFullText', 'N/A'))
-                    break # Found the product, exit loop
-
-        if product_description == "N/A" and product_ingredients == "N/A":
-            print(f"GTIN {gtin} not found in USDA.")
-            return jsonify({"gtin": gtin, "status": "not_found", "message": "Product not found in USDA FoodData Central."})
-
-        # --- New: Analyze Ingredients and Generate Trust Report ---
-        identified_substances, unidentified_ingredients, confidence_level, trust_score_percentage = analyze_ingredients(product_ingredients)
-
-        # Build the Trust Report in Markdown format
-        trust_report_markdown = f"## GTIN: {gtin}  **Product:** {product_description}\n\n"
-        trust_report_markdown += "### Identified Substances:\n"
-        if identified_substances:
-            for sub in identified_substances:
-                trust_report_markdown += f"- {sub.title()}\n" # Capitalize for display
-        else:
-            trust_report_markdown += "- None identified from known additive list.\n"
-
-        trust_report_markdown += "\n### Unidentified Ingredients:\n"
-        if unidentified_ingredients:
-            for unident in unidentified_ingredients:
-                trust_report_markdown += f"- {unident.title()}\n" # Capitalize for display
-        else:
-            trust_report_markdown += "- All components matched known substances or were processed.\n"
-        
-        trust_report_markdown += f"\n### Trust Score:\n"
-        trust_report_markdown += f"- **Confidence Level:** {confidence_level} ({trust_score_percentage:.1f}%)\n"
-        trust_report_markdown += "_Explanation: This score reflects our certainty that all relevant ingredients were identified. A lower score indicates more unidentifiable words/phrases in the ingredient list, suggesting potential formatting issues or unknown substances._\n"
-
-        # Placeholder for other sections (as per AI Coach's example)
-        # You'll need to define how to get this data (e.g., from USDA response, or simple hardcoded for MVP)
-        trust_report_markdown += "\n### Processing Level:\n"
-        trust_report_markdown += "- Ultra-Processed (Nova 4)\n" # Placeholder, needs actual logic
-        trust_report_markdown += "_Source: NOVA Classification System (Placeholder)_"
-
-        trust_report_markdown += "\n### Ownership:\n"
-        trust_report_markdown += "- PepsiCo\n" # Placeholder, needs actual logic
-        trust_report_markdown += "_Source: AI-generated summary (Placeholder)_"
-
-        trust_report_markdown += "\n### Origin:\n"
-        trust_report_markdown += "- Likely U.S.-based manufacturing\n" # Placeholder, needs actual logic
-        trust_report_markdown += "_Source: AI-generated (Placeholder)_"
-
-
-        # 3. Write to Airtable Cache
-        print(f"Caching GTIN {gtin} to Airtable...")
-        try:
-            airtable.insert({
-                'GTIN': gtin,
-                'Description': product_description,
-                'Ingredients': product_ingredients,
-                'Trust Report Markdown': trust_report_markdown # Store the full markdown report
-            })
-            print(f"GTIN {gtin} successfully cached.")
-            return jsonify({
-                "gtin": gtin,
-                "description": product_description,
-                "ingredients": product_ingredients,
-                "trust_report_markdown": trust_report_markdown,
-                "status": "pulled_from_usda_and_cached"
-            })
-        except Exception as e:
-            print(f"Error writing to Airtable cache for GTIN {gtin}: {e}")
-            # Even if caching fails, return the product data to the user
-            return jsonify({
-                "gtin": gtin,
-                "description": product_description,
-                "ingredients": product_ingredients,
-                "trust_report_markdown": trust_report_markdown,
-                "status": "pulled_from_usda_no_cache" # Indicate cache failure
-            })
-
-    except requests.exceptions.RequestException as e:
-        print(f"Network or USDA API error: {e}")
-        return jsonify({"error": "Failed to connect to USDA FoodData Central or network issue.", "details": str(e)}), 500
-    except Exception as e:
-        print(f"An unexpected error occurred in gtin_lookup: {e}")
-        return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500
-
-if __name__ == '__main__':
-    # This block is for local development only. Render will run the app via Gunicorn or similar.
-    # Ensure environment variables are set if running locally.
-    if not all([AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY]):
-        print("WARNING: Missing one or more environment variables (AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY).")
-        print("Please set them for local testing or ensure they are configured on Render.")
-    app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))
+                print(f"GTIN {g
