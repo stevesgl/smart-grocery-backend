@@ -416,4 +416,189 @@ def fetch_from_usda_api(gtin):
 
 def store_to_airtable(gtin, usda_data, data_report_markdown):
     """
-    Stores product data pulled from USDA API into the Airtable ca
+    Stores product data pulled from USDA API into the Airtable cache,
+    including the generated data report markdown.
+    """
+    if not airtable:
+        print("[Render Backend] Airtable client not initialized. Skipping store to Airtable.")
+        return
+        
+    print(f"[Render Backend] Attempting to store GTIN {gtin} to Airtable...")
+    fields = {
+        "gtin_upc": gtin,
+        "fdc_id": str(usda_data.get("fdcId", "")),
+        "brand_name": usda_data.get("brandName", ""),
+        "brand_owner": usda_data.get("brandOwner", ""),
+        "description": usda_data.get("description", ""),
+        "ingredients": usda_data.get("ingredients", ""),
+        "lookup_count": 1,
+        "last_access": datetime.now().isoformat(),
+        "hot_score": 1, # Placeholder, can be calculated dynamically later
+        "source": "USDA API",
+        "data_report_markdown": data_report_markdown # Store the markdown report
+    }
+    
+    try:
+        airtable.insert(fields)
+        print(f"[Render Backend] ✅ Stored to Airtable: {fields.get('description', gtin)}")
+    except Exception as e:
+        print(f"[Render Backend] ❌ Failed to store to Airtable for GTIN {gtin}: {e}")
+
+def count_airtable_rows():
+    """Counts the total number of records in the Airtable table."""
+    if not airtable:
+        print("[Render Backend] Airtable client not initialized. Skipping row count.")
+        return 0
+        
+    print("[Render Backend] Counting Airtable rows...")
+    try:
+        records = airtable.get_all(fields=['id']) 
+        return len(records)
+    except Exception as e:
+        print(f"[Render Backend] ⚠️ Error counting Airtable rows: {e}")
+        return 0
+
+def delete_least_valuable_row():
+    """
+    Deletes the least valuable record in Airtable based on lookup_count and last_access.
+    Least valuable = lowest lookup_count, then oldest last_access for ties.
+    """
+    if not airtable:
+        print("[Render Backend] Airtable client not initialized. Skipping row deletion.")
+        return
+        
+    print("[Render Backend] Checking for least valuable row to evict...")
+    try:
+        records = airtable.get_all(fields=['lookup_count', 'last_access'])
+        
+        if records:
+            records_sorted = sorted(records, key=lambda r: (
+                r["fields"].get("lookup_count", 0), 
+                r["fields"].get("last_access", "0000-01-01T00:00:00.000Z") 
+            ))
+            
+            least_valuable_record = records_sorted[0] 
+            record_id_to_delete = least_valuable_record['id']
+            
+            airtable.delete(record_id_to_delete)
+            print(f"[Render Backend] 🗑️ Deleted least valuable entry (ID: {record_id_to_delete}, "
+                  f"Lookup: {least_valuable_record['fields'].get('lookup_count', 0)}, "
+                  f"Last Access: {least_valuable_record['fields'].get('last_access', 'N/A')}).")
+        else:
+            print("[Render Backend] No records to evict.")
+    except Exception as e:
+        print(f"[Render Backend] ❌ Error deleting least valuable row: {e}")
+
+# --- Flask API Endpoint ---
+@app.route('/api/gtin-lookup', methods=['POST', 'OPTIONS'])
+def gtin_lookup_api():
+    """
+    Flask API endpoint for GTIN lookup.
+    Expects a POST request with a JSON body containing 'gtin'.
+    Returns JSON response including product data and data report markdown.
+    """
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+    }
+
+    if request.method == 'OPTIONS':
+        print("[Render Backend] Received OPTIONS request.")
+        return '', 204, headers
+
+    if request.method != 'POST':
+        print(f"[Render Backend] Received {request.method} request, expected POST.")
+        return jsonify({"error": "Method Not Allowed", "message": "Only POST requests are supported."}), 405, headers
+
+    try:
+        print("[Render Backend] Attempting to get JSON from request.")
+        request_data = request.get_json()
+        gtin = request_data.get('gtin')
+        print(f"[Render Backend] Received GTIN: {gtin}")
+
+        if not gtin:
+            print("[Render Backend] GTIN is missing from request.")
+            return jsonify({"error": "Bad Request", "message": "GTIN is required in the request body."}), 400, headers
+
+        product_description = "N/A"
+        product_ingredients = "N/A"
+        data_report_markdown = "N/A"
+        status = "not_found"
+
+        # 1. Check Airtable Cache
+        print(f"[Render Backend] Calling check_airtable_cache for GTIN: {gtin}")
+        cached_data = check_airtable_cache(gtin)
+        if cached_data:
+            print(f"[Render Backend] DEBUG: Data found in cache for GTIN {gtin}. Fields: {cached_data.keys()}")
+            product_description = cached_data.get('description', "N/A")
+            product_ingredients = cached_data.get('ingredients', "N/A")
+            data_report_markdown = cached_data.get('data_report_markdown', "N/A")
+            status = "found_in_cache"
+            print(f"[Render Backend] Returning cached data for GTIN {gtin}")
+            return jsonify({
+                "gtin": gtin,
+                "description": product_description,
+                "ingredients": product_ingredients,
+                "data_report_markdown": data_report_markdown,
+                "status": status
+            }), 200, headers
+
+        # 2. If not in cache, fetch from USDA API
+        print(f"[Render Backend] Calling fetch_from_usda_api for GTIN: {gtin}")
+        usda_product_data = fetch_from_usda_api(gtin)
+        
+        if usda_product_data:
+            product_description = usda_product_data.get('description', "N/A")
+            product_ingredients = usda_product_data.get('ingredients', "N/A")
+
+            # Analyze ingredients and generate data report with new categories
+            print(f"[Render Backend] Analyzing ingredients for GTIN: {gtin}")
+            identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level = analyze_ingredients(product_ingredients)
+            data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level)
+            status = "pulled_from_usda_and_cached"
+
+            # Check if cache is full before adding new entry
+            print(f"[Render Backend] Checking Airtable row count for eviction logic.")
+            current_row_count = count_airtable_rows()
+            if current_row_count >= AIRTABLE_MAX_ROWS:
+                print(f"[Render Backend] Cache is full ({current_row_count} rows). Evicting least valuable entry.")
+                delete_least_valuable_row()
+            
+            # Store the new product data to Airtable, including the data report
+            print(f"[Render Backend] Storing to Airtable for GTIN: {gtin}")
+            store_to_airtable(gtin, usda_product_data, data_report_markdown)
+            
+            print(f"[Render Backend] Returning USDA data for GTIN {gtin}")
+            return jsonify({
+                "gtin": gtin,
+                "description": product_description,
+                "ingredients": product_ingredients,
+                "data_report_markdown": data_report_markdown,
+                "status": status
+            }), 200, headers
+        else:
+            print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
+            return jsonify({
+                "gtin": gtin,
+                "description": "N/A",
+                "ingredients": "N/A",
+                "data_report_markdown": "Product not found in USDA FoodData Central.",
+                "status": "not_found"
+            }), 404, headers
+
+    except requests.exceptions.RequestException as e:
+        print(f"[Render Backend] Network or USDA API error caught: {e}")
+        return jsonify({"error": "Failed to connect to USDA FoodData Central or network issue.", "details": str(e)}), 500, headers
+    except Exception as e:
+        print(f"[Render Backend] An unexpected error occurred in gtin_lookup_api: {e}")
+        traceback.print_exc() # Print full traceback for debugging
+        return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500, headers
+
+# Standard way to run Flask app for local testing
+if __name__ == '__main__':
+    if not all([AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY]):
+        print("WARNING: Missing one or more environment variables (AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY).")
+        print("Please set them for local testing or ensure they are configured on Render.")
+    app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))
