@@ -534,7 +534,15 @@ def gtin_lookup_api():
             print(f"[Render Backend] DEBUG: Data found in cache for GTIN {gtin}. Fields: {cached_data.keys()}")
             product_description = cached_data.get('description', "N/A")
             product_ingredients = cached_data.get('ingredients', "N/A")
-            data_report_markdown = cached_data.get('data_report_markdown', "N/A")
+            
+            # FIX: Re-generate data_report_markdown from cached ingredients
+            if product_ingredients and product_ingredients != "N/A":
+                print(f"[Render Backend] Re-analyzing ingredients from cache for GTIN: {gtin}")
+                identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level = analyze_ingredients(product_ingredients)
+                data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level)
+            else:
+                data_report_markdown = "No ingredients data available in cache to generate report."
+
             status = "found_in_cache"
             print(f"[Render Backend] Returning cached data for GTIN {gtin}")
             return jsonify({
