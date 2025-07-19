@@ -1,4 +1,5 @@
+Flask
+Flask-Cors
 requests
 airtable-python-wrapper
-Flask
 gunicorn
