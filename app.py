@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS # Import Flask-Cors
 import requests # For making HTTP requests to USDA
 from airtable import Airtable # For interacting with Airtable
+from pprint import pprint # Import pprint for pretty printing dictionaries
 
 # --- Configuration ---
 # Load environment variables for sensitive API keys and IDs
@@ -180,15 +181,20 @@ def gtin_lookup():
                 # Assuming 'cached_record' is a list and we take the first match
                 product_data = cached_record[0]['fields']
                 print(f"GTIN {gtin} found in cache.")
-                # Return cached data including the trust report if it exists
-                # FIX: Return description, ingredients, and trust_report_markdown directly at top level
-                return jsonify({
+                print("DEBUG: Cached product_data from Airtable:")
+                pprint(product_data) # DEBUG: Print the raw data from Airtable
+
+                # Construct the response explicitly to ensure top-level fields
+                response_data = {
                     "gtin": gtin,
                     "description": product_data.get('Description'),
                     "ingredients": product_data.get('Ingredients'),
                     "trust_report_markdown": product_data.get('Trust Report Markdown'),
                     "status": "found_in_cache"
-                })
+                }
+                print("DEBUG: Response data being sent for cached item:")
+                pprint(response_data) # DEBUG: Print the final response data
+                return jsonify(response_data)
         except Exception as e:
             print(f"Error checking Airtable cache: {e}")
             # Continue to USDA if cache check fails
@@ -266,25 +272,31 @@ def gtin_lookup():
                 'Trust Report Markdown': trust_report_markdown # Store the full markdown report
             })
             print(f"GTIN {gtin} successfully cached.")
-            # FIX: Return description, ingredients, and trust_report_markdown directly at top level
-            return jsonify({
+            # Construct the response explicitly to ensure top-level fields
+            response_data = {
                 "gtin": gtin,
                 "description": product_description,
                 "ingredients": product_ingredients,
                 "trust_report_markdown": trust_report_markdown,
                 "status": "pulled_from_usda_and_cached"
-            })
+            }
+            print("DEBUG: Response data being sent for new USDA item:")
+            pprint(response_data) # DEBUG: Print the final response data
+            return jsonify(response_data)
         except Exception as e:
             print(f"Error writing to Airtable cache for GTIN {gtin}: {e}")
             # Even if caching fails, return the product data to the user
-            # FIX: Return description, ingredients, and trust_report_markdown directly at top level
-            return jsonify({
+            # Construct the response explicitly to ensure top-level fields
+            response_data = {
                 "gtin": gtin,
                 "description": product_description,
                 "ingredients": product_ingredients,
                 "trust_report_markdown": trust_report_markdown,
-                "status": "pulled_from_usda_no_cache" # Indicate cache failure
-            })
+                "status": "pulled_from_usda_no_cache"
+            }
+            print("DEBUG: Response data being sent when cache fails:")
+            pprint(response_data) # DEBUG: Print the final response data
+            return jsonify(response_data)
 
     except requests.exceptions.RequestException as e:
         print(f"Network or USDA API error: {e}")
