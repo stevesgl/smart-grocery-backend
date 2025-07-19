@@ -25,9 +25,9 @@ AIRTABLE_MAX_ROWS = 1000
 USDA_SEARCH_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search'
 
 # --- Paths for Data Files (relative to the script) ---
-# When deployed, these files should be in the same directory as this script or a subdirectory
-ADDITIVES_DATA_FILE = os.path.join(os.path.dirname(__file__), 'all_fda_substances_full.json')
-COMMON_INGREDIENTS_DATA_FILE = os.path.join(os.path.dirname(__file__), 'common_ingredients.json')
+# IMPORTANT FIX: Ensure these paths correctly point to the 'data' subdirectory
+ADDITIVES_DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'all_fda_substances_full.json')
+COMMON_INGREDIENTS_DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'common_ingredients.json')
 
 # --- Global Lookups (will be populated once on app startup) ---
 ADDITIVES_LOOKUP = {}
@@ -262,8 +262,7 @@ def generate_data_report_markdown(identified_fda_substances, identified_common_i
     if truly_unidentified_ingredients:
         report += "The following components were not matched against our database of FDA-regulated substances or common ingredients. This means our system couldn't fully categorize them. These could be:\n"
         report += "* **Complex phrasing** not yet fully parsed.\n"
-        report += "* **Obscure ingredients** not yet in our database.\n"
-        report += "* **Potential misspellings** from the label.\n\n"
+        report += "* **Obscure ingredients** not yet in our database.\n\n"
         report += "We'll keep improving. The more you use, the better we get!!\n"
         for unident in sorted(truly_unidentified_ingredients):
             report += f"* {unident.title()}\n"
