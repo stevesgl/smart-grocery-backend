@@ -46,6 +46,7 @@ USDA_SEARCH_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search'
 ADDITIVES_LOOKUP = {} # Maps normalized alias to normalized canonical FDA substance name
 COMMON_INGREDIENTS_LOOKUP = {} # Maps normalized common ingredient to its preferred original casing
 COMMON_FDA_SUBSTANCES_SET = set() # Stores normalized canonical FDA substance names that are also common ingredients
+FDA_SUBSTANCE_DETAILS_LOOKUP = {} # NEW: Stores full FDA substance entry by its normalized canonical name
 
 def load_data_lookups():
     """
@@ -53,7 +54,7 @@ def load_data_lookups():
     and builds the optimized lookup dictionaries/sets.
     This function should be called once at application startup.
     """
-    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET
+    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET, FDA_SUBSTANCE_DETAILS_LOOKUP
 
     # Load additive data
     print(f"[Backend Init] Attempting to load additives data from: {ADDITIVES_DATA_FILE}")
@@ -69,6 +70,9 @@ def load_data_lookups():
             normalized_canonical_name_for_key = re.sub(r'[^a-z0-9\s\&\.\-#]', '', canonical_name.lower()).strip()
             normalized_canonical_name_for_key = re.sub(r'\s+', ' ', normalized_canonical_name_for_key)
             normalized_canonical_name_for_key = normalized_canonical_name_for_key.replace('no.', 'no ')
+
+            # Store the full entry by its normalized canonical name for later lookup
+            FDA_SUBSTANCE_DETAILS_LOOKUP[normalized_canonical_name_for_key] = entry
 
             names_to_add = set()
             if entry.get("Substance"):
@@ -180,12 +184,63 @@ def load_data_lookups():
 # Call load_data_lookups() immediately after app creation to ensure data is loaded when Gunicorn runs the app
 load_data_lookups()
 
+# --- NOVA Score Calculation Function ---
+def calculate_nova_score(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients):
+    """
+    Estimates the NOVA score based on the categorized ingredient lists.
+    
+    NOVA Groups:
+    1: Unprocessed or Minimally Processed Foods (primarily identified_common_ingredients_only)
+    2: Processed Culinary Ingredients (primarily identified_fda_common, e.g., salt, sugar, oil)
+    3: Processed Foods (combination of Group 1 and Group 2 ingredients)
+    4: Ultra-Processed Foods (presence of identified_fda_non_common, or a high number of additives/unidentified)
+    """
+    
+    # Rule 1: If any "FDA Substance Detected (Non-Common)" is present, it's NOVA 4.
+    if identified_fda_non_common:
+        return 4, "Ultra-Processed Food"
+    
+    # Rule 2: If there are truly unidentified ingredients, it leans towards NOVA 4 due to complexity/obscurity
+    # This is a heuristic and can be refined. A high number of unidentified might also suggest UPF.
+    if truly_unidentified_ingredients:
+        # If there are many unidentified, it's more likely UPF.
+        # This threshold can be adjusted.
+        if len(truly_unidentified_ingredients) > 2: # Heuristic: more than 2 unidentified ingredients
+            return 4, "Ultra-Processed Food (Unidentified Ingredients)"
+
+    # Rule 3: If no non-common FDA substances, and no significant unidentified,
+    # check for combinations of common ingredients and common FDA-regulated substances.
+    # This implies NOVA 3 (Processed Food).
+    if (identified_common_ingredients_only and identified_fda_common) or \
+       (len(identified_common_ingredients_only) > 0 and not identified_fda_common and not identified_fda_non_common and not truly_unidentified_ingredients):
+        return 3, "Processed Food"
+        
+    # Rule 4: If only common FDA-regulated substances (like salt, sugar, oil) are present, it's NOVA 2.
+    # This would be for products like a bag of salt, a bottle of sugar, or cooking oil.
+    if identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients:
+        return 2, "Processed Culinary Ingredient"
+
+    # Rule 5: If only common ingredients (like water, milk, fresh produce) are present, it's NOVA 1.
+    if identified_common_ingredients_only and not identified_fda_common and not identified_fda_non_common and not truly_unidentified_ingredients:
+        return 1, "Unprocessed or Minimally Processed Food"
+        
+    # Fallback for edge cases or very minimal products not fitting above rules
+    # If no ingredients, or only very few that don't fit clear categories, default to a reasonable group.
+    # For an empty ingredient list, it's hard to classify, but 1 or 2 might be reasonable.
+    if not identified_fda_non_common and not identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients:
+        return 1, "Unprocessed or Minimally Processed Food (No Ingredients Listed)" # Default for empty list
+
+    # If none of the above, it's a bit ambiguous, but likely leans processed or ultra-processed
+    # based on the presence of some identified components.
+    return 3, "Processed Food (Categorization Ambiguous)"
+
+
 # --- Ingredient Analysis Function (Revised for Data Score and Phrase Matching) ---
 def analyze_ingredients(ingredients_string):
     """
     Analyzes an ingredient string to identify FDA-regulated substances and common ingredients.
     Calculates a Data Score based on the completeness of identification.
-    Returns categorized lists of ingredients for the four categories.
+    Returns categorized lists of ingredients for the four categories, plus estimated NOVA score.
     """
     identified_fda_non_common = set() # New category 1
     identified_fda_common = set()      # New category 2
@@ -193,7 +248,9 @@ def analyze_ingredients(ingredients_string):
     truly_unidentified_ingredients = set() # Category 4 (previously truly_unidentified_ingredients)
 
     if not ingredients_string:
-        return [], [], [], [], 100.0, "High" # Adjusted return for new categories
+        # Also return NOVA score for empty string
+        nova_score, nova_description = calculate_nova_score([], [], [], [])
+        return [], [], [], [], 100.0, "High", nova_score, nova_description
 
     # Step 1: Initial cleanup and pre-processing
     cleaned_string = re.sub(r'^(?:ingredients|contains|ingredient list|ingredients list):?\s*', '', ingredients_string, flags=re.IGNORECASE).strip()
@@ -246,9 +303,9 @@ def analyze_ingredients(ingredients_string):
         if matched_additive_canonical:
             # Determine if this FDA substance is also considered a "common food substance"
             if matched_additive_canonical in COMMON_FDA_SUBSTANCES_SET:
-                identified_fda_common.add(COMMON_INGREDIENTS_LOOKUP.get(matched_additive_canonical, original_component)) # Use original casing if available
+                identified_fda_common.add(FDA_SUBSTANCE_DETAILS_LOOKUP.get(matched_additive_canonical, {}).get("Substance Name (Heading)", matched_additive_canonical.title())) # Use original casing if available
             else:
-                identified_fda_non_common.add(matched_additive_canonical)
+                identified_fda_non_common.add(FDA_SUBSTANCE_DETAILS_LOOKUP.get(matched_additive_canonical, {}).get("Substance Name (Heading)", matched_additive_canonical.title()))
             component_categorized = True
         else:
             # Pass 2: If not an FDA Additive, try to match against Common Ingredients (longest match first)
@@ -290,34 +347,70 @@ def analyze_ingredients(ingredients_string):
     else:
         data_completeness_level = "Low"
 
-    # Return all four categorized lists, plus score and level
+    # Calculate NOVA score
+    nova_score, nova_description = calculate_nova_score(
+        list(identified_fda_non_common),
+        list(identified_fda_common),
+        list(identified_common_ingredients_only),
+        list(truly_unidentified_ingredients)
+    )
+
+    # Return all four categorized lists, plus score, level, and NOVA score/description
     return (list(identified_fda_non_common), list(identified_fda_common), 
             list(identified_common_ingredients_only), list(truly_unidentified_ingredients), 
-            data_score_percentage, data_completeness_level)
+            data_score_percentage, data_completeness_level, nova_score, nova_description)
 
 # --- Data Report Generation ---
-def generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level):
+def generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description):
     """
     Generates a markdown-formatted data report for the product,
-    now with four distinct categories.
+    now with four distinct categories and estimated NOVA score,
+    including 'Used for (Technical Effect)' for FDA substances.
+    CAS Reg No (or other ID) has been removed as per user request.
     """
     report = "## Ingredient Data Report\n\n"
     report += f"**Data Score:** {data_score:.1f}% ({data_completeness_level})\n\n"
     report += "The Data Score indicates the percentage of ingredients our system could categorize.\n\n"
+    
+    report += f"**Estimated NOVA Score:** {nova_score} - {nova_description}\n\n"
+    report += "The NOVA score classifies foods by the extent and purpose of their processing.\n\n"
+
 
     # Category 1: FDA Substance Detected (Non-Common)
     report += "### FDA Substance Detected (Non-Common):\n"
     if identified_fda_non_common:
-        for sub in sorted(identified_fda_non_common):
-            report += f"* {sub.title()}\n"
+        for sub_name in sorted(identified_fda_non_common):
+            # Retrieve full details for the canonical substance using the FDA_SUBSTANCE_DETAILS_LOOKUP
+            # Note: sub_name here is already the canonical name (e.g., "FD&C RED NO. 40")
+            normalized_sub_name_for_lookup = re.sub(r'[^a-z0-9\s\&\.\-#]', '', sub_name.lower()).strip()
+            normalized_sub_name_for_lookup = re.sub(r'\s+', ' ', normalized_sub_name_for_lookup)
+            normalized_sub_name_for_lookup = normalized_sub_name_for_lookup.replace('no.', 'no ')
+
+            sub_details = FDA_SUBSTANCE_DETAILS_LOOKUP.get(normalized_sub_name_for_lookup, {})
+            used_for = sub_details.get("Used for (Technical Effect)", "N/A (No 'Used for' data)")
+
+            report += f"* **{sub_name.title()}**\n"
+            if used_for and used_for != "N/A (No 'Used for' data)":
+                report += f"  * Used for: *{used_for}*\n"
     else:
         report += "* No specific FDA-regulated substances (additives) identified that are not also common food ingredients.\n"
 
     # Category 2: Common Food Substance Regulated by FDA
     report += "\n### Common Food Substance Regulated by FDA:\n"
     if identified_fda_common:
-        for common_fda_sub in sorted(identified_fda_common):
-            report += f"* {common_fda_sub.title()}\n"
+        for common_fda_sub_name in sorted(identified_fda_common):
+            # Retrieve full details for the canonical substance using the FDA_SUBSTANCE_DETAILS_LOOKUP
+            # Note: common_fda_sub_name here is the preferred original casing (e.g., "Sucrose")
+            normalized_common_fda_sub_name_for_lookup = re.sub(r'[^a-z0-9\s\&\.\-#]', '', common_fda_sub_name.lower()).strip()
+            normalized_common_fda_sub_name_for_lookup = re.sub(r'\s+', ' ', normalized_common_fda_sub_name_for_lookup)
+            normalized_common_fda_sub_name_for_lookup = normalized_common_fda_sub_name_for_lookup.replace('no.', 'no ')
+
+            sub_details = FDA_SUBSTANCE_DETAILS_LOOKUP.get(normalized_common_fda_sub_name_for_lookup, {})
+            used_for = sub_details.get("Used for (Technical Effect)", "N/A (No 'Used for' data)")
+
+            report += f"* **{common_fda_sub_name.title()}**\n"
+            if used_for and used_for != "N/A (No 'Used for' data)":
+                report += f"  * Used for: *{used_for}*\n"
     else:
         report += "* No common food ingredients identified that are explicitly regulated by the FDA as substances.\n"
 
@@ -399,7 +492,7 @@ def fetch_from_usda_api(gtin):
     
     try:
         response = requests.get(USDA_SEARCH_URL, params=params)
-        response.raise_for_status()
+        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
         data = response.json()
         
         if data.get('foods'):
@@ -526,6 +619,8 @@ def gtin_lookup_api():
         product_ingredients = "N/A"
         data_report_markdown = "N/A"
         status = "not_found"
+        nova_score = "N/A"
+        nova_description = "N/A"
 
         # 1. Check Airtable Cache
         print(f"[Render Backend] Calling check_airtable_cache for GTIN: {gtin}")
@@ -538,8 +633,8 @@ def gtin_lookup_api():
             # FIX: Re-generate data_report_markdown from cached ingredients
             if product_ingredients and product_ingredients != "N/A":
                 print(f"[Render Backend] Re-analyzing ingredients from cache for GTIN: {gtin}")
-                identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level = analyze_ingredients(product_ingredients)
-                data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level)
+                identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description = analyze_ingredients(product_ingredients)
+                data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description)
             else:
                 data_report_markdown = "No ingredients data available in cache to generate report."
 
@@ -550,7 +645,9 @@ def gtin_lookup_api():
                 "description": product_description,
                 "ingredients": product_ingredients,
                 "data_report_markdown": data_report_markdown,
-                "status": status
+                "status": status,
+                "nova_score": nova_score, # Include NOVA score
+                "nova_description": nova_description # Include NOVA description
             }), 200, headers
 
         # 2. If not in cache, fetch from USDA API
@@ -561,10 +658,10 @@ def gtin_lookup_api():
             product_description = usda_product_data.get('description', "N/A")
             product_ingredients = usda_product_data.get('ingredients', "N/A")
 
-            # Analyze ingredients and generate data report with new categories
+            # Analyze ingredients and generate data report with new categories and NOVA score
             print(f"[Render Backend] Analyzing ingredients for GTIN: {gtin}")
-            identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level = analyze_ingredients(product_ingredients)
-            data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level)
+            identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description = analyze_ingredients(product_ingredients)
+            data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description)
             status = "pulled_from_usda_and_cached"
 
             # Check if cache is full before adding new entry
@@ -584,7 +681,9 @@ def gtin_lookup_api():
                 "description": product_description,
                 "ingredients": product_ingredients,
                 "data_report_markdown": data_report_markdown,
-                "status": status
+                "status": status,
+                "nova_score": nova_score, # Include NOVA score
+                "nova_description": nova_description # Include NOVA description
             }), 200, headers
         else:
             print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
@@ -593,7 +692,9 @@ def gtin_lookup_api():
                 "description": "N/A",
                 "ingredients": "N/A",
                 "data_report_markdown": "Product not found in USDA FoodData Central.",
-                "status": "not_found"
+                "status": "not_found",
+                "nova_score": "N/A", # Indicate N/A for NOVA if product not found
+                "nova_description": "Cannot determine NOVA score."
             }), 404, headers
 
     except requests.exceptions.RequestException as e:
