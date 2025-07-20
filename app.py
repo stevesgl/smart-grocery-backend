@@ -545,7 +545,8 @@ def count_airtable_rows():
         
     print("[Render Backend] Counting Airtable rows...")
     try:
-        records = airtable.get_all(fields=['id']) 
+        # FIX: Removed fields=['id'] as 'id' is a record identifier, not a field name
+        records = airtable.get_all() 
         return len(records)
     except Exception as e:
         print(f"[Render Backend] ⚠️ Error counting Airtable rows: {e}")
@@ -631,6 +632,7 @@ def gtin_lookup_api():
             product_ingredients = cached_data.get('ingredients', "N/A")
             
             # FIX: Re-generate data_report_markdown from cached ingredients
+            # This logic is correct, assuming 'ingredients' is present in cache
             if product_ingredients and product_ingredients != "N/A":
                 print(f"[Render Backend] Re-analyzing ingredients from cache for GTIN: {gtin}")
                 identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description = analyze_ingredients(product_ingredients)
