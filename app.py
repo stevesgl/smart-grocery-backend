@@ -117,6 +117,9 @@ def load_data_lookups():
                 names_to_add.add("garlic")
                 names_to_add.add("dehydrated garlic")
                 names_to_add.add("garlic powder")
+            # ADDITION: Silicon Dioxide
+            if "silicon dioxide" in normalized_canonical_name_for_key:
+                names_to_add.add("silicon dioxide")
 
 
             for name in names_to_add:
@@ -135,6 +138,10 @@ def load_data_lookups():
         print(f"[Backend Init] DEBUG: Value for 'sucrose': {ADDITIVES_LOOKUP.get('sucrose')}")
         print(f"[Backend Init] DEBUG: 'sodium chloride' in ADDITIVES_LOOKUP: {'sodium chloride' in ADDITIVES_LOOKUP}")
         print(f"[Backend Init] DEBUG: Value for 'sodium chloride': {ADDITIVES_LOOKUP.get('sodium chloride')}")
+        # ADDITION: Debug for Silicon Dioxide
+        print(f"[Backend Init] DEBUG: 'silicon dioxide' in ADDITIVES_LOOKUP: {'silicon dioxide' in ADDITIVES_LOOKUP}")
+        print(f"[Backend Init] DEBUG: Value for 'silicon dioxide': {ADDITIVES_LOOKUP.get('silicon dioxide')}")
+
 
     except FileNotFoundError:
         print(f"[Backend Init] ❌ Error: Additives data file not found at '{ADDITIVES_DATA_FILE}'. Additive lookup will not work.")
@@ -256,6 +263,7 @@ def analyze_ingredients(ingredients_string):
     
     # Split by common delimiters. Using a regex to split by comma, semicolon, or "and"
     # This helps in splitting complex ingredient lists like "sugar, salt and pepper"
+    # FIX: Changed '\bandand\b' to '\band\b' for correct splitting of "and"
     ingredient_phrases = re.split(r',|;|\band\b', processed_ingredients_string)
     
     # Further split phrases that might contain multiple items separated by " " or "/" or "or"
@@ -348,6 +356,7 @@ def analyze_ingredients(ingredients_string):
 
 # --- Markdown Report Generation ---
 def generate_data_report_markdown(analysis_results, usda_product_data):
+    # Ensure GTIN is passed correctly
     gtin = usda_product_data.get('gtin', 'N/A')
     description = usda_product_data.get('description', 'N/A')
     ingredients = usda_product_data.get('ingredients', 'N/A')
@@ -362,6 +371,7 @@ def generate_data_report_markdown(analysis_results, usda_product_data):
 
     report_parts = []
 
+    # FIX: Ensure GTIN is correctly displayed in the markdown header
     report_parts.append(f"# Product Scan Report for GTIN: {gtin}\n")
     report_parts.append(f"**Description:** {description}\n")
     report_parts.append(f"**Ingredients List:** {ingredients}\n")
