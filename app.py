@@ -304,10 +304,14 @@ def analyze_ingredients(ingredients_string):
         normalized_phrase = re.sub(r'\s+', ' ', normalized_phrase)
         normalized_phrase = normalized_phrase.replace('no.', 'no ')
 
-        # If it's already identified as an FDA substance (common or non-common), skip
-        canonical_fda_name = ADDITIVES_LOOKUP.get(normalized_phrase)
-        if canonical_fda_name and (canonical_fda_name in COMMON_FDA_SUBSTANCES_SET or canonical_fda_name not in COMMON_FDA_SUBSTANCES_SET):
+        # If it's already identified as an FDA substance (of any type), skip
+        # We need to check against the *normalized canonical name* because that's what's stored in ADDITIVES_LOOKUP values.
+        # So, we need to normalize the original phrase and then check if its canonical form is already identified.
+        canonical_form_of_phrase = ADDITIVES_LOOKUP.get(normalized_phrase)
+        if canonical_form_of_phrase and (canonical_form_of_phrase in {re.sub(r'[^a-z0-9\s\&\.\-#]', '', s.lower()).strip() for s in identified_fda_non_common} or \
+                                         canonical_form_of_phrase in {re.sub(r'[^a-z0-9\s\&\.\-#]', '', s.lower()).strip() for s in identified_fda_common}):
             continue
+
 
         if normalized_phrase in COMMON_INGREDIENTS_LOOKUP:
             identified_common_ingredients_only.add(COMMON_INGREDIENTS_LOOKUP[normalized_phrase])
@@ -390,13 +394,16 @@ def generate_data_report_markdown(analysis_results, usda_product_data):
 
     if fda_non_common:
         report_parts.append("## Detected FDA Substances (Non-Commonly Found in Whole Foods) 🧪\n")
-        for substance in sorted(fda_non_common):
-            normalized_substance = re.sub(r'[^a-z0-9\s\&\.\-#]', '', substance.lower()).strip()
-            normalized_substance = re.sub(r'\s+', ' ', normalized_substance)
-            details = FDA_SUBSTANCE_DETAILS_LOOKUP.get(normalized_substance, {})
-            functions = details.get("Function(s)", "N/A")
-            source = details.get("Source", "FDA Additive Database")
-            report_parts.append(f"**1. {substance}**\n")
+        for substance_heading in sorted(fda_non_common): # Iterate over the actual Substance Name (Heading)
+            # Normalize the substance heading to match the keys in FDA_SUBSTANCE_DETAILS_LOOKUP
+            normalized_substance_key = re.sub(r'[^a-z0-9\s\&\.\-#]', '', substance_heading.lower()).strip()
+            normalized_substance_key = re.sub(r'\s+', ' ', normalized_substance_key)
+            normalized_substance_key = normalized_substance_key.replace('no.', 'no ')
+
+            details = FDA_SUBSTANCE_DETAILS_LOOKUP.get(normalized_substance_key, {})
+            functions = details.get("Used for (Technical Effect)", "N/A")
+            source = details.get("Source", "FDA Additive Database") # Assuming "Source" field exists or defaults
+            report_parts.append(f"**1. {substance_heading}**\n")
             report_parts.append(f"  * Used for: {functions}\n")
             report_parts.append(f"  * Source: {source}\n")
         report_parts.append("\n") # Add a newline for spacing
