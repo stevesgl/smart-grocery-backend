@@ -120,6 +120,11 @@ def load_data_lookups():
             # ADDITION: Silicon Dioxide
             if "silicon dioxide" in normalized_canonical_name_for_key:
                 names_to_add.add("silicon dioxide")
+            # REMOVED: Chili powder and related terms
+            # if "chili powder" in normalized_canonical_name_for_key or "chili pepper" in normalized_canonical_name_for_key:
+            #     names_to_add.add("chili powder")
+            #     names_to_add.add("chili pepper")
+            #     names_to_add.add("dried red chili pepper")
 
 
             for name in names_to_add:
@@ -141,6 +146,9 @@ def load_data_lookups():
         # ADDITION: Debug for Silicon Dioxide
         print(f"[Backend Init] DEBUG: 'silicon dioxide' in ADDITIVES_LOOKUP: {'silicon dioxide' in ADDITIVES_LOOKUP}")
         print(f"[Backend Init] DEBUG: Value for 'silicon dioxide': {ADDITIVES_LOOKUP.get('silicon dioxide')}")
+        # REMOVED: Debug for Chili powder
+        # print(f"[Backend Init] DEBUG: 'chili powder' in ADDITIVES_LOOKUP: {'chili powder' in ADDITIVES_LOOKUP}")
+        # print(f"[Backend Init] DEBUG: Value for 'chili powder': {ADDITIVES_LOOKUP.get('chili powder')}")
 
 
     except FileNotFoundError:
@@ -542,6 +550,8 @@ def gtin_lookup_api():
             analysis_results = analyze_ingredients(product_ingredients)
             
             # Generate Markdown report
+            # Pass the original GTIN from the request to the markdown generation
+            usda_product_data['gtin'] = gtin # Ensure GTIN is in usda_product_data for markdown generation
             data_report_markdown = generate_data_report_markdown(analysis_results, usda_product_data)
             
             # Extract ingredient categories from analysis_results for storage and response
@@ -596,3 +606,42 @@ if __name__ == '__main__':
     if not all([AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY]):
         print("WARNING: Missing one or more environment variables (AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY).")
         print("Please set them for local testing or ensure they are...")
+I have reviewed the `app.py` code you just uploaded.
+
+Yes, this `app.py` file looks **correct and complete** according to our latest discussion and your priorities.
+
+I've confirmed:
+
+* **No Chili Powder Recognition:** The specific lines for adding "chili powder" and related terms to the `ADDITIVES_LOOKUP` have been removed/commented out, as you requested.
+* **GTIN in Markdown Fix:** The line `usda_product_data['gtin'] = gtin` is present, which is essential for the GTIN to appear correctly in the markdown report.
+* **Ingredient Splitting Fix:** The `re.split` pattern for ingredients (`r',|;|\band\b'`) is correctly maintained.
+
+This `app.py` is ready for deployment to Render.
+
+Now, to ensure the frontend displays everything correctly and to eliminate the duplicate lists, you also need to make sure your `index.html` matches the latest version I provided (the `index-html-final-final` immersive), and then clear your browser's cache aggressively.
+
+**Next Steps:**
+
+1.  **Deploy this `app.py` to Render:**
+    * If you haven't already, commit and push this `app.py` to your GitHub repository for your backend.
+    * Monitor your Render dashboard until the service is "Live" again.
+
+2.  **Ensure Frontend `index.html` is Latest:**
+    * Confirm your local `index.html` matches the code from the `index-html-final-final` immersive.
+    * If you made any changes, commit and push your `index.html` to your GitHub repository for your frontend.
+    * Monitor your Vercel dashboard until the frontend is "Ready" again.
+
+3.  **Perform Aggressive Browser Cache Clear:**
+    * Go to your live Vercel site (`https://barcode-vercel-ten.vercel.app/`).
+    * Open Developer Tools (F12).
+    * Go to the **"Application" tab**.
+    * On the left sidebar, under "Storage," click on **"Clear site data"**. Confirm the action.
+    * Then, perform a **hard reload** (`Ctrl + Shift + R` on Windows/Linux, or right-click the refresh button and select "Empty Cache and Hard Reload").
+
+4.  **Final Test:**
+    * Enter the GTIN `071998000051`.
+    * **Crucially, verify:**
+        * Does the GTIN now appear correctly in the "Product Scan Report for GTIN: **071998000051**" markdown header?
+        * Are the "FDA Substances" and "Unidentified Ingredients" lists appearing **only once** (within the markdown report), with no duplicates at the very bottom?
+
+Let me know the results of this comprehensive te
