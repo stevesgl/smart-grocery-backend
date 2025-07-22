@@ -323,14 +323,12 @@ def analyze_ingredients(ingredients_string):
             # This check prevents duplicates if an ingredient was first identified as common,
             # then also found to be an FDA common substance.
             
-            # Double check if this ingredient might be a part of an already identified common FDA substance
             is_covered_by_fda_common = False
             for fda_common_item in identified_fda_common:
                 if fda_common_item.lower() in normalized_phrase:
                     is_covered_by_fda_common = True
                     break
             
-            # Double check if this ingredient might be a part of an already identified common ingredient
             is_covered_by_common_only = False
             for common_only_item in identified_common_ingredients_only:
                 if common_only_item.lower() in normalized_phrase:
@@ -384,49 +382,46 @@ def generate_data_report_markdown(analysis_results, usda_product_data):
 
     report_parts = []
 
-    # FIX: Ensure GTIN is correctly displayed in the markdown header
-    report_parts.append(f"# Product Scan Report for GTIN: {gtin}\n\n") # Added extra newline
-    report_parts.append(f"**Description:** {description}\n\n") # Added extra newline
-    report_parts.append(f"**Ingredients List:** {ingredients}\n\n") # Added extra newline
-    report_parts.append(f"**Data Score:** {data_score_percentage}% of ingredients identified.\n\n") # Added extra newline
-    report_parts.append(f"**NOVA Score Estimate:** {nova_score} ({nova_description})\n\n") # Added extra newline
-    report_parts.append("---\n\n") # Added extra newline
+    report_parts.append(f"# Product Scan Report for GTIN: {gtin}\n\n")
+    report_parts.append(f"**Description:** {description}\n\n")
+    report_parts.append(f"**Ingredients List:** {ingredients}\n\n")
+    report_parts.append(f"**Data Score:** {data_score_percentage}% of ingredients identified.\n\n")
+    report_parts.append(f"**NOVA Score Estimate:** {nova_score} ({nova_description})\n\n")
+    report_parts.append("---\n\n")
 
 
     if fda_non_common:
-        report_parts.append("## Detected FDA Substances (Non-Commonly Found in Whole Foods)  \n\n") # Added extra newline
-        for substance_heading in sorted(fda_non_common): # Iterate over the actual Substance Name (Heading)
-            # Normalize the substance heading to match the keys in FDA_SUBSTANCE_DETAILS_LOOKUP
+        report_parts.append("## Detected FDA Substances (Non-Commonly Found in Whole Foods) 🧪\n\n")
+        for substance_heading in sorted(fda_non_common):
             normalized_substance_key = re.sub(r'[^a-z0-9\s\&\.\-#]', '', substance_heading.lower()).strip()
             normalized_substance_key = re.sub(r'\s+', ' ', normalized_substance_key)
             normalized_substance_key = normalized_substance_key.replace('no.', 'no ')
 
             details = FDA_SUBSTANCE_DETAILS_LOOKUP.get(normalized_substance_key, {})
             functions = details.get("Used for (Technical Effect)", "N/A")
-            source = details.get("Source", "FDA Additive Database") # Assuming "Source" field exists or defaults
-            # FIX: Removed "1." prefix and added a bullet point for better formatting
+            source = details.get("Source", "FDA Additive Database")
             report_parts.append(f"- **{substance_heading}**\n")
             report_parts.append(f"  * Used for: {functions}\n")
-            report_parts.append(f"  * Source: {source}\n\n") # Added extra newline after each substance entry
-        report_parts.append("\n") # Add a newline for spacing
+            report_parts.append(f"  * Source: {source}\n\n")
+        report_parts.append("\n")
 
     if fda_common:
-        report_parts.append("## Detected Common FDA-Regulated Substances (e.g., Salt, Sugar) 🌱\n\n") # Added extra newline
+        report_parts.append("## Detected Common FDA-Regulated Substances (e.g., Salt, Sugar) 🌱\n\n")
         for substance in sorted(fda_common):
-            report_parts.append(f"- {substance}\n") # Changed to bullet point
+            report_parts.append(f"- {substance}\n")
         report_parts.append("\n")
 
     if common_ingredients_only:
-        report_parts.append("## Detected Common Ingredients (Non-FDA Regulated) 🍎\n\n") # Added extra newline
+        report_parts.append("## Detected Common Ingredients (Non-FDA Regulated) 🍎\n\n")
         for ingredient in sorted(common_ingredients_only):
-            report_parts.append(f"- {ingredient}\n") # Changed to bullet point
+            report_parts.append(f"- {ingredient}\n")
         report_parts.append("\n")
 
     if unidentified:
         report_parts.append("## Unidentified Ingredients ❓\n")
-        report_parts.append("The following ingredients could not be identified in our databases:\n\n") # Added extra newline
+        report_parts.append("The following ingredients could not be identified in our databases:\n\n")
         for ingredient in sorted(unidentified):
-            report_parts.append(f"- {ingredient}\n") # Changed to bullet point
+            report_parts.append(f"- {ingredient}\n")
         report_parts.append("\n")
 
     report_parts.append("---\n")
@@ -458,7 +453,7 @@ def store_to_airtable(gtin, usda_product_data, data_report_markdown, nova_score,
     
     try:
         # Check if record already exists by GTIN
-        existing_records = airtable.search('GTIN', str(gtin))
+        existing_records = airtable.search('gtin_upc', str(gtin)) # Using 'gtin_upc' as confirmed by user
         if existing_records:
             record_id = existing_records[0]['id']
             airtable.update(record_id, record_data)
@@ -485,7 +480,8 @@ def fetch_from_airtable(gtin):
         return None
 
     try:
-        records = airtable.search('GTIN', str(gtin))
+        # Corrected: Using 'gtin_upc' to match the Airtable column name as confirmed by user
+        records = airtable.search('gtin_upc', str(gtin))
         if records:
             record = records[0]['fields']
             print(f"[Airtable] Cache hit for GTIN: {gtin}")
@@ -528,7 +524,7 @@ def gtin_lookup_api():
                 "nova_description": cached_data.get('NOVA Description', 'Cannot determine NOVA score.'),
                 "fda_substances": cached_data.get('FDA Substances', []), # Include these
                 "common_ingredients": cached_data.get('Common Ingredients', []), # Include these
-                "unidentified_ingredients": unidentified_ingredients # Include these
+                "unidentified_ingredients": cached_data.get('Unidentified Ingredients', []) # Include these
             }), 200, headers
 
         # 2. If not in cache, query USDA FoodData Central
