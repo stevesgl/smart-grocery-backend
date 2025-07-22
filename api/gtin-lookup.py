@@ -457,6 +457,7 @@ def store_to_airtable(gtin, usda_data, data_report_markdown, nova_score, nova_de
     Stores product data pulled from USDA API into the Airtable cache,
     including the generated data report markdown and NOVA score/description.
     """
+    print(f\"✅ Ready to cache to Airtable: {gtin}\")
     if not airtable:
         print("[Vercel Backend] Airtable client not initialized. Skipping store to Airtable.")
         return

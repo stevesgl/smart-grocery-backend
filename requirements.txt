@@ -3,3 +3,5 @@ Flask-Cors
 requests
 airtable-python-wrapper
 gunicorn
+python-dotenv
+markdown
