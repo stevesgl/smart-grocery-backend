@@ -193,6 +193,7 @@ def load_data_lookups():
     print(f"[Backend Init] DEBUG: 'garlic' in COMMON_FDA_SUBSTANCES_SET: {'garlic' in COMMON_FDA_SUBSTANCES_SET}")
     print(f"[Backend Init] DEBUG: 'sucrose' in COMMON_FDA_SUBSTANCES_SET: {'sucrose' in COMMON_FDA_SUBSTANCES_SET}")
     print(f"[Backend Init] DEBUG: 'sodium chloride' in COMMON_FDA_SUBSTANCES_SET: {'sodium chloride' in COMMON_FDA_SUBSTANCES_SET}")
+    print(f"[Backend Init] DEBUG: Value for 'sodium chloride': {ADDITIVES_LOOKUP.get('sodium chloride')}")
     print(f"[Backend Init] DEBUG: 'red 40' in COMMON_FDA_SUBSTANCES_SET: {'red 40' in COMMON_FDA_SUBSTANCES_SET}")
 
 
@@ -384,16 +385,16 @@ def generate_data_report_markdown(analysis_results, usda_product_data):
     report_parts = []
 
     # FIX: Ensure GTIN is correctly displayed in the markdown header
-    report_parts.append(f"# Product Scan Report for GTIN: {gtin}\n")
-    report_parts.append(f"**Description:** {description}\n")
-    report_parts.append(f"**Ingredients List:** {ingredients}\n")
-    report_parts.append(f"**Data Score:** {data_score_percentage}% of ingredients identified.\n")
-    report_parts.append(f"**NOVA Score Estimate:** {nova_score} ({nova_description})\n")
-    report_parts.append("---\n")
+    report_parts.append(f"# Product Scan Report for GTIN: {gtin}\n\n") # Added extra newline
+    report_parts.append(f"**Description:** {description}\n\n") # Added extra newline
+    report_parts.append(f"**Ingredients List:** {ingredients}\n\n") # Added extra newline
+    report_parts.append(f"**Data Score:** {data_score_percentage}% of ingredients identified.\n\n") # Added extra newline
+    report_parts.append(f"**NOVA Score Estimate:** {nova_score} ({nova_description})\n\n") # Added extra newline
+    report_parts.append("---\n\n") # Added extra newline
 
 
     if fda_non_common:
-        report_parts.append("## Detected FDA Substances (Non-Commonly Found in Whole Foods) 🧪\n")
+        report_parts.append("## Detected FDA Substances (Non-Commonly Found in Whole Foods)  \n\n") # Added extra newline
         for substance_heading in sorted(fda_non_common): # Iterate over the actual Substance Name (Heading)
             # Normalize the substance heading to match the keys in FDA_SUBSTANCE_DETAILS_LOOKUP
             normalized_substance_key = re.sub(r'[^a-z0-9\s\&\.\-#]', '', substance_heading.lower()).strip()
@@ -403,28 +404,29 @@ def generate_data_report_markdown(analysis_results, usda_product_data):
             details = FDA_SUBSTANCE_DETAILS_LOOKUP.get(normalized_substance_key, {})
             functions = details.get("Used for (Technical Effect)", "N/A")
             source = details.get("Source", "FDA Additive Database") # Assuming "Source" field exists or defaults
-            report_parts.append(f"**1. {substance_heading}**\n")
+            # FIX: Removed "1." prefix and added a bullet point for better formatting
+            report_parts.append(f"- **{substance_heading}**\n")
             report_parts.append(f"  * Used for: {functions}\n")
-            report_parts.append(f"  * Source: {source}\n")
+            report_parts.append(f"  * Source: {source}\n\n") # Added extra newline after each substance entry
         report_parts.append("\n") # Add a newline for spacing
 
     if fda_common:
-        report_parts.append("## Detected Common FDA-Regulated Substances (e.g., Salt, Sugar) 🌱\n")
+        report_parts.append("## Detected Common FDA-Regulated Substances (e.g., Salt, Sugar) 🌱\n\n") # Added extra newline
         for substance in sorted(fda_common):
-            report_parts.append(f"  * {substance}\n")
+            report_parts.append(f"- {substance}\n") # Changed to bullet point
         report_parts.append("\n")
 
     if common_ingredients_only:
-        report_parts.append("## Detected Common Ingredients (Non-FDA Regulated) 🍎\n")
+        report_parts.append("## Detected Common Ingredients (Non-FDA Regulated) 🍎\n\n") # Added extra newline
         for ingredient in sorted(common_ingredients_only):
-            report_parts.append(f"  * {ingredient}\n")
+            report_parts.append(f"- {ingredient}\n") # Changed to bullet point
         report_parts.append("\n")
 
     if unidentified:
         report_parts.append("## Unidentified Ingredients ❓\n")
-        report_parts.append("The following ingredients could not be identified in our databases:\n")
+        report_parts.append("The following ingredients could not be identified in our databases:\n\n") # Added extra newline
         for ingredient in sorted(unidentified):
-            report_parts.append(f"  * {ingredient}\n")
+            report_parts.append(f"- {ingredient}\n") # Changed to bullet point
         report_parts.append("\n")
 
     report_parts.append("---\n")
@@ -526,7 +528,7 @@ def gtin_lookup_api():
                 "nova_description": cached_data.get('NOVA Description', 'Cannot determine NOVA score.'),
                 "fda_substances": cached_data.get('FDA Substances', []), # Include these
                 "common_ingredients": cached_data.get('Common Ingredients', []), # Include these
-                "unidentified_ingredients": cached_data.get('Unidentified Ingredients', []) # Include these
+                "unidentified_ingredients": unidentified_ingredients # Include these
             }), 200, headers
 
         # 2. If not in cache, query USDA FoodData Central
