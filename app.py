@@ -120,11 +120,6 @@ def load_data_lookups():
             # ADDITION: Silicon Dioxide
             if "silicon dioxide" in normalized_canonical_name_for_key:
                 names_to_add.add("silicon dioxide")
-            # REMOVED: Chili powder and related terms
-            # if "chili powder" in normalized_canonical_name_for_key or "chili pepper" in normalized_canonical_name_for_key:
-            #     names_to_add.add("chili powder")
-            #     names_to_add.add("chili pepper")
-            #     names_to_add.add("dried red chili pepper")
 
 
             for name in names_to_add:
@@ -146,9 +141,6 @@ def load_data_lookups():
         # ADDITION: Debug for Silicon Dioxide
         print(f"[Backend Init] DEBUG: 'silicon dioxide' in ADDITIVES_LOOKUP: {'silicon dioxide' in ADDITIVES_LOOKUP}")
         print(f"[Backend Init] DEBUG: Value for 'silicon dioxide': {ADDITIVES_LOOKUP.get('silicon dioxide')}")
-        # REMOVED: Debug for Chili powder
-        # print(f"[Backend Init] DEBUG: 'chili powder' in ADDITIVES_LOOKUP: {'chili powder' in ADDITIVES_LOOKUP}")
-        # print(f"[Backend Init] DEBUG: Value for 'chili powder': {ADDITIVES_LOOKUP.get('chili powder')}")
 
 
     except FileNotFoundError:
@@ -271,8 +263,6 @@ def analyze_ingredients(ingredients_string):
     processed_ingredients_string = re.sub(r'\([^)]*\)', '', ingredients_string).lower()
     
     # Split by common delimiters. Using a regex to split by comma, semicolon, or "and"
-    # This helps in splitting complex ingredient lists like "sugar, salt and pepper"
-    # FIX: Changed '\bandand\b' to '\band\b' for correct splitting of "and"
     ingredient_phrases = re.split(r',|;|\band\b', processed_ingredients_string)
     
     # Further split phrases that might contain multiple items separated by " " or "/" or "or"
@@ -452,8 +442,12 @@ def store_to_airtable(gtin, usda_product_data, data_report_markdown, nova_score,
     }
     
     try:
-        # Check if record already exists by GTIN
-        existing_records = airtable.search('gtin_upc', str(gtin)) # Using 'gtin_upc' as confirmed by user
+        # Check if record already exists by GTIN using a direct formula
+        # Ensuring the field name in the formula exactly matches the Airtable column: 'gtin_upc'
+        formula = f"{{gtin_upc}}='{gtin}'"
+        print(f"[Airtable] Searching for existing record with formula: {formula}")
+        existing_records = airtable.get_all(formula=formula) # Use get_all with formula
+
         if existing_records:
             record_id = existing_records[0]['id']
             airtable.update(record_id, record_data)
@@ -480,8 +474,12 @@ def fetch_from_airtable(gtin):
         return None
 
     try:
-        # Corrected: Using 'gtin_upc' to match the Airtable column name as confirmed by user
-        records = airtable.search('gtin_upc', str(gtin))
+        # Fetch using a direct formula
+        # Ensuring the field name in the formula exactly matches the Airtable column: 'gtin_upc'
+        formula = f"{{gtin_upc}}='{gtin}'"
+        print(f"[Airtable] Fetching with formula: {formula}")
+        records = airtable.get_all(formula=formula) # Use get_all with formula
+
         if records:
             record = records[0]['fields']
             print(f"[Airtable] Cache hit for GTIN: {gtin}")
