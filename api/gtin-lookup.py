@@ -383,39 +383,33 @@ def generate_data_report_markdown(identified_fda_non_common, identified_fda_comm
 def check_airtable_cache(gtin):
     """
     Checks if a GTIN exists in the Airtable cache.
-    If found, it updates the lookup_count and last_access fields for that record.
+    If found, updates lookup count and last access timestamp.
     """
     if not airtable:
-        print("[Vercel Backend] Airtable client not initialized. Skipping cache check.")
+        print("[Backend] Airtable not initialized. Skipping cache check.")
         return None
-    
-    print(f"[Vercel Backend] Checking Airtable cache for GTIN: {gtin}...")
+
+    print(f"[Backend] Checking Airtable cache for GTIN: {gtin}")
     try:
-        results = airtable.search('gtin_upc', gtin)
-        
-        if results:
-            record = results[0]
+        records = airtable.search('gtin_upc', gtin)
+        if records:
+            record = records[0]
             record_id = record['id']
-            current_fields = record['fields']
-            
-            new_lookup_count = current_fields.get('lookup_count', 0) + 1
-            new_last_access = datetime.now().isoformat()
-            
-            update_data = {
-                'lookup_count': new_lookup_count,
-                'last_access': new_last_access
+            fields = record['fields']
+
+            # Update usage stats
+            updated_fields = {
+                'lookup_count': fields.get('lookup_count', 0) + 1,
+                'last_access': datetime.now().isoformat()
             }
-            
-            # Ensure 'data_report_markdown' is also updated if it exists in cache
-            # It's better to re-generate it if ingredients are present, as done in the handler.
-            # But if we're just returning cached data, we need to ensure these fields are present.
-            # For simplicity, we'll just return the current_fields and let the handler re-analyze if needed.
-            
-            airtable.update(record_id, update_data)
-            print(f"[Vercel Backend] ✅ Found in Airtable cache. Updated lookup_count to {new_lookup_count}.")
-            return current_fields
+            airtable.update(record_id, updated_fields)
+            print(f"[Backend] ✅ Cache hit. Updated count: {updated_fields['lookup_count']}")
+
+            return fields  # Return cached content
+        else:
+            print("[Backend] Cache miss.")
     except Exception as e:
-        print(f"[Vercel Backend] ⚠️ Error in check_airtable_cache for GTIN {gtin}: {e}")
+        print(f"[Backend] ⚠️ Airtable lookup error: {e}")
     return None
 
 def fetch_from_usda_api(gtin):
@@ -452,16 +446,21 @@ def fetch_from_usda_api(gtin):
             
     return None
 
-def store_to_airtable(gtin, usda_data, data_report_markdown, nova_score, nova_description):
+if usda_data:
+    print(f"[GTIN Lookup] USDA data found for GTIN: {gtin}")
+    print(f"✅ Ready to cache to Airtable: {gtin}")
+    store_to_airtable(gtin, usda_data)
+    return Response(json.dumps(usda_data), media_type="application/json")
+
+def store_to_airtable(gtin, usda_data):
     """
-    Stores product data pulled from USDA API into the Airtable cache,
-    including the generated data report markdown and NOVA score/description.
+    Stores product data pulled from USDA API into the Airtable cache.
     """
-    print(f\"✅ Ready to cache to Airtable: {gtin}\")
     if not airtable:
         print("[Vercel Backend] Airtable client not initialized. Skipping store to Airtable.")
         return
-        
+
+    
     print(f"[Vercel Backend] Attempting to store GTIN {gtin} to Airtable...")
     fields = {
         "gtin_upc": gtin,
@@ -569,7 +568,7 @@ def handler(request):
 
         # 1. Check Airtable Cache
         cached_data = check_airtable_cache(gtin)
-        if cached_data:
+        if cached_data and cached_data.get('Data Report Markdown'):
             product_description = cached_data.get('description', "N/A")
             product_ingredients = cached_data.get('ingredients', "N/A")
             
