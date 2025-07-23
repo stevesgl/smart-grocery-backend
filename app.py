@@ -32,10 +32,8 @@ COMMON_INGREDIENTS_DATA_FILE = os.path.join(
 # Airtable max rows for the free tier (for eviction logic)
 AIRTABLE_MAX_ROWS = 1000
 
-# --- Flask App Initialization ---
 app = Flask(__name__)
-# Enable CORS for all routes. In production, you might restrict this to your frontend's domain.
-CORS(app)
+CORS(app)  # Enable CORS for all routes
 
 # Initialize Airtable client globally
 airtable = None
@@ -50,19 +48,9 @@ if AIRTABLE_BASE_ID and AIRTABLE_TABLE_NAME and AIRTABLE_API_KEY:
 USDA_SEARCH_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
 
 # --- Global Lookups (will be populated once on app startup) ---
-ADDITIVES_LOOKUP = (
-    {}
-)  # Maps normalized alias to normalized canonical FDA substance name
-COMMON_INGREDIENTS_LOOKUP = (
-    {}
-)  # Maps normalized common ingredient to its preferred original casing
-COMMON_FDA_SUBSTANCES_SET = (
-    set()
-)  # Stores normalized canonical FDA substance names that are also common ingredients
-FDA_SUBSTANCE_DETAILS_LOOKUP = (
-    {}
-)  # NEW: Stores full FDA substance entry by its normalized canonical name
-
+ADDITIVES_LOOKUP = {}  # Maps normalized alias to normalized canonical FDA substance name
+COMMON_INGREDIENTS_LOOKUP = {}  # Maps normalized common ingredient to its preferred original casing
+COMMON_FDA_SUBSTANCES_SET = set()  # Stores normalized canonical FDA substance names that are also common ingredients
 
 def load_data_lookups():
     """
@@ -70,14 +58,12 @@ def load_data_lookups():
     and builds the optimized lookup dictionaries/sets.
     This function should be called once at application startup.
     """
-    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET, FDA_SUBSTANCE_DETAILS_LOOKUP
+    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET
 
     # Load additive data
-    print(
-        f"[Backend Init] Attempting to load additives data from: {ADDITIVES_DATA_FILE}"
-    )
+    print(f"[Backend Init] Attempting to load additives data from: {ADDITIVES_DATA_FILE}")
     try:
-        with open(ADDITIVES_DATA_FILE, "r", encoding="utf-8") as f:
+        with open(ADDITIVES_DATA_FILE, 'r', encoding='utf-8') as f:
             additives_raw = json.load(f)
 
         for entry in additives_raw:
@@ -85,18 +71,9 @@ def load_data_lookups():
             if not canonical_name:
                 continue
 
-            normalized_canonical_name_for_key = re.sub(
-                r"[^a-z0-9\s\&\.\-#]", "", canonical_name.lower()
-            ).strip()
-            normalized_canonical_name_for_key = re.sub(
-                r"\s+", " ", normalized_canonical_name_for_key
-            )
-            normalized_canonical_name_for_key = (
-                normalized_canonical_name_for_key.replace("no.", "no ")
-            )
-
-            # Store the full entry by its normalized canonical name for later lookup
-            FDA_SUBSTANCE_DETAILS_LOOKUP[normalized_canonical_name_for_key] = entry
+            normalized_canonical_name_for_key = re.sub(r'[^a-z0-9\s\&\.\-#]', '', canonical_name.lower()).strip()
+            normalized_canonical_name_for_key = re.sub(r'\s+', ' ', normalized_canonical_name_for_key)
+            normalized_canonical_name_for_key = normalized_canonical_name_for_key.replace('no.', 'no ')
 
             names_to_add = set()
             if entry.get("Substance"):
@@ -106,7 +83,6 @@ def load_data_lookups():
             names_to_add.update(entry.get("Other Names", []))
 
             # --- Explicitly add common aliases for problematic cases ---
-            # These aliases map to their respective canonical names
             if "fd&c red no 40" in normalized_canonical_name_for_key:
                 names_to_add.add("red 40")
                 names_to_add.add("red #40")
@@ -137,157 +113,63 @@ def load_data_lookups():
                 names_to_add.add("cmc")
             if "annatto" in normalized_canonical_name_for_key:
                 names_to_add.add("annatto (color)")
-            if (
-                "garlic" in normalized_canonical_name_for_key
-            ):  # Explicitly add garlic related terms
+            if "garlic" in normalized_canonical_name_for_key:
                 names_to_add.add("garlic")
                 names_to_add.add("dehydrated garlic")
                 names_to_add.add("garlic powder")
-            # ADDITION: Silicon Dioxide
-            if "silicon dioxide" in normalized_canonical_name_for_key:
-                names_to_add.add("silicon dioxide")
+
 
             for name in names_to_add:
                 if name:
-                    normalized_alias = re.sub(
-                        r"[^a-z0-9\s\&\.\-#\(\)]", "", name.lower()
-                    ).strip()
-                    normalized_alias = re.sub(r"\s+", " ", normalized_alias)
-                    normalized_alias = normalized_alias.replace("no.", "no ")
+                    normalized_alias = re.sub(r'[^a-z0-9\s\&\.\-#\(\)]', '', name.lower()).strip()
+                    normalized_alias = re.sub(r'\s+', ' ', normalized_alias)
+                    normalized_alias = normalized_alias.replace('no.', 'no ')
 
                     if normalized_alias:
-                        ADDITIVES_LOOKUP[normalized_alias] = (
-                            normalized_canonical_name_for_key
-                        )
+                        ADDITIVES_LOOKUP[normalized_alias] = normalized_canonical_name_for_key
 
-        print(
-            f"[Backend Init] ✅ Successfully loaded {len(additives_raw)} additives and built lookup with {len(ADDITIVES_LOOKUP)} aliases."
-        )
-        print(
-            f"[Backend Init] DEBUG: 'garlic' in ADDITIVES_LOOKUP: {'garlic' in ADDITIVES_LOOKUP}"
-        )
-        print(
-            f"[Backend Init] DEBUG: Value for 'garlic': {ADDITIVES_LOOKUP.get('garlic')}"
-        )
-        print(
-            f"[Backend Init] DEBUG: 'sucrose' in ADDITIVES_LOOKUP: {'sucrose' in ADDITIVES_LOOKUP}"
-        )
-        print(
-            f"[Backend Init] DEBUG: Value for 'sucrose': {ADDITIVES_LOOKUP.get('sucrose')}"
-        )
-        print(
-            f"[Backend Init] DEBUG: 'sodium chloride' in ADDITIVES_LOOKUP: {'sodium chloride' in ADDITIVES_LOOKUP}"
-        )
-        print(
-            f"[Backend Init] DEBUG: Value for 'sodium chloride': {ADDITIVES_LOOKUP.get('sodium chloride')}"
-        )
-        # ADDITION: Debug for Silicon Dioxide
-        print(
-            f"[Backend Init] DEBUG: 'silicon dioxide' in ADDITIVES_LOOKUP: {'silicon dioxide' in ADDITIVES_LOOKUP}"
-        )
-        print(
-            f"[Backend Init] DEBUG: Value for 'silicon dioxide': {ADDITIVES_LOOKUP.get('silicon dioxide')}"
-        )
+        print(f"[Backend Init] ✅ Successfully loaded {len(additives_raw)} additives and built lookup with {len(ADDITIVES_LOOKUP)} aliases.")
 
     except FileNotFoundError:
-        print(
-            f"[Backend Init] ❌ Error: Additives data file not found at '{ADDITIVES_DATA_FILE}'. Additive lookup will not work."
-        )
+        print(f"[Backend Init] ❌ Error: Additives data file not found at '{ADDITIVES_DATA_FILE}'. Additive lookup will not work.")
     except json.JSONDecodeError as e:
-        print(
-            f"[Backend Init] ❌ Error decoding JSON from '{ADDITIVES_DATA_FILE}': {e}"
-        )
+        print(f"[Backend Init] ❌ Error decoding JSON from '{ADDITIVES_DATA_FILE}': {e}")
     except Exception as e:
-        print(
-            f"[Backend Init] ❌ An unexpected error occurred while loading additive data: {e}"
-        )
+        print(f"[Backend Init] ❌ An unexpected error occurred while loading additive data: {e}")
 
     # Load common ingredients data
-    print(
-        f"[Backend Init] Attempting to load common ingredients data from: {COMMON_INGREDIENTS_DATA_FILE}"
-    )
-    temp_common_ingredients_set = set()  # Use a temporary set for initial loading
+    print(f"[Backend Init] Attempting to load common ingredients data from: {COMMON_INGREDIENTS_DATA_FILE}")
+    temp_common_ingredients_set = set() # Use a temporary set for initial loading
     try:
-        with open(COMMON_INGREDIENTS_DATA_FILE, "r", encoding="utf-8") as f:
+        with open(COMMON_INGREDIENTS_DATA_FILE, 'r', encoding='utf-8') as f:
             common_ingredients_raw = json.load(f)
 
         for ingredient in common_ingredients_raw:
-            normalized_ingredient = re.sub(
-                r"[^a-z0-9\s\&\.\-#\(\)]", "", ingredient.lower()
-            ).strip()
-            normalized_ingredient = re.sub(r"\s+", " ", normalized_ingredient)
-            COMMON_INGREDIENTS_LOOKUP[normalized_ingredient] = (
-                ingredient  # Keep mapping to original casing
-            )
-            temp_common_ingredients_set.add(
-                normalized_ingredient
-            )  # Add to temp set for intersection
+            normalized_ingredient = re.sub(r'[^a-z0-9\s\&\.\-#\(\)]', '', ingredient.lower()).strip()
+            normalized_ingredient = re.sub(r'\s+', ' ', normalized_ingredient)
+            COMMON_INGREDIENTS_LOOKUP[normalized_ingredient] = ingredient # Keep mapping to original casing
+            temp_common_ingredients_set.add(normalized_ingredient) # Add to temp set for intersection
 
-        print(
-            f"[Backend Init] ✅ Successfully loaded {len(common_ingredients_raw)} common ingredients into lookup."
-        )
-        print(
-            f"[Backend Init] DEBUG: 'cottonseed' in COMMON_INGREDIENTS_LOOKUP: {'cottonseed' in COMMON_INGREDIENTS_LOOKUP}"
-        )
-        print(
-            f"[Backend Init] DEBUG: Value for 'cottonseed': {COMMON_INGREDIENTS_LOOKUP.get('cottonseed')}"
-        )
-        print(
-            f"[Backend Init] DEBUG: 'sunflower' in COMMON_INGREDIENTS_LOOKUP: {'sunflower' in COMMON_INGREDIENTS_LOOKUP}"
-        )
-        print(
-            f"[Backend Init] DEBUG: Value for 'sunflower': {COMMON_INGREDIENTS_LOOKUP.get('sunflower')}"
-        )
+        print(f"[Backend Init] ✅ Successfully loaded {len(common_ingredients_raw)} common ingredients into lookup.")
     except FileNotFoundError:
-        print(
-            f"[Backend Init] ❌ Error: Common ingredients data file not found at '{COMMON_INGREDIENTS_DATA_FILE}'. Common ingredient lookup will not work."
-        )
+        print(f"[Backend Init] ❌ Error: Common ingredients data file not found at '{COMMON_INGREDIENTS_DATA_FILE}'. Common ingredient lookup will not work.")
     except json.JSONDecodeError as e:
-        print(
-            f"[Backend Init] ❌ Error decoding JSON from '{COMMON_INGREDIENTS_DATA_FILE}': {e}"
-        )
+        print(f"[Backend Init] ❌ Error decoding JSON from '{COMMON_INGREDIENTS_DATA_FILE}': {e}")
     except Exception as e:
-        print(
-            f"[Backend Init] ❌ An unexpected error occurred while loading common ingredient data: {e}"
-        )
+        print(f"[Backend Init] ❌ An unexpected error occurred while loading common ingredient data: {e}")
 
     # Populate COMMON_FDA_SUBSTANCES_SET
-    # Iterate through the canonical names (values) in ADDITIVES_LOOKUP
-    # If a canonical name is also present in the normalized common ingredients set, add it
     for canonical_fda_name in set(ADDITIVES_LOOKUP.values()):
         if canonical_fda_name in temp_common_ingredients_set:
             COMMON_FDA_SUBSTANCES_SET.add(canonical_fda_name)
-    print(
-        f"[Backend Init] Populated COMMON_FDA_SUBSTANCES_SET with {len(COMMON_FDA_SUBSTANCES_SET)} entries."
-    )
-    print(
-        f"[Backend Init] DEBUG: 'garlic' in COMMON_FDA_SUBSTANCES_SET: {'garlic' in COMMON_FDA_SUBSTANCES_SET}"
-    )
-    print(
-        f"[Backend Init] DEBUG: 'sucrose' in COMMON_FDA_SUBSTANCES_SET: {'sucrose' in COMMON_FDA_SUBSTANCES_SET}"
-    )
-    print(
-        f"[Backend Init] DEBUG: 'sodium chloride' in COMMON_FDA_SUBSTANCES_SET: {'sodium chloride' in COMMON_FDA_SUBSTANCES_SET}"
-    )
-    print(
-        f"[Backend Init] DEBUG: Value for 'sodium chloride': {ADDITIVES_LOOKUP.get('sodium chloride')}"
-    )
-    print(
-        f"[Backend Init] DEBUG: 'red 40' in COMMON_FDA_SUBSTANCES_SET: {'red 40' in COMMON_FDA_SUBSTANCES_SET}"
-    )
+    print(f"[Backend Init] Populated COMMON_FDA_SUBSTANCES_SET with {len(COMMON_FDA_SUBSTANCES_SET)} entries.")
 
-
-# Call load_data_lookups() immediately after app creation to ensure data is loaded when Gunicorn runs the app
+# Call load_data_lookups() immediately when the script is imported/run
 load_data_lookups()
 
 
 # --- NOVA Score Calculation Function ---
-def calculate_nova_score(
-    identified_fda_non_common,
-    identified_fda_common,
-    identified_common_ingredients_only,
-    truly_unidentified_ingredients,
-):
+def calculate_nova_score(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients):
     """
     Estimates the NOVA score based on the categorized ingredient lists.
 
@@ -303,60 +185,34 @@ def calculate_nova_score(
         return 4, "Ultra-Processed Food"
 
     # Rule 2: If there are truly unidentified ingredients, it leans towards NOVA 4 due to complexity/obscurity
-    # This is a heuristic and can be refined. A high number of unidentified might also suggest UPF.
     if truly_unidentified_ingredients:
-        # If there are many unidentified, it's more likely UPF.
-        # This threshold can be adjusted.
-        if (
-            len(truly_unidentified_ingredients) > 2
-        ):  # Heuristic: more than 2 unidentified ingredients
+        if len(truly_unidentified_ingredients) > 2: # Heuristic: more than 2 unidentified ingredients
             return 4, "Ultra-Processed Food (Unidentified Ingredients)"
 
     # Rule 3: If no non-common FDA substances, and no significant unidentified,
     # check for combinations of common ingredients and common FDA-regulated substances.
     # This implies NOVA 3 (Processed Food).
-    if (identified_common_ingredients_only and identified_fda_common) or (
-        len(identified_common_ingredients_only) > 0
-        and not identified_fda_common
-        and not identified_fda_non_common
-        and not truly_unidentified_ingredients
-    ):
-        return 3, "Processed Food"
+    if (identified_common_ingredients_only and identified_fda_common) or \
+       (len(identified_common_ingredients_only) > 0 and not identified_fda_common and not identified_fda_non_common and not truly_unidentified_ingredients):
+        if identified_fda_common and identified_common_ingredients_only:
+            return 3, "Processed Food"
+        if len(identified_common_ingredients_only) > 1 and not identified_fda_common and not identified_fda_non_common and not truly_unidentified_ingredients:
+             return 3, "Processed Food (Simple Combination)"
 
     # Rule 4: If only common FDA-regulated substances (like salt, sugar, oil) are present, it's NOVA 2.
-    # This would be for products like a bag of salt, a bottle of sugar, or cooking oil.
-    if (
-        identified_fda_common
-        and not identified_common_ingredients_only
-        and not truly_unidentified_ingredients
-    ):
+    if identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients:
         return 2, "Processed Culinary Ingredient"
 
     # Rule 5: If only common ingredients (like water, milk, fresh produce) are present, it's NOVA 1.
-    if (
-        identified_common_ingredients_only
-        and not identified_fda_common
-        and not identified_fda_non_common
-        and not truly_unidentified_ingredients
-    ):
+    if identified_common_ingredients_only and not identified_fda_common and not identified_fda_non_common and not truly_unidentified_ingredients:
+        if len(identified_common_ingredients_only) == 1:
+            return 1, "Unprocessed or Minimally Processed Food"
         return 1, "Unprocessed or Minimally Processed Food"
 
-    # Fallback for edge cases or very minimal products not fitting above rules
-    # If no ingredients, or only very few that don't fit clear categories, default to a reasonable group.
-    # For an empty ingredient list, it's hard to classify, but 1 or 2 might be reasonable.
-    if (
-        not identified_fda_non_common
-        and not identified_fda_common
-        and not identified_common_ingredients_only
-        and not truly_unidentified_ingredients
-    ):
-        return (
-            1,
-            "Unprocessed or Minimally Processed Food (No Ingredients Listed)",
-        )  # Default for empty list
+    # Fallback for empty ingredient list or very minimal products not fitting above rules
+    if not identified_fda_non_common and not identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients:
+        return 1, "Unprocessed or Minimally Processed Food (No Ingredients Listed)"
 
-    # If none of the above, it's a bit ambiguous, but likely leans processed or ultra-processed
-    # based on the presence of some identified components.
     return 3, "Processed Food (Categorization Ambiguous)"
 
 
@@ -367,538 +223,444 @@ def analyze_ingredients(ingredients_string):
     Calculates a Data Score based on the completeness of identification.
     Returns categorized lists of ingredients for the four categories, plus estimated NOVA score.
     """
+    identified_fda_non_common = set()
+    identified_fda_common = set()
+    identified_common_ingredients_only = set()
+    truly_unidentified_ingredients = set()
 
-    identified_fda_non_common = set()  # New category 1
-    identified_fda_common = set()  # New category 2
-    identified_common_ingredients_only = set()  # New category 3
-    truly_unidentified_ingredients = set()  # New category 4
+    if not ingredients_string:
+        nova_score, nova_description = calculate_nova_score([], [], [], [])
+        return [], [], [], [], 100.0, "High", nova_score, nova_description
 
-    # Keep track of identified ingredient phrases to calculate data score
-    identified_phrases = set()
+    # Step 1: Initial cleanup and pre-processing
+    cleaned_string = re.sub(r'^(?:ingredients|contains|ingredient list|ingredients list):?\s*', '', ingredients_string, flags=re.IGNORECASE).strip()
+    cleaned_string = re.sub(r'\s+and/or\s+', ', ', cleaned_string, flags=re.IGNORECASE)
+    cleaned_string = re.sub(r'\s*\((?:color|flavour|flavor|emulsifier|stabilizer|thickener|preservative|antioxidant|acidifier|sweetener|gelling agent|firming agent|nutrient|vitamin [a-z0-9]+)\)\s*', '', cleaned_string, flags=re.IGNORECASE)
+    cleaned_string = re.sub(r'\s*\[vitamin b\d\]\s*', '', cleaned_string, flags=re.IGNORECASE)
 
-    # Normalize the entire ingredient string for initial processing (e.g., remove parentheticals)
-    processed_ingredients_string = re.sub(r"\([^)]*\)", "", ingredients_string).lower()
 
-    # Split by common delimiters. Using a regex to split by comma, semicolon, or "and"
-    ingredient_phrases = re.split(r",|;|\band\b", processed_ingredients_string)
+    # Step 2: Extract content within parentheses and process separately
+    parenthetical_matches = re.findall(r'\(([^()]*?(?:\([^()]*?\)[^()]*?)*?)\)', cleaned_string)
+    main_components_string = re.sub(r'\([^()]*?(?:\([^()]*?\)[^()]*?)*?\)', '', cleaned_string).strip()
 
-    # Further split phrases that might contain multiple items separated by " " or "/" or "or"
-    # Example: "corn starch / potato starch" should be treated as two distinct phrases.
-    final_ingredient_phrases = []
-    for phrase in ingredient_phrases:
-        sub_phrases = re.split(r"\s/\s|\sor\s", phrase.strip())
-        final_ingredient_phrases.extend([p.strip() for p in sub_phrases if p.strip()])
+    # Step 3: Split main string into components by commas and semicolons
+    components = [comp.strip() for comp in re.split(r',\s*|;\s*', main_components_string) if comp.strip()]
 
-    # --- Phase 1: Identify direct FDA additives ---
-    for original_phrase in final_ingredient_phrases:
-        normalized_phrase = re.sub(
-            r"[^a-z0-9\s\&\.\-#\(\)]", "", original_phrase.lower()
-        ).strip()
-        normalized_phrase = re.sub(r"\s+", " ", normalized_phrase)
-        normalized_phrase = normalized_phrase.replace("no.", "no ")
+    for p_content in parenthetical_matches:
+        sub_components = [s.strip() for s in re.split(r',\s*| and\s*', p_content) if s.strip()]
+        components.extend(sub_components)
 
-        if normalized_phrase in ADDITIVES_LOOKUP:
-            canonical_fda_name = ADDITIVES_LOOKUP[normalized_phrase]
-            # Check if this FDA substance is also considered a common ingredient
-            if canonical_fda_name in COMMON_FDA_SUBSTANCES_SET:
-                identified_fda_common.add(
-                    FDA_SUBSTANCE_DETAILS_LOOKUP.get(canonical_fda_name, {}).get(
-                        "Substance Name (Heading)", canonical_fda_name
-                    )
-                )
-            else:
-                identified_fda_non_common.add(
-                    FDA_SUBSTANCE_DETAILS_LOOKUP.get(canonical_fda_name, {}).get(
-                        "Substance Name (Heading)", canonical_fda_name
-                    )
-                )
+    components = [comp for comp in components if comp]
 
-            # Add the original phrase to identified_phrases set for data score calculation
-            identified_phrases.add(
-                original_phrase.lower()
-            )  # Use lowercased original phrase for consistency
+    total_analyzed_items = len(components)
+    categorized_items_count = 0
 
-    # --- Phase 2: Identify common ingredients and re-evaluate remaining ---
-    for original_phrase in final_ingredient_phrases:
-        normalized_phrase = re.sub(
-            r"[^a-z0-9\s\&\.\-#\(\)]", "", original_phrase.lower()
-        ).strip()
-        normalized_phrase = re.sub(r"\s+", " ", normalized_phrase)
-        normalized_phrase = normalized_phrase.replace("no.", "no ")
+    for original_component in components:
+        normalized_component = original_component.lower().strip()
+        normalized_component = re.sub(r'\s+', ' ', normalized_component)
+        normalized_component = normalized_component.replace('no.', 'no ')
+        normalized_component = normalized_component.rstrip('.,\'"').strip()
 
-        # If it's already identified as an FDA substance (of any type), skip
-        # We need to check against the *normalized canonical name* because that's what's stored in ADDITIVES_LOOKUP values.
-        # So, we need to normalize the original phrase and then check if its canonical form is already identified.
-        canonical_form_of_phrase = ADDITIVES_LOOKUP.get(normalized_phrase)
-        if canonical_form_of_phrase and (
-            canonical_form_of_phrase
-            in {
-                re.sub(r"[^a-z0-9\s\&\.\-#]", "", s.lower()).strip()
-                for s in identified_fda_non_common
-            }
-            or canonical_form_of_phrase
-            in {
-                re.sub(r"[^a-z0-9\s\&\.\-#]", "", s.lower()).strip()
-                for s in identified_fda_common
-            }
-        ):
+        if not normalized_component:
             continue
 
-        if normalized_phrase in COMMON_INGREDIENTS_LOOKUP:
-            identified_common_ingredients_only.add(
-                COMMON_INGREDIENTS_LOOKUP[normalized_phrase]
-            )
-            identified_phrases.add(original_phrase.lower())
+        component_categorized = False
+
+        # Pass 1: Try to match against FDA Additives (longest match first for phrases)
+        words = normalized_component.split()
+        matched_additive_canonical = None
+        for i in range(len(words)):
+            for j in range(len(words), i, -1):
+                phrase = " ".join(words[i:j])
+                if phrase in ADDITIVES_LOOKUP:
+                    matched_additive_canonical = ADDITIVES_LOOKUP[phrase]
+                    break
+            if matched_additive_canonical:
+                break
+
+        if matched_additive_canonical:
+            if matched_additive_canonical in COMMON_FDA_SUBSTANCES_SET:
+                # Use original casing if available from COMMON_INGREDIENTS_LOOKUP, else the canonical name
+                identified_fda_common.add(COMMON_INGREDIENTS_LOOKUP.get(matched_additive_canonical, matched_additive_canonical))
+            else:
+                identified_fda_non_common.add(matched_additive_canonical)
+            component_categorized = True
         else:
-            # If it's not an FDA substance (of any type) and not a common ingredient, it's truly unidentified
-            # Ensure it's not already covered by an FDA-common entry or a common ingredient already.
-            # This check prevents duplicates if an ingredient was first identified as common,
-            # then also found to be an FDA common substance.
-
-            is_covered_by_fda_common = False
-            for fda_common_item in identified_fda_common:
-                if fda_common_item.lower() in normalized_phrase:
-                    is_covered_by_fda_common = True
+            # Pass 2: If not an FDA Additive, try to match against Common Ingredients (longest match first)
+            matched_common_ingredient_original_casing = None
+            for i in range(len(words)):
+                for j in range(len(words), i, -1):
+                    phrase = " ".join(words[i:j])
+                    if phrase in COMMON_INGREDIENTS_LOOKUP:
+                        # Ensure it's not an FDA substance that we already caught in Pass 1
+                        if phrase not in ADDITIVES_LOOKUP or ADDITIVES_LOOKUP[phrase] not in COMMON_FDA_SUBSTANCES_SET:
+                            matched_common_ingredient_original_casing = COMMON_INGREDIENTS_LOOKUP[phrase]
+                            break
+                if matched_common_ingredient_original_casing:
                     break
 
-            is_covered_by_common_only = False
-            for common_only_item in identified_common_ingredients_only:
-                if common_only_item.lower() in normalized_phrase:
-                    is_covered_by_common_only = True
-                    break
+            if matched_common_ingredient_original_casing:
+                identified_common_ingredients_only.add(matched_common_ingredient_original_casing)
+                component_categorized = True
+            else:
+                truly_unidentified_ingredients.add(original_component)
 
-            if (
-                not is_covered_by_fda_common
-                and not is_covered_by_common_only
-                and original_phrase.strip() != ""
-            ):
-                truly_unidentified_ingredients.add(original_phrase.strip())
+        if component_categorized:
+            categorized_items_count += 1
 
-    # --- Calculate Data Score ---
-    total_phrases = len(final_ingredient_phrases)
-    if total_phrases == 0:
-        data_score_percentage = (
-            100  # If no ingredients, assume 100% identified vacuously
-        )
+    # Calculate Data Score
+    if total_analyzed_items == 0:
+        data_score_percentage = 100.0
     else:
-        # Data score is the percentage of distinct phrases that were identified
-        data_score_percentage = (len(identified_phrases) / total_phrases) * 100
+        data_score_percentage = (categorized_items_count / total_analyzed_items) * 100.0
+        data_score_percentage = max(0.0, min(100.0, data_score_percentage))
+
+    # Convert score to High/Medium/Low
+    if data_score_percentage >= 90:
+        data_completeness_level = "High"
+    elif data_score_percentage >= 70:
+        data_completeness_level = "Medium"
+    else:
+        data_completeness_level = "Low"
 
     # Calculate NOVA score
     nova_score, nova_description = calculate_nova_score(
-        identified_fda_non_common,
-        identified_fda_common,
-        identified_common_ingredients_only,
-        truly_unidentified_ingredients,
+        list(identified_fda_non_common),
+        list(identified_fda_common),
+        list(identified_common_ingredients_only),
+        list(truly_unidentified_ingredients)
     )
 
-    return {
-        "identified_fda_non_common": list(identified_fda_non_common),
-        "identified_fda_common": list(identified_fda_common),
-        "identified_common_ingredients_only": list(identified_common_ingredients_only),
-        "truly_unidentified_ingredients": list(truly_unidentified_ingredients),
-        "data_score_percentage": round(
-            data_score_percentage
-        ),  # Round to nearest whole number
-        "nova_score": nova_score,
-        "nova_description": nova_description,
+    return (list(identified_fda_non_common), list(identified_fda_common),
+            list(identified_common_ingredients_only), list(truly_unidentified_ingredients),
+            data_score_percentage, data_completeness_level, nova_score, nova_description)
+
+def check_airtable_cache(gtin):
+    """
+    Checks if a GTIN exists in the Airtable cache.
+    If found, updates lookup count and last access timestamp.
+    Returns the raw fields from Airtable if found, otherwise None.
+    """
+    if not airtable:
+        print("[Backend] Airtable not initialized. Skipping cache check.")
+        return None
+
+    print(f"[Backend] Checking Airtable cache for GTIN: {gtin}")
+    try:
+        records = airtable.search('gtin_upc', gtin)
+        if records:
+            record = records[0]
+            record_id = record['id']
+            fields = record['fields']
+
+            # Update usage stats
+            updated_fields = {
+                'lookup_count': fields.get('lookup_count', 0) + 1,
+                'last_access': datetime.now().isoformat()
+            }
+            airtable.update(record_id, updated_fields)
+            print(f"[Backend] ✅ Cache hit. Updated count: {updated_fields['lookup_count']}")
+
+            # Return the full fields, which now include the individual ingredient lists, NOVA, etc.
+            return fields
+        else:
+            print("[Backend] Cache miss.")
+    except Exception as e:
+        print(f"[Backend] ⚠️ Airtable lookup error: {e}")
+    return None
+
+def fetch_from_usda_api(gtin):
+    """
+    Queries the USDA FoodData Central API using the GTIN.
+    Returns the first matching food item's data if found, otherwise None.
+    """
+    if not USDA_API_KEY:
+        print("[Render Backend] USDA API Key not set. Skipping USDA API fetch.")
+        return None
+
+    print(f"[Render Backend] Querying USDA API for GTIN: {gtin}...")
+    params = {
+        'query': gtin,
+        'api_key': USDA_API_KEY,
+        'dataType': ['Branded'],
+        'pageSize': 1
     }
 
+    try:
+        response = requests.get(USDA_SEARCH_URL, params=params)
+        response.raise_for_status()
+        data = response.json()
 
-# --- Markdown Report Generation ---
-def generate_data_report_markdown(analysis_results, usda_product_data):
-    # Ensure GTIN is passed correctly
-    gtin = usda_product_data.get("gtin", "N/A")
-    description = usda_product_data.get("description", "N/A")
-    ingredients = usda_product_data.get("ingredients", "N/A")
-    data_score_percentage = analysis_results.get("data_score_percentage", 0)
-    nova_score = analysis_results.get("nova_score", "N/A")
-    nova_description = analysis_results.get("nova_description", "N/A")
+        if data.get('foods'):
+            print("[Render Backend] 📥 Pulled from USDA API.")
+            return data['foods'][0]
+    except requests.exceptions.RequestException as e:
+        print(f"[Render Backend] ❌ Error fetching from USDA API for GTIN {gtin}: {e}")
+    except json.JSONDecodeError:
+        print(f"[Render Backend] ❌ JSON Decode Error from USDA API for GTIN {gtin}. Response: {response.text.strip()}")
+    except Exception as e:
+        print(f"[Render Backend] ❌ Unexpected Error fetching from USDA: {e}")
 
-    fda_non_common = analysis_results.get("identified_fda_non_common", [])
-    fda_common = analysis_results.get("identified_fda_common", [])
-    common_ingredients_only = analysis_results.get(
-        "identified_common_ingredients_only", []
-    )
-    unidentified = analysis_results.get("truly_unidentified_ingredients", [])
+    return None
 
-    report_parts = []
-
-    report_parts.append(f"# Product Scan Report for GTIN: {gtin}\n\n")
-    report_parts.append(f"**Description:** {description}\n\n")
-    report_parts.append(f"**Ingredients List:** {ingredients}\n\n")
-    report_parts.append(
-        f"**Data Score:** {data_score_percentage}% of ingredients identified.\n\n"
-    )
-    report_parts.append(
-        f"**NOVA Score Estimate:** {nova_score} ({nova_description})\n\n"
-    )
-    report_parts.append("---\n\n")
-
-    if fda_non_common:
-        report_parts.append(
-            "## Detected FDA Substances (Non-Commonly Found in Whole Foods) 🧪\n\n"
-        )
-        for substance_heading in sorted(fda_non_common):
-            normalized_substance_key = re.sub(
-                r"[^a-z0-9\s\&\.\-#]", "", substance_heading.lower()
-            ).strip()
-            normalized_substance_key = re.sub(r"\s+", " ", normalized_substance_key)
-            normalized_substance_key = normalized_substance_key.replace("no.", "no ")
-
-            details = FDA_SUBSTANCE_DETAILS_LOOKUP.get(normalized_substance_key, {})
-            functions = details.get("Used for (Technical Effect)", "N/A")
-            source = details.get("Source", "FDA Additive Database")
-            report_parts.append(f"- **{substance_heading}**\n")
-            report_parts.append(f"  * Used for: {functions}\n")
-            report_parts.append(f"  * Source: {source}\n\n")
-        report_parts.append("\n")
-
-    if fda_common:
-        report_parts.append(
-            "## Detected Common FDA-Regulated Substances (e.g., Salt, Sugar) 🌱\n\n"
-        )
-        for substance in sorted(fda_common):
-            report_parts.append(f"- {substance}\n")
-        report_parts.append("\n")
-
-    if common_ingredients_only:
-        report_parts.append("## Detected Common Ingredients (Non-FDA Regulated) 🍎\n\n")
-        for ingredient in sorted(common_ingredients_only):
-            report_parts.append(f"- {ingredient}\n")
-        report_parts.append("\n")
-
-    if unidentified:
-        report_parts.append("## Unidentified Ingredients ❓\n")
-        report_parts.append(
-            "The following ingredients could not be identified in our databases:\n\n"
-        )
-        for ingredient in sorted(unidentified):
-            report_parts.append(f"- {ingredient}\n")
-        report_parts.append("\n")
-
-    report_parts.append("---\n")
-    report_parts.append(
-        "*Disclaimer: This report is an estimate based on available data and ingredient analysis. Consult a professional for dietary advice.*"
-    )
-
-    return "".join(report_parts)
-
-
-# --- Airtable Cache Functions ---
-def store_to_airtable(
-    gtin,
-    usda_product_data,
-    data_report_markdown,
-    nova_score,
-    nova_description,
-    fda_substances,
-    common_ingredients,
-    unidentified_ingredients,
-):
+def store_to_airtable(gtin, usda_data, analyzed_data):
+    """
+    Stores product data pulled from USDA API (and analysis results) into the Airtable cache.
+    analyzed_data is a dictionary containing all structured analysis results.
+    """
     if not airtable:
-        print("[Airtable] Airtable client not initialized. Skipping cache storage.")
+        print("[Render Backend] Airtable client not initialized. Skipping store to Airtable.")
         return
 
-    # Prepare data for Airtable
-    record_data = {
-        "GTIN": str(gtin),
-        "Description": usda_product_data.get("description", "N/A"),
-        "Ingredients": usda_product_data.get("ingredients", "N/A"),
-        "Data Report Markdown": data_report_markdown,
-        "NOVA Score": str(nova_score),  # Store as string to handle "N/A"
-        "NOVA Description": nova_description,
-        "FDA Substances": json.dumps(fda_substances),  # Store lists as JSON strings
-        "Common Ingredients": json.dumps(common_ingredients),
-        "Unidentified Ingredients": json.dumps(unidentified_ingredients),
-        "Last Cached": datetime.now().isoformat(),
+    print(f"[Render Backend] Attempting to store GTIN {gtin} to Airtable...")
+
+    # Extracting data from usda_data
+    product_description = usda_data.get("description", "")
+    product_ingredients = usda_data.get("ingredients", "")
+
+    # Extracting data from analyzed_data
+    identified_fda_non_common = analyzed_data.get("identified_fda_non_common", [])
+    identified_fda_common = analyzed_data.get("identified_fda_common", [])
+    identified_common_ingredients_only = analyzed_data.get("identified_common_ingredients_only", [])
+    truly_unidentified_ingredients = analyzed_data.get("truly_unidentified_ingredients", [])
+    data_score = analyzed_data.get("data_score", 0.0)
+    data_completeness_level = analyzed_data.get("data_completeness_level", "N/A")
+    nova_score = analyzed_data.get("nova_score", "N/A")
+    nova_description = analyzed_data.get("nova_description", "N/A")
+
+    fields = {
+        "gtin_upc": gtin,
+        "fdc_id": str(usda_data.get("fdcId", "")),
+        "brand_name": usda_data.get("brandName", ""),
+        "brand_owner": usda_data.get("brandOwner", ""),
+        "description": product_description,
+        "ingredients": product_ingredients,
+        "lookup_count": 1,
+        "last_access": datetime.now().isoformat(),
+        "hot_score": 1, # Placeholder, can be calculated dynamically later
+        "source": "USDA API",
+        # Store structured data points directly
+        "identified_fda_non_common": json.dumps(identified_fda_non_common), # Store as JSON string
+        "identified_fda_common": json.dumps(identified_fda_common),
+        "identified_common_ingredients_only": json.dumps(identified_common_ingredients_only),
+        "truly_unidentified_ingredients": json.dumps(truly_unidentified_ingredients),
+        "data_score": data_score,
+        "data_completeness_level": data_completeness_level,
+        "nova_score": str(nova_score), # Store as string to handle "N/A" and numbers
+        "nova_description": nova_description
     }
 
     try:
-        # Check if record already exists by GTIN using a direct formula
-        # Ensuring the field name in the formula exactly matches the Airtable column: 'gtin_upc'
-        formula = f"{{gtin_upc}}='{gtin}'"
-        print(f"[Airtable] Searching for existing record with formula: {formula}")
-        existing_records = airtable.get_all(formula=formula)  # Use get_all with formula
-
-        if existing_records:
-            record_id = existing_records[0]["id"]
-            airtable.update(record_id, record_data)
-            print(f"[Airtable] Updated existing record for GTIN: {gtin}")
-        else:
-            # Check current row count and evict if necessary
-            current_records = airtable.get_all()
-            if len(current_records) >= AIRTABLE_MAX_ROWS:
-                # Simple eviction: remove the oldest record
-                oldest_record = min(
-                    current_records,
-                    key=lambda r: r["fields"].get("Last Cached", "1970-01-01"),
-                )
-                airtable.delete(oldest_record["id"])
-                print(
-                    f"[Airtable] Evicted oldest record (ID: {oldest_record['id']}) to make space."
-                )
-
-            airtable.insert(record_data)
-            print(f"[Airtable] Stored new record for GTIN: {gtin}")
+        airtable.insert(fields)
+        print(f"[Render Backend] ✅ Stored to Airtable: {fields.get('description', gtin)}")
     except Exception as e:
-        print(f"[Airtable] Error storing/updating to Airtable for GTIN {gtin}: {e}")
+        print(f"[Render Backend] ❌ Failed to store to Airtable for GTIN {gtin}: {e}")
+        # Print a more detailed traceback for debugging
         traceback.print_exc()
 
-
-def fetch_from_airtable(gtin):
+def count_airtable_rows():
+    """Counts the total number of records in the Airtable table."""
     if not airtable:
-        print("[Airtable] Airtable client not initialized. Skipping cache fetch.")
-        return None
+        print("[Render Backend] Airtable client not initialized. Skipping row count.")
+        return 0
 
+    print("[Render Backend] Counting Airtable rows...")
     try:
-        # Fetch using a direct formula
-        # Ensuring the field name in the formula exactly matches the Airtable column: 'gtin_upc'
-        formula = f"{{gtin_upc}}='{gtin}'"
-        print(f"[Airtable] Fetching with formula: {formula}")
-        records = airtable.get_all(formula=formula)  # Use get_all with formula
+        records = airtable.get_all(fields=['id'])
+        return len(records)
+    except Exception as e:
+        print(f"[Render Backend] ⚠️ Error counting Airtable rows: {e}")
+        return 0
+
+def delete_least_valuable_row():
+    """
+    Deletes the least valuable record in Airtable based on lookup_count and last_access.
+    Least valuable = lowest lookup_count, then oldest last_access for ties.
+    """
+    if not airtable:
+        print("[Render Backend] Airtable client not initialized. Skipping row deletion.")
+        return
+
+    print("[Render Backend] Checking for least valuable row to evict...")
+    try:
+        records = airtable.get_all(fields=['lookup_count', 'last_access'])
 
         if records:
-            record = records[0]["fields"]
-            print(f"[Airtable] Cache hit for GTIN: {gtin}")
-            # Parse JSON strings back into lists
-            record["FDA Substances"] = json.loads(record.get("FDA Substances", "[]"))
-            record["Common Ingredients"] = json.loads(
-                record.get("Common Ingredients", "[]")
-            )
-            record["Unidentified Ingredients"] = json.loads(
-                record.get("Unidentified Ingredients", "[]")
-            )
-            return record
-        print(f"[Airtable] Cache miss for GTIN: {gtin}")
-        return None
+            records_sorted = sorted(records, key=lambda r: (
+                r["fields"].get("lookup_count", 0),
+                r["fields"].get("last_access", "0000-01-01T00:00:00.000Z")
+            ))
+
+            least_valuable_record = records_sorted[0]
+            record_id_to_delete = least_valuable_record['id']
+
+            airtable.delete(record_id_to_delete)
+            print(f"[Render Backend] 🗑️ Deleted least valuable entry (ID: {record_id_to_delete}, "
+                  f"Lookup: {least_valuable_record['fields'].get('lookup_count', 0)}, "
+                  f"Last Access: {least_valuable_record['fields'].get('last_access', 'N/A')}).")
+        else:
+            print("[Render Backend] No records to evict.")
     except Exception as e:
-        print(f"[Airtable] Error fetching from Airtable for GTIN {gtin}: {e}")
-        traceback.print_exc()
-        return None
+        print(f"[Render Backend] ❌ Error deleting least valuable row: {e}")
 
 
-# --- Main GTIN Lookup API Endpoint ---
-@app.route("/gtin_lookup", methods=["POST"])
-def gtin_lookup_api():
-    headers = {"Content-Type": "application/json"}  # Set content type for all responses
-    overall_start = time.time()
-    print("🔍 [TIMER] Lookup route started")
+@app.route('/api/gtin-lookup', methods=['POST'])
+def gtin_lookup():
+    """
+    API endpoint for GTIN lookup.
+    Expects a POST request with a JSON body containing 'gtin'.
+    Returns JSON response.
+    """
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+    }
+
+    if request.method == 'OPTIONS':
+        return '', 204, headers
 
     try:
-        step1_start = time.time()
-        data = request.get_json()
-        gtin = data.get("gtin")
+        request_data = request.get_json(force=True)
+        gtin = request_data.get('gtin')
 
         if not gtin:
-            print("[Render Backend] Missing GTIN in request.")
-            return jsonify({"error": "GTIN is required."}), 400, headers
-        print(f"✅ [TIMER] Parsed GTIN: {time.time() - step1_start:.2f}s")
+            return jsonify({"error": "Bad Request", "message": "GTIN is required in the request body."}), 400, headers
 
-        # 1. Try fetching from Airtable cache first
-        step2_start = time.time()
-        cached_data = fetch_from_airtable(gtin)
-        print(f"📦 [TIMER] Airtable cache fetch: {time.time() - step2_start:.2f}s")
+        # Initialize variables for the response
+        product_description = "N/A"
+        product_ingredients = "N/A"
+        status = "not_found"
+        nova_score = "N/A"
+        nova_description = "N/A"
+        identified_fda_non_common = []
+        identified_fda_common = []
+        identified_common_ingredients_only = []
+        truly_unidentified_ingredients = []
+        data_score = 0.0
+        data_completeness_level = "N/A"
 
+
+        # 1. Check Airtable Cache
+        cached_data = check_airtable_cache(gtin)
         if cached_data:
-            total_time = time.time() - overall_start
-            print(f"🚀 [TIMER] Total response time (cache hit): {total_time:.2f}s")
-            return (
-                jsonify(
-                    {
-                        "gtin": gtin,
-                        "description": cached_data.get("Description", "N/A"),
-                        "ingredients": cached_data.get("Ingredients", "N/A"),
-                        "data_report_markdown": cached_data.get(
-                            "Data Report Markdown",
-                            "We’re improving every day. The more you use it, the smarter it gets!",
-                        ),
-                        "status": "cached",
-                        "nova_score": cached_data.get("NOVA Score", "N/A"),
-                        "nova_description": cached_data.get(
-                            "NOVA Description", "Cannot determine NOVA score."
-                        ),
-                        "fda_substances": cached_data.get("FDA Substances", []),
-                        "common_ingredients": cached_data.get("Common Ingredients", []),
-                        "unidentified_ingredients": cached_data.get(
-                            "Unidentified Ingredients", []
-                        ),
-                    }
-                ),
-                200,
-                headers,
-            )
+            product_description = cached_data.get('description', "N/A")
+            product_ingredients = cached_data.get('ingredients', "N/A")
 
-        # 2. If not in cache, query USDA FoodData Central
-        step3_start = time.time()
-        print(f"[Render Backend] Querying USDA for GTIN: {gtin}")
-        params = {"query": gtin, "dataType": "Branded", "api_key": USDA_API_KEY}
-        usda_response = requests.get(USDA_SEARCH_URL, params=params)
-        usda_response.raise_for_status()
-        usda_data = usda_response.json()
-        print(f"🌽 [TIMER] USDA fetch: {time.time() - step3_start:.2f}s")
+            # Retrieve pre-analyzed data from cache or re-analyze if ingredients changed/not present
+            # We assume if product_ingredients are in cache, the analyzed lists are too.
+            # Convert JSON strings back to Python lists
+            identified_fda_non_common = json.loads(cached_data.get('identified_fda_non_common', '[]'))
+            identified_fda_common = json.loads(cached_data.get('identified_fda_common', '[]'))
+            identified_common_ingredients_only = json.loads(cached_data.get('identified_common_ingredients_only', '[]'))
+            truly_unidentified_ingredients = json.loads(cached_data.get('truly_unidentified_ingredients', '[]'))
+            data_score = cached_data.get('data_score', 0.0)
+            data_completeness_level = cached_data.get('data_completeness_level', "N/A")
+            nova_score = cached_data.get('nova_score', "N/A")
+            nova_description = cached_data.get('nova_description', "N/A")
 
-        # 3. Process the USDA product data
-        usda_product_data = {}
-        if usda_data and usda_data.get("foods"):
-            step4_start = time.time()
+            # In case an older cache entry doesn't have the granular data, re-analyze
+            if not identified_fda_non_common and not identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients and product_ingredients != "N/A":
+                print("[Backend] Cached data missing granular ingredient breakdown, re-analyzing...")
+                (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
+                 truly_unidentified_ingredients, data_score, data_completeness_level,
+                 nova_score, nova_description) = analyze_ingredients(product_ingredients)
+                # Potentially update the Airtable record with new granular data here if desired
 
-            for food_item in usda_data["foods"]:
-                if food_item.get("gtinV1") == gtin:
-                    usda_product_data = food_item
-                    break
-            if not usda_product_data:
-                usda_product_data = usda_data["foods"][0]
+            status = "found_in_cache"
 
-            product_description = usda_product_data.get("description", "N/A")
-            product_ingredients = usda_product_data.get("ingredients", "N/A")
+            # Prepare the response with structured data
+            response_data = {
+                "gtin": gtin,
+                "description": product_description,
+                "ingredients": product_ingredients,
+                "status": status,
+                "nova_score": nova_score,
+                "nova_description": nova_description,
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level
+            }
+            return jsonify(response_data), 200, headers
 
-            # Analyze ingredients and calculate NOVA score
-            analysis_results = analyze_ingredients(product_ingredients)
-            print("🧠 Analysis Results:", analysis_results)
-            print("🧪 Ingredients:", product_ingredients)
+        # 2. If not in cache, fetch from USDA API
+        usda_product_data = fetch_from_usda_api(gtin)
 
-            # TEMP patch to ensure these fields exist
-            num_matched = len(
-                analysis_results.get("identified_fda_non_common", [])
-            ) + len(analysis_results.get("identified_common_ingredients_only", []))
-            num_total = num_matched + len(
-                analysis_results.get("truly_unidentified_ingredients", [])
-            )
-            data_score_percent = (
-                int((num_matched / num_total) * 100) if num_total > 0 else 0
-            )
+        if usda_product_data:
+            product_description = usda_product_data.get('description', "N/A")
+            product_ingredients = usda_product_data.get('ingredients', "N/A")
 
-            # Inject fallback scores
-            analysis_results["num_matched"] = num_matched
-            analysis_results["num_total"] = num_total
-            analysis_results["data_score_percent"] = data_score_percent
+            # Analyze ingredients and get all structured results
+            (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
+             truly_unidentified_ingredients, data_score, data_completeness_level,
+             nova_score, nova_description) = analyze_ingredients(product_ingredients)
 
-            # Generate Markdown report
-            usda_product_data["gtin"] = gtin
-            data_report_markdown = generate_data_report_markdown(
-                analysis_results, usda_product_data
-            )
+            status = "pulled_from_usda_and_cached"
 
-            # Prepare counts for future frontend use (MVP+)
-            summary_counts = {
-                "fda_additives": len(analysis_results["identified_fda_non_common"]),
-                "fda_common_substances": len(analysis_results["identified_fda_common"]),
-                "common_ingredients": len(
-                    analysis_results["identified_common_ingredients_only"]
-                ),
-                "unidentified": len(analysis_results["truly_unidentified_ingredients"]),
+            # Prepare a dictionary of analyzed data to pass to store_to_airtable
+            analyzed_data_for_cache = {
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level,
+                "nova_score": nova_score,
+                "nova_description": nova_description
             }
 
-            print("[Backend] ✅ Generated Markdown Report:")
-            print(data_report_markdown)
+            # Check if cache is full before adding new entry
+            current_row_count = count_airtable_rows()
+            if current_row_count >= AIRTABLE_MAX_ROWS:
+                delete_least_valuable_row()
 
-            fda_substances = analysis_results.get("identified_fda_non_common", [])
-            fda_common = analysis_results.get("identified_fda_common", [])
-            common_ingredients = analysis_results.get(
-                "identified_common_ingredients_only", []
-            )
-            unidentified_ingredients = analysis_results.get(
-                "truly_unidentified_ingredients", []
-            )
+            # Store the new product data to Airtable, including the structured analysis results
+            store_to_airtable(gtin, usda_product_data, analyzed_data_for_cache)
 
-            nova_score = analysis_results.get("nova_score", "N/A")
-            nova_description = analysis_results.get(
-                "nova_description", "Cannot determine NOVA score."
-            )
-            print(f"🧪 [TIMER] Analysis + Markdown: {time.time() - step4_start:.2f}s")
-
-            # 4. Store to Airtable
-            step5_start = time.time()
-            store_to_airtable(
-                gtin,
-                usda_product_data,
-                data_report_markdown,
-                nova_score,
-                nova_description,
-                fda_substances,
-                common_ingredients,
-                unidentified_ingredients,
-            )
-            print(f"🗃️ [TIMER] Stored to Airtable: {time.time() - step5_start:.2f}s")
-
-            total_time = time.time() - overall_start
-            print(f"🚀 [TIMER] Total response time (USDA): {total_time:.2f}s")
-
-            # ✅ NEW — Build structured report HTML
-            structured_report_html = generate_structured_report_html(
-                analysis_results, usda_product_data
-            )
-
-            return (
-                jsonify(
-                    {
-                        "status": "success",
-                        "gtin": gtin,
-                        "description": product_description,
-                        "ingredients": product_ingredients,
-                        "structured_report_html": structured_report_html,
-                        "nova_score": nova_score,
-                        "nova_description": nova_description,
-                        "data_score": analysis_results.get("data_score_percent", 0),
-                        "num_matched": analysis_results.get("num_matched", 0),
-                        "num_total": analysis_results.get("num_total", 0),
-                        "fda_ingredients": fda_substances,
-                        "common_ingredients": common_ingredients,
-                        "unidentified_ingredients": unidentified_ingredients,
-                    }
-                ),
-                200,
-                headers,
-            )
+            # Prepare the response with structured data
+            response_data = {
+                "gtin": gtin,
+                "description": product_description,
+                "ingredients": product_ingredients,
+                "status": status,
+                "nova_score": nova_score,
+                "nova_description": nova_description,
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level
+            }
+            return jsonify(response_data), 200, headers
         else:
-            print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
-            return (
-                jsonify(
-                    {
-                        "status": "not_found",
-                        "gtin": gtin,
-                        "description": "N/A",
-                        "ingredients": "N/A",
-                        "structured_report_html": """
-                    <div class="text-red-600 font-semibold">
-                        Product not found in USDA FoodData Central. Please check the GTIN and try again.
-                    </div>
-                """,
-                        "nova_score": "N/A",
-                        "nova_description": "Cannot determine NOVA score.",
-                        "data_score": 0,
-                        "num_matched": 0,
-                        "num_total": 0,
-                        "fda_ingredients": [],
-                        "common_ingredients": [],
-                        "unidentified_ingredients": [],
-                    }
-                ),
-                404,
-                headers,
-            )
+            # Product not found scenario
+            return jsonify({
+                "gtin": gtin,
+                "description": "N/A",
+                "ingredients": "N/A",
+                "status": "not_found",
+                "nova_score": "N/A",
+                "nova_description": "Cannot determine NOVA score.",
+                "identified_fda_non_common": [],
+                "identified_fda_common": [],
+                "identified_common_ingredients_only": [],
+                "truly_unidentified_ingredients": [],
+                "data_score": 0.0,
+                "data_completeness_level": "N/A"
+            }), 404, headers
 
     except requests.exceptions.RequestException as e:
-        print(f"[Render Backend] Network or USDA API error: {e}")
-        return (
-            jsonify(
-                {
-                    "error": "Failed to connect to USDA or network issue.",
-                    "details": str(e),
-                }
-            ),
-            500,
-            headers,
-        )
+        print(f"[Render Backend] Network or USDA API error caught: {e}")
+        return jsonify({"error": "Failed to connect to USDA FoodData Central or network issue.", "details": str(e)}), 500, headers
     except Exception as e:
-        print(f"[Render Backend] Unexpected error in GTIN Lookup: {e}")
+        print(f"[Render Backend] An unexpected error occurred in handler: {e}")
         traceback.print_exc()
-        return (
-            jsonify({"error": "Internal server error", "details": str(e)}),
-            500,
-            headers,
-        )
+        return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500, headers
 
 
 # Standard way to run Flask app for local testing
@@ -907,4 +669,5 @@ if __name__ == "__main__":
         print(
             "WARNING: Missing one or more environment variables (AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY)."
         )
-        print("Please set them for local testing or ensure they are...")
+        print("Please set them for local testing or deployment.")
+    app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))

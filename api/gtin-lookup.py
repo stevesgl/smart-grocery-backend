@@ -22,7 +22,7 @@ ADDITIVES_DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'all_fda_s
 COMMON_INGREDIENTS_DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'common_ingredients.json')
 
 # Airtable max rows for the free tier (for eviction logic)
-AIRTABLE_MAX_ROWS = 1000 
+AIRTABLE_MAX_ROWS = 1000
 # ===============================================================================================
 
 # Initialize Airtable client globally
@@ -82,7 +82,7 @@ def load_data_lookups():
             if "fd&c blue no 1" in normalized_canonical_name_for_key:
                 names_to_add.add("blue 1")
                 names_to_add.add("blue #1")
-            
+
             if "caramel" in normalized_canonical_name_for_key:
                 names_to_add.add("caramel color")
             if "phosphoric acid" in normalized_canonical_name_for_key:
@@ -133,7 +133,7 @@ def load_data_lookups():
     try:
         with open(COMMON_INGREDIENTS_DATA_FILE, 'r', encoding='utf-8') as f:
             common_ingredients_raw = json.load(f)
-        
+
         for ingredient in common_ingredients_raw:
             normalized_ingredient = re.sub(r'[^a-z0-9\s\&\.\-#\(\)]', '', ingredient.lower()).strip()
             normalized_ingredient = re.sub(r'\s+', ' ', normalized_ingredient)
@@ -161,18 +161,18 @@ load_data_lookups()
 def calculate_nova_score(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients):
     """
     Estimates the NOVA score based on the categorized ingredient lists.
-    
+
     NOVA Groups:
     1: Unprocessed or Minimally Processed Foods (primarily identified_common_ingredients_only)
     2: Processed Culinary Ingredients (primarily identified_fda_common, e.g., salt, sugar, oil)
     3: Processed Foods (combination of Group 1 and Group 2 ingredients)
     4: Ultra-Processed Foods (presence of identified_fda_non_common, or a high number of additives/unidentified)
     """
-    
+
     # Rule 1: If any "FDA Substance Detected (Non-Common)" is present, it's NOVA 4.
     if identified_fda_non_common:
         return 4, "Ultra-Processed Food"
-    
+
     # Rule 2: If there are truly unidentified ingredients, it leans towards NOVA 4 due to complexity/obscurity
     if truly_unidentified_ingredients:
         if len(truly_unidentified_ingredients) > 2: # Heuristic: more than 2 unidentified ingredients
@@ -197,7 +197,7 @@ def calculate_nova_score(identified_fda_non_common, identified_fda_common, ident
         if len(identified_common_ingredients_only) == 1:
             return 1, "Unprocessed or Minimally Processed Food"
         return 1, "Unprocessed or Minimally Processed Food"
-    
+
     # Fallback for empty ingredient list or very minimal products not fitting above rules
     if not identified_fda_non_common and not identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients:
         return 1, "Unprocessed or Minimally Processed Food (No Ingredients Listed)"
@@ -234,7 +234,7 @@ def analyze_ingredients(ingredients_string):
 
     # Step 3: Split main string into components by commas and semicolons
     components = [comp.strip() for comp in re.split(r',\s*|;\s*', main_components_string) if comp.strip()]
-    
+
     for p_content in parenthetical_matches:
         sub_components = [s.strip() for s in re.split(r',\s*| and\s*', p_content) if s.strip()]
         components.extend(sub_components)
@@ -254,7 +254,7 @@ def analyze_ingredients(ingredients_string):
             continue
 
         component_categorized = False
-        
+
         # Pass 1: Try to match against FDA Additives (longest match first for phrases)
         words = normalized_component.split()
         matched_additive_canonical = None
@@ -266,7 +266,7 @@ def analyze_ingredients(ingredients_string):
                     break
             if matched_additive_canonical:
                 break
-        
+
         if matched_additive_canonical:
             if matched_additive_canonical in COMMON_FDA_SUBSTANCES_SET:
                 # Use original casing if available from COMMON_INGREDIENTS_LOOKUP, else the canonical name
@@ -293,7 +293,7 @@ def analyze_ingredients(ingredients_string):
                 component_categorized = True
             else:
                 truly_unidentified_ingredients.add(original_component)
-        
+
         if component_categorized:
             categorized_items_count += 1
 
@@ -320,70 +320,21 @@ def analyze_ingredients(ingredients_string):
         list(truly_unidentified_ingredients)
     )
 
-    return (list(identified_fda_non_common), list(identified_fda_common), 
-            list(identified_common_ingredients_only), list(truly_unidentified_ingredients), 
+    return (list(identified_fda_non_common), list(identified_fda_common),
+            list(identified_common_ingredients_only), list(truly_unidentified_ingredients),
             data_score_percentage, data_completeness_level, nova_score, nova_description)
 
-# --- Data Report Generation ---
-def generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description):
-    """
-    Generates a markdown-formatted data report for the product,
-    now with four distinct categories and estimated NOVA score.
-    """
-    report = "## Ingredient Data Report\n\n"
-    report += f"**Data Score:** {data_score:.1f}% ({data_completeness_level})\n\n"
-    report += "The Data Score indicates the percentage of ingredients our system could categorize.\n\n"
-    
-    report += f"**Estimated NOVA Score:** {nova_score} - {nova_description}\n\n"
-    report += "The NOVA score classifies foods by the extent and purpose of their processing.\n\n"
+# --- Removed: generate_data_report_markdown ---
+# This function is no longer needed as we will return structured data.
+# Any calls to it within the handler will be replaced by direct JSON structure creation.
 
-
-    # Category 1: FDA Substance Detected (Non-Common)
-    report += "### FDA Substance Detected (Non-Common):\n"
-    if identified_fda_non_common:
-        for sub in sorted(identified_fda_non_common):
-            report += f"* {sub.title()}\n"
-    else:
-        report += "* No specific FDA-regulated substances (additives) identified that are not also common food ingredients.\n"
-
-    # Category 2: Common Food Substance Regulated by FDA
-    report += "\n### Common Food Substance Regulated by FDA:\n"
-    if identified_fda_common:
-        for common_fda_sub in sorted(identified_fda_common):
-            report += f"* {common_fda_sub.title()}\n"
-    else:
-        report += "* No common food ingredients identified that are explicitly regulated by the FDA as substances.\n"
-
-    # Category 3: Common Food Ingredients (Not Explicitly FDA-Regulated as Additives)
-    report += "\n### Common Food Ingredients (Not Explicitly FDA-Regulated as Additives):\n"
-    if identified_common_ingredients_only:
-        for common_ing in sorted(identified_common_ingredients_only):
-            report += f"* {common_ing.title()}\n"
-    else:
-        report += "* No common food ingredients identified that are not also FDA-regulated substances.\n"
-
-    # Category 4: Truly Unidentified Ingredients/Phrases
-    report += "\n### Truly Unidentified Ingredients/Phrases:\n"
-    if truly_unidentified_ingredients:
-        report += "The following components were not matched against our database of FDA-regulated substances or common ingredients. This means our system couldn't fully categorize them. These could be:\n"
-        report += "* **Complex phrasing** not yet fully parsed.\n"
-        report += "* **Obscure ingredients** not yet in our database.\n"
-        report += "* **Potential misspellings** from the label.\n\n"
-        report += "We'll keep improving. The more you use, the better we get!!\n"
-        for unident in sorted(truly_unidentified_ingredients):
-            report += f"* {unident.title()}\n"
-    else:
-        report += "* All ingredient components were successfully categorized!\n"
-    
-    report += "\n---\n"
-    report += "*Data Score reflects the percentage of parsed ingredient components that matched known FDA-regulated substances or common food ingredients.*"
-    return report
 
 # --- Airtable Cache Management Functions ---
 def check_airtable_cache(gtin):
     """
     Checks if a GTIN exists in the Airtable cache.
     If found, updates lookup count and last access timestamp.
+    Returns the raw fields from Airtable if found, otherwise None.
     """
     if not airtable:
         print("[Backend] Airtable not initialized. Skipping cache check.")
@@ -405,7 +356,8 @@ def check_airtable_cache(gtin):
             airtable.update(record_id, updated_fields)
             print(f"[Backend] ✅ Cache hit. Updated count: {updated_fields['lookup_count']}")
 
-            return fields  # Return cached content
+            # Return the full fields, which now include the individual ingredient lists, NOVA, etc.
+            return fields
         else:
             print("[Backend] Cache miss.")
     except Exception as e:
@@ -428,12 +380,12 @@ def fetch_from_usda_api(gtin):
         'dataType': ['Branded'],
         'pageSize': 1
     }
-    
+
     try:
         response = requests.get(USDA_SEARCH_URL, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         if data.get('foods'):
             print("[Vercel Backend] 📥 Pulled from USDA API.")
             return data['foods'][0]
@@ -443,56 +395,75 @@ def fetch_from_usda_api(gtin):
         print(f"[Vercel Backend] ❌ JSON Decode Error from USDA API for GTIN {gtin}. Response: {response.text.strip()}")
     except Exception as e:
         print(f"[Vercel Backend] ❌ Unexpected Error fetching from USDA: {e}")
-            
+
     return None
 
-if usda_data:
-    print(f"[GTIN Lookup] USDA data found for GTIN: {gtin}")
-    print(f"✅ Ready to cache to Airtable: {gtin}")
-    store_to_airtable(gtin, usda_data)
-    return Response(json.dumps(usda_data), media_type="application/json")
+# Removed: if usda_data block here as it's part of the handler now.
 
-def store_to_airtable(gtin, usda_data):
+def store_to_airtable(gtin, usda_data, analyzed_data):
     """
-    Stores product data pulled from USDA API into the Airtable cache.
+    Stores product data pulled from USDA API (and analysis results) into the Airtable cache.
+    analyzed_data is a dictionary containing all structured analysis results.
     """
     if not airtable:
         print("[Vercel Backend] Airtable client not initialized. Skipping store to Airtable.")
         return
 
-    
     print(f"[Vercel Backend] Attempting to store GTIN {gtin} to Airtable...")
+
+    # Extracting data from usda_data
+    product_description = usda_data.get("description", "")
+    product_ingredients = usda_data.get("ingredients", "")
+
+    # Extracting data from analyzed_data
+    identified_fda_non_common = analyzed_data.get("identified_fda_non_common", [])
+    identified_fda_common = analyzed_data.get("identified_fda_common", [])
+    identified_common_ingredients_only = analyzed_data.get("identified_common_ingredients_only", [])
+    truly_unidentified_ingredients = analyzed_data.get("truly_unidentified_ingredients", [])
+    data_score = analyzed_data.get("data_score", 0.0)
+    data_completeness_level = analyzed_data.get("data_completeness_level", "N/A")
+    nova_score = analyzed_data.get("nova_score", "N/A")
+    nova_description = analyzed_data.get("nova_description", "N/A")
+
     fields = {
         "gtin_upc": gtin,
         "fdc_id": str(usda_data.get("fdcId", "")),
         "brand_name": usda_data.get("brandName", ""),
         "brand_owner": usda_data.get("brandOwner", ""),
-        "description": usda_data.get("description", ""),
-        "ingredients": usda_data.get("ingredients", ""),
+        "description": product_description,
+        "ingredients": product_ingredients,
         "lookup_count": 1,
         "last_access": datetime.now().isoformat(),
         "hot_score": 1, # Placeholder, can be calculated dynamically later
         "source": "USDA API",
-        "data_report_markdown": data_report_markdown, # Store the markdown report
+        # Store structured data points directly
+        "identified_fda_non_common": json.dumps(identified_fda_non_common), # Store as JSON string
+        "identified_fda_common": json.dumps(identified_fda_common),
+        "identified_common_ingredients_only": json.dumps(identified_common_ingredients_only),
+        "truly_unidentified_ingredients": json.dumps(truly_unidentified_ingredients),
+        "data_score": data_score,
+        "data_completeness_level": data_completeness_level,
         "nova_score": str(nova_score), # Store as string to handle "N/A" and numbers
         "nova_description": nova_description
     }
-    
+
     try:
         airtable.insert(fields)
         print(f"[Vercel Backend] ✅ Stored to Airtable: {fields.get('description', gtin)}")
     except Exception as e:
         print(f"[Vercel Backend] ❌ Failed to store to Airtable for GTIN {gtin}: {e}")
+        # Print a more detailed traceback for debugging
+        traceback.print_exc()
 
 def count_airtable_rows():
     """Counts the total number of records in the Airtable table."""
     if not airtable:
         print("[Vercel Backend] Airtable client not initialized. Skipping row count.")
         return 0
-        
+
     print("[Vercel Backend] Counting Airtable rows...")
     try:
-        records = airtable.get_all(fields=['id']) 
+        records = airtable.get_all(fields=['id'])
         return len(records)
     except Exception as e:
         print(f"[Vercel Backend] ⚠️ Error counting Airtable rows: {e}")
@@ -506,20 +477,20 @@ def delete_least_valuable_row():
     if not airtable:
         print("[Vercel Backend] Airtable client not initialized. Skipping row deletion.")
         return
-        
+
     print("[Vercel Backend] Checking for least valuable row to evict...")
     try:
         records = airtable.get_all(fields=['lookup_count', 'last_access'])
-        
+
         if records:
             records_sorted = sorted(records, key=lambda r: (
-                r["fields"].get("lookup_count", 0), 
-                r["fields"].get("last_access", "0000-01-01T00:00:00.000Z") 
+                r["fields"].get("lookup_count", 0),
+                r["fields"].get("last_access", "0000-01-01T00:00:00.000Z")
             ))
-            
-            least_valuable_record = records_sorted[0] 
+
+            least_valuable_record = records_sorted[0]
             record_id_to_delete = least_valuable_record['id']
-            
+
             airtable.delete(record_id_to_delete)
             print(f"[Vercel Backend] 🗑️ Deleted least valuable entry (ID: {record_id_to_delete}, "
                   f"Lookup: {least_valuable_record['fields'].get('lookup_count', 0)}, "
@@ -553,109 +524,136 @@ def handler(request):
         return json.dumps({"error": "Method Not Allowed", "message": "Only POST requests are supported."}), 405, headers
 
     try:
-        request_data = request.get_json(force=True) 
+        request_data = request.get_json(force=True)
         gtin = request_data.get('gtin')
 
         if not gtin:
             return json.dumps({"error": "Bad Request", "message": "GTIN is required in the request body."}), 400, headers
 
+        # Initialize variables for the response
         product_description = "N/A"
         product_ingredients = "N/A"
-        data_report_markdown = "N/A"
         status = "not_found"
         nova_score = "N/A"
         nova_description = "N/A"
+        identified_fda_non_common = []
+        identified_fda_common = []
+        identified_common_ingredients_only = []
+        truly_unidentified_ingredients = []
+        data_score = 0.0
+        data_completeness_level = "N/A"
+
 
         # 1. Check Airtable Cache
         cached_data = check_airtable_cache(gtin)
-        if cached_data and cached_data.get('Data Report Markdown'):
+        if cached_data:
             product_description = cached_data.get('description', "N/A")
             product_ingredients = cached_data.get('ingredients', "N/A")
-            
-            # Re-generate data_report_markdown and NOVA score from cached ingredients
-            # This ensures the latest analysis logic is always applied, even for cached items.
-            if product_ingredients and product_ingredients != "N/A":
-                identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description = analyze_ingredients(product_ingredients)
-                from gtin_lookup import build_data_report_markdown
 
-match_summary = f"We successfully matched {len(identified_fda_non_common) + len(identified_fda_common) + len(identified_common_ingredients_only)} out of {len(product_ingredients.split(','))} listed ingredients to known databases."
+            # Retrieve pre-analyzed data from cache or re-analyze if ingredients changed/not present
+            # We assume if product_ingredients are in cache, the analyzed lists are too.
+            # Convert JSON strings back to Python lists
+            identified_fda_non_common = json.loads(cached_data.get('identified_fda_non_common', '[]'))
+            identified_fda_common = json.loads(cached_data.get('identified_fda_common', '[]'))
+            identified_common_ingredients_only = json.loads(cached_data.get('identified_common_ingredients_only', '[]'))
+            truly_unidentified_ingredients = json.loads(cached_data.get('truly_unidentified_ingredients', '[]'))
+            data_score = cached_data.get('data_score', 0.0)
+            data_completeness_level = cached_data.get('data_completeness_level', "N/A")
+            nova_score = cached_data.get('nova_score', "N/A")
+            nova_description = cached_data.get('nova_description', "N/A")
 
-data_report_markdown = build_data_report_markdown({
-    "fda_substances": identified_fda_non_common + identified_fda_common,
-    "common_ingredients": identified_common_ingredients_only,
-    "unidentified_ingredients": truly_unidentified_ingredients,
-    "data_score": f"{data_score:.1f}%",
-    "nova_score": nova_score,
-    "nova_description": nova_description,
-    "match_summary": match_summary
-})
-
-            else:
-                data_report_markdown = "No ingredients data available in cache to generate report."
-                nova_score, nova_description = calculate_nova_score([], [], [], []) # Default for no ingredients
+            # In case an older cache entry doesn't have the granular data, re-analyze
+            if not identified_fda_non_common and not identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients and product_ingredients != "N/A":
+                print("[Backend] Cached data missing granular ingredient breakdown, re-analyzing...")
+                (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
+                 truly_unidentified_ingredients, data_score, data_completeness_level,
+                 nova_score, nova_description) = analyze_ingredients(product_ingredients)
+                # Potentially update the Airtable record with new granular data here if desired
 
             status = "found_in_cache"
-            return json.dumps({
+
+            # Prepare the response with structured data
+            response_data = {
                 "gtin": gtin,
                 "description": product_description,
                 "ingredients": product_ingredients,
-                "data_report_markdown": data_report_markdown,
                 "status": status,
                 "nova_score": nova_score,
-                "nova_description": nova_description
-            }), 200, headers
+                "nova_description": nova_description,
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level
+            }
+            return json.dumps(response_data), 200, headers
 
         # 2. If not in cache, fetch from USDA API
         usda_product_data = fetch_from_usda_api(gtin)
-        
+
         if usda_product_data:
             product_description = usda_product_data.get('description', "N/A")
             product_ingredients = usda_product_data.get('ingredients', "N/A")
 
-            # Analyze ingredients and generate data report
-            identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description = analyze_ingredients(product_ingredients)
-            from gtin_lookup import build_data_report_markdown
-
-match_summary = f"We successfully matched {len(identified_fda_non_common) + len(identified_fda_common) + len(identified_common_ingredients_only)} out of {len(product_ingredients.split(','))} listed ingredients to known databases."
-
-data_report_markdown = build_data_report_markdown({
-    "fda_substances": identified_fda_non_common + identified_fda_common,
-    "common_ingredients": identified_common_ingredients_only,
-    "unidentified_ingredients": truly_unidentified_ingredients,
-    "data_score": f"{data_score:.1f}%",
-    "nova_score": nova_score,
-    "nova_description": nova_description,
-    "match_summary": match_summary
-})
+            # Analyze ingredients and get all structured results
+            (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
+             truly_unidentified_ingredients, data_score, data_completeness_level,
+             nova_score, nova_description) = analyze_ingredients(product_ingredients)
 
             status = "pulled_from_usda_and_cached"
+
+            # Prepare a dictionary of analyzed data to pass to store_to_airtable
+            analyzed_data_for_cache = {
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level,
+                "nova_score": nova_score,
+                "nova_description": nova_description
+            }
 
             # Check if cache is full before adding new entry
             current_row_count = count_airtable_rows()
             if current_row_count >= AIRTABLE_MAX_ROWS:
                 delete_least_valuable_row()
-            
-            # Store the new product data to Airtable, including the data report and NOVA score
-            store_to_airtable(gtin, usda_product_data, data_report_markdown, nova_score, nova_description)
-            
-            return json.dumps({
+
+            # Store the new product data to Airtable, including the structured analysis results
+            store_to_airtable(gtin, usda_product_data, analyzed_data_for_cache)
+
+            # Prepare the response with structured data
+            response_data = {
                 "gtin": gtin,
                 "description": product_description,
                 "ingredients": product_ingredients,
-                "data_report_markdown": data_report_markdown,
                 "status": status,
                 "nova_score": nova_score,
-                "nova_description": nova_description
-            }), 200, headers
+                "nova_description": nova_description,
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level
+            }
+            return json.dumps(response_data), 200, headers
         else:
+            # Product not found scenario
             return json.dumps({
                 "gtin": gtin,
                 "description": "N/A",
                 "ingredients": "N/A",
-                "data_report_markdown": "Product not found in USDA FoodData Central.",
                 "status": "not_found",
                 "nova_score": "N/A",
-                "nova_description": "Cannot determine NOVA score."
+                "nova_description": "Cannot determine NOVA score.",
+                "identified_fda_non_common": [],
+                "identified_fda_common": [],
+                "identified_common_ingredients_only": [],
+                "truly_unidentified_ingredients": [],
+                "data_score": 0.0,
+                "data_completeness_level": "N/A"
             }), 404, headers
 
     except requests.exceptions.RequestException as e:
