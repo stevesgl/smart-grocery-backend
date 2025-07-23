@@ -8,6 +8,7 @@ from airtable import Airtable # For interacting with Airtable
 from datetime import datetime
 from pprint import pprint # For debugging, can be removed later
 import traceback # For printing full tracebacks
+import time
 
 # --- Configuration ---
 # Load environment variables for sensitive API keys and IDs
