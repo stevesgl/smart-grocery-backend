@@ -613,9 +613,9 @@ def gtin_lookup_api():
     "fda_ingredients": fda_substances,
     "common_ingredients": common_ingredients,
     "unidentified_ingredients": unidentified_ingredients
-}), 200, headers
+    }), 200, headers
 
-       else:
+    else:
     print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
     return jsonify({
         "status": "not_found",
