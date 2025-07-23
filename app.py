@@ -599,43 +599,45 @@ def gtin_lookup_api():
             total_time = time.time() - overall_start
             print(f"🚀 [TIMER] Total response time (USDA): {total_time:.2f}s")
 
-            return jsonify({
-    "status": "success",
-    "gtin": gtin,
-    "description": product_description,
-    "ingredients": product_ingredients,
-    "structured_report_html": structured_report_html,  # 🔥 Main frontend block
-    "nova_score": nova_score,
-    "nova_description": nova_description,
-    "data_score": summary_counts["data_score_percent"],     # ✅ Required for summary section
-    "num_matched": summary_counts["num_matched"],
-    "num_total": summary_counts["num_total"],
-    "fda_ingredients": fda_substances,
-    "common_ingredients": common_ingredients,
-    "unidentified_ingredients": unidentified_ingredients
-    }), 200, headers
+ # ✅ NEW — Build structured report HTML
+            structured_report_html = generate_structured_report_html(analysis_results, usda_product_data)
 
-    else:
-    print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
-    return jsonify({
-        "status": "not_found",
-        "gtin": gtin,
-        "description": "N/A",
-        "ingredients": "N/A",
-        "structured_report_html": """
-            <div class="text-red-600 font-semibold">
-                Product not found in USDA FoodData Central. Please check the GTIN and try again.
-            </div>
-        """,
-        "nova_score": "N/A",
-        "nova_description": "Cannot determine NOVA score.",
-        "data_score": 0,
-        "num_matched": 0,
-        "num_total": 0,
-        "fda_ingredients": [],
-        "common_ingredients": [],
-        "unidentified_ingredients": []
-    }), 404, headers
+            return jsonify({
+                "status": "success",
+                "gtin": gtin,
+                "description": product_description,
+                "ingredients": product_ingredients,
+                "structured_report_html": structured_report_html,
+                "nova_score": nova_score,
+                "nova_description": nova_description,
+                "data_score": analysis_results.get("data_score_percent", 0),
+                "num_matched": analysis_results.get("num_matched", 0),
+                "num_total": analysis_results.get("num_total", 0),
+                "fda_ingredients": fda_substances,
+                "common_ingredients": common_ingredients,
+                "unidentified_ingredients": unidentified_ingredients
+            }), 200, headers
+        else:
+            print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
+            return jsonify({
+                "status": "not_found",
+                "gtin": gtin,
+                "description": "N/A",
+                "ingredients": "N/A",
+                "structured_report_html": """
+                    <div class="text-red-600 font-semibold">
+                        Product not found in USDA FoodData Central. Please check the GTIN and try again.
+                    </div>
+                """,
+                "nova_score": "N/A",
+                "nova_description": "Cannot determine NOVA score.",
+                "data_score": 0,
+                "num_matched": 0,
+                "num_total": 0,
+                "fda_ingredients": [],
+                "common_ingredients": [],
+                "unidentified_ingredients": []
+            }), 404, headers
 
     except requests.exceptions.RequestException as e:
         print(f"[Render Backend] Network or USDA API error: {e}")
@@ -644,7 +646,6 @@ def gtin_lookup_api():
         print(f"[Render Backend] Unexpected error in GTIN Lookup: {e}")
         traceback.print_exc()
         return jsonify({"error": "Internal server error", "details": str(e)}), 500, headers
-
 
 # Standard way to run Flask app for local testing
 if __name__ == '__main__':
