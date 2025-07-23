@@ -609,7 +609,7 @@ def gtin_lookup_api():
                 "nova_description": nova_description,
                 "fda_substances": fda_substances,
                 "common_ingredients": common_ingredients,
-                "unidentified_ingredients": unidentified_ingredients
+                "unidentified_ingredients": unidentified_ingredients,
                 "summary_counts": summary_counts  # ✅ MVP+ prep
             }), 200, headers
 
