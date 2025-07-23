@@ -575,11 +575,11 @@ def gtin_lookup_api():
             "fda_additives": len(analysis_results["identified_fda_non_common"]),
             "fda_common_substances": len(analysis_results["identified_fda_common"]),
             "common_ingredients": len(analysis_results["identified_common_ingredients_only"]),
-    	    "unidentified": len(analysis_results["truly_unidentified_ingredients"])
-	    }
+            "unidentified": len(analysis_results["truly_unidentified_ingredients"])
+         }
 
-	    print("[Backend] ✅ Generated Markdown Report:")
-	    print(data_report_markdown)
+            print("[Backend] ✅ Generated Markdown Report:")
+            print(data_report_markdown)
 
             fda_substances = analysis_results.get("identified_fda_non_common", [])
             fda_common = analysis_results.get("identified_fda_common", [])
@@ -593,7 +593,7 @@ def gtin_lookup_api():
             # 4. Store to Airtable
             step5_start = time.time()
             store_to_airtable(gtin, usda_product_data, data_report_markdown, nova_score, nova_description,
-                              fda_substances, common_ingredients, unidentified_ingredients)
+            fda_substances, common_ingredients, unidentified_ingredients)
             print(f"🗃️ [TIMER] Stored to Airtable: {time.time() - step5_start:.2f}s")
 
             total_time = time.time() - overall_start
