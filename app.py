@@ -526,7 +526,7 @@ def gtin_lookup_api():
                 "gtin": gtin,
                 "description": cached_data.get('Description', 'N/A'),
                 "ingredients": cached_data.get('Ingredients', 'N/A'),
-                "data_report_markdown": cached_data.get('Data Report Markdown', 'No cached report.'),
+                "data_report_markdown": cached_data.get('Data Report Markdown', 'We’re improving every day. The more you use it, the smarter it gets!'),
                 "status": "cached",
                 "nova_score": cached_data.get('NOVA Score', 'N/A'),
                 "nova_description": cached_data.get('NOVA Description', 'Cannot determine NOVA score.'),
@@ -570,6 +570,17 @@ def gtin_lookup_api():
             usda_product_data['gtin'] = gtin
             data_report_markdown = generate_data_report_markdown(analysis_results, usda_product_data)
 
+            # Prepare counts for future frontend use (MVP+)
+            summary_counts = {
+            "fda_additives": len(analysis_results["identified_fda_non_common"]),
+            "fda_common_substances": len(analysis_results["identified_fda_common"]),
+            "common_ingredients": len(analysis_results["identified_common_ingredients_only"]),
+    	    "unidentified": len(analysis_results["truly_unidentified_ingredients"])
+	    }
+
+	    print("[Backend] ✅ Generated Markdown Report:")
+	    print(data_report_markdown)
+
             fda_substances = analysis_results.get("identified_fda_non_common", [])
             fda_common = analysis_results.get("identified_fda_common", [])
             common_ingredients = analysis_results.get("identified_common_ingredients_only", [])
@@ -599,6 +610,7 @@ def gtin_lookup_api():
                 "fda_substances": fda_substances,
                 "common_ingredients": common_ingredients,
                 "unidentified_ingredients": unidentified_ingredients
+                "summary_counts": summary_counts  # ✅ MVP+ prep
             }), 200, headers
 
         else:

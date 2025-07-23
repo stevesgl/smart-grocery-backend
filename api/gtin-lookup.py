@@ -576,7 +576,20 @@ def handler(request):
             # This ensures the latest analysis logic is always applied, even for cached items.
             if product_ingredients and product_ingredients != "N/A":
                 identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description = analyze_ingredients(product_ingredients)
-                data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description)
+                from gtin_lookup import build_data_report_markdown
+
+match_summary = f"We successfully matched {len(identified_fda_non_common) + len(identified_fda_common) + len(identified_common_ingredients_only)} out of {len(product_ingredients.split(','))} listed ingredients to known databases."
+
+data_report_markdown = build_data_report_markdown({
+    "fda_substances": identified_fda_non_common + identified_fda_common,
+    "common_ingredients": identified_common_ingredients_only,
+    "unidentified_ingredients": truly_unidentified_ingredients,
+    "data_score": f"{data_score:.1f}%",
+    "nova_score": nova_score,
+    "nova_description": nova_description,
+    "match_summary": match_summary
+})
+
             else:
                 data_report_markdown = "No ingredients data available in cache to generate report."
                 nova_score, nova_description = calculate_nova_score([], [], [], []) # Default for no ingredients
@@ -601,7 +614,20 @@ def handler(request):
 
             # Analyze ingredients and generate data report
             identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description = analyze_ingredients(product_ingredients)
-            data_report_markdown = generate_data_report_markdown(identified_fda_non_common, identified_fda_common, identified_common_ingredients_only, truly_unidentified_ingredients, data_score, data_completeness_level, nova_score, nova_description)
+            from gtin_lookup import build_data_report_markdown
+
+match_summary = f"We successfully matched {len(identified_fda_non_common) + len(identified_fda_common) + len(identified_common_ingredients_only)} out of {len(product_ingredients.split(','))} listed ingredients to known databases."
+
+data_report_markdown = build_data_report_markdown({
+    "fda_substances": identified_fda_non_common + identified_fda_common,
+    "common_ingredients": identified_common_ingredients_only,
+    "unidentified_ingredients": truly_unidentified_ingredients,
+    "data_score": f"{data_score:.1f}%",
+    "nova_score": nova_score,
+    "nova_description": nova_description,
+    "match_summary": match_summary
+})
+
             status = "pulled_from_usda_and_cached"
 
             # Check if cache is full before adding new entry
