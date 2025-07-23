@@ -498,7 +498,7 @@ def fetch_from_airtable(gtin):
 
 
 # --- Main GTIN Lookup API Endpoint ---
-@app.route('/gtin-lookup', methods=['POST'])
+@app.route('/gtin_lookup', methods=['POST'])
 def gtin_lookup_api():
     headers = {'Content-Type': 'application/json'}  # Set content type for all responses
     overall_start = time.time()
