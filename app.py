@@ -600,30 +600,42 @@ def gtin_lookup_api():
             print(f"🚀 [TIMER] Total response time (USDA): {total_time:.2f}s")
 
             return jsonify({
-                "gtin": gtin,
-                "description": product_description,
-                "ingredients": product_ingredients,
-                "data_report_markdown": data_report_markdown,
-                "status": "success",
-                "nova_score": nova_score,
-                "nova_description": nova_description,
-                "fda_substances": fda_substances,
-                "common_ingredients": common_ingredients,
-                "unidentified_ingredients": unidentified_ingredients,
-                "summary_counts": summary_counts  # ✅ MVP+ prep
-            }), 200, headers
+    "status": "success",
+    "gtin": gtin,
+    "description": product_description,
+    "ingredients": product_ingredients,
+    "structured_report_html": structured_report_html,  # 🔥 Main frontend block
+    "nova_score": nova_score,
+    "nova_description": nova_description,
+    "data_score": summary_counts["data_score_percent"],     # ✅ Required for summary section
+    "num_matched": summary_counts["num_matched"],
+    "num_total": summary_counts["num_total"],
+    "fda_ingredients": fda_substances,
+    "common_ingredients": common_ingredients,
+    "unidentified_ingredients": unidentified_ingredients
+}), 200, headers
 
-        else:
-            print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
-            return jsonify({
-                "gtin": gtin,
-                "description": "N/A",
-                "ingredients": "N/A",
-                "data_report_markdown": "Product not found in USDA FoodData Central.",
-                "status": "not_found",
-                "nova_score": "N/A",
-                "nova_description": "Cannot determine NOVA score."
-            }), 404, headers
+       else:
+    print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
+    return jsonify({
+        "status": "not_found",
+        "gtin": gtin,
+        "description": "N/A",
+        "ingredients": "N/A",
+        "structured_report_html": """
+            <div class="text-red-600 font-semibold">
+                Product not found in USDA FoodData Central. Please check the GTIN and try again.
+            </div>
+        """,
+        "nova_score": "N/A",
+        "nova_description": "Cannot determine NOVA score.",
+        "data_score": 0,
+        "num_matched": 0,
+        "num_total": 0,
+        "fda_ingredients": [],
+        "common_ingredients": [],
+        "unidentified_ingredients": []
+    }), 404, headers
 
     except requests.exceptions.RequestException as e:
         print(f"[Render Backend] Network or USDA API error: {e}")
