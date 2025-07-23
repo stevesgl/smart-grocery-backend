@@ -499,19 +499,28 @@ def fetch_from_airtable(gtin):
 # --- Main GTIN Lookup API Endpoint ---
 @app.route('/gtin-lookup', methods=['POST'])
 def gtin_lookup_api():
-    headers = {'Content-Type': 'application/json'} # Set content type for all responses
-    
+    headers = {'Content-Type': 'application/json'}  # Set content type for all responses
+    overall_start = time.time()
+    print("🔍 [TIMER] Lookup route started")
+
     try:
+        step1_start = time.time()
         data = request.get_json()
         gtin = data.get('gtin')
-        
+
         if not gtin:
             print("[Render Backend] Missing GTIN in request.")
             return jsonify({"error": "GTIN is required."}), 400, headers
+        print(f"✅ [TIMER] Parsed GTIN: {time.time() - step1_start:.2f}s")
 
         # 1. Try fetching from Airtable cache first
+        step2_start = time.time()
         cached_data = fetch_from_airtable(gtin)
+        print(f"📦 [TIMER] Airtable cache fetch: {time.time() - step2_start:.2f}s")
+
         if cached_data:
+            total_time = time.time() - overall_start
+            print(f"🚀 [TIMER] Total response time (cache hit): {total_time:.2f}s")
             return jsonify({
                 "gtin": gtin,
                 "description": cached_data.get('Description', 'N/A'),
@@ -520,44 +529,46 @@ def gtin_lookup_api():
                 "status": "cached",
                 "nova_score": cached_data.get('NOVA Score', 'N/A'),
                 "nova_description": cached_data.get('NOVA Description', 'Cannot determine NOVA score.'),
-                "fda_substances": cached_data.get('FDA Substances', []), # Include these
-                "common_ingredients": cached_data.get('Common Ingredients', []), # Include these
-                "unidentified_ingredients": cached_data.get('Unidentified Ingredients', []) # Include these
+                "fda_substances": cached_data.get('FDA Substances', []),
+                "common_ingredients": cached_data.get('Common Ingredients', []),
+                "unidentified_ingredients": cached_data.get('Unidentified Ingredients', [])
             }), 200, headers
 
         # 2. If not in cache, query USDA FoodData Central
+        step3_start = time.time()
         print(f"[Render Backend] Querying USDA for GTIN: {gtin}")
         params = {
             'query': gtin,
-            'dataType': 'Branded', # Focusing on branded foods
+            'dataType': 'Branded',
             'api_key': USDA_API_KEY
         }
         usda_response = requests.get(USDA_SEARCH_URL, params=params)
-        usda_response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        usda_response.raise_for_status()
         usda_data = usda_response.json()
+        print(f"🌽 [TIMER] USDA fetch: {time.time() - step3_start:.2f}s")
 
+        # 3. Process the USDA product data
         usda_product_data = {}
         if usda_data and usda_data.get('foods'):
-            # Find the best match - prioritizing exact GTIN match if possible
+            step4_start = time.time()
+
             for food_item in usda_data['foods']:
                 if food_item.get('gtinV1') == gtin:
                     usda_product_data = food_item
                     break
-            if not usda_product_data: # If no exact GTIN match, take the first result
+            if not usda_product_data:
                 usda_product_data = usda_data['foods'][0]
-            
+
             product_description = usda_product_data.get('description', 'N/A')
             product_ingredients = usda_product_data.get('ingredients', 'N/A')
 
             # Analyze ingredients and calculate NOVA score
             analysis_results = analyze_ingredients(product_ingredients)
-            
+
             # Generate Markdown report
-            # Pass the original GTIN from the request to the markdown generation
-            usda_product_data['gtin'] = gtin # Ensure GTIN is in usda_product_data for markdown generation
+            usda_product_data['gtin'] = gtin
             data_report_markdown = generate_data_report_markdown(analysis_results, usda_product_data)
-            
-            # Extract ingredient categories from analysis_results for storage and response
+
             fda_substances = analysis_results.get("identified_fda_non_common", [])
             fda_common = analysis_results.get("identified_fda_common", [])
             common_ingredients = analysis_results.get("identified_common_ingredients_only", [])
@@ -565,25 +576,30 @@ def gtin_lookup_api():
 
             nova_score = analysis_results.get("nova_score", "N/A")
             nova_description = analysis_results.get("nova_description", "Cannot determine NOVA score.")
-            
-            status = "success"
+            print(f"🧪 [TIMER] Analysis + Markdown: {time.time() - step4_start:.2f}s")
 
-            # 3. Store the new product data to Airtable, including the data report and NOVA score
+            # 4. Store to Airtable
+            step5_start = time.time()
             store_to_airtable(gtin, usda_product_data, data_report_markdown, nova_score, nova_description,
-                              fda_substances, common_ingredients, unidentified_ingredients) # Pass new lists to store
+                              fda_substances, common_ingredients, unidentified_ingredients)
+            print(f"🗃️ [TIMER] Stored to Airtable: {time.time() - step5_start:.2f}s")
+
+            total_time = time.time() - overall_start
+            print(f"🚀 [TIMER] Total response time (USDA): {total_time:.2f}s")
 
             return jsonify({
                 "gtin": gtin,
                 "description": product_description,
                 "ingredients": product_ingredients,
                 "data_report_markdown": data_report_markdown,
-                "status": status,
+                "status": "success",
                 "nova_score": nova_score,
                 "nova_description": nova_description,
-                "fda_substances": fda_substances, # Include these in the response!
-                "common_ingredients": common_ingredients, # Include these in the response!
-                "unidentified_ingredients": unidentified_ingredients # Include these in the response!
+                "fda_substances": fda_substances,
+                "common_ingredients": common_ingredients,
+                "unidentified_ingredients": unidentified_ingredients
             }), 200, headers
+
         else:
             print(f"[Render Backend] Product not found in USDA for GTIN {gtin}")
             return jsonify({
@@ -592,17 +608,18 @@ def gtin_lookup_api():
                 "ingredients": "N/A",
                 "data_report_markdown": "Product not found in USDA FoodData Central.",
                 "status": "not_found",
-                "nova_score": "N/A", # Indicate N/A for NOVA if product not found
+                "nova_score": "N/A",
                 "nova_description": "Cannot determine NOVA score."
             }), 404, headers
 
     except requests.exceptions.RequestException as e:
-        print(f"[Render Backend] Network or USDA API error caught: {e}")
-        return jsonify({"error": "Failed to connect to USDA FoodData Central or network issue.", "details": str(e)}), 500, headers
+        print(f"[Render Backend] Network or USDA API error: {e}")
+        return jsonify({"error": "Failed to connect to USDA or network issue.", "details": str(e)}), 500, headers
     except Exception as e:
-        print(f"[Render Backend] An unexpected error occurred in gtin_lookup_api: {e}")
-        traceback.print_exc() # Print full traceback for debugging
-        return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500, headers
+        print(f"[Render Backend] Unexpected error in GTIN Lookup: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500, headers
+
 
 # Standard way to run Flask app for local testing
 if __name__ == '__main__':
