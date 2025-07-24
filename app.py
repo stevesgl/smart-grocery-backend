@@ -55,6 +55,45 @@ COMMON_INGREDIENTS_LOOKUP = {}  # Maps normalized common ingredient to its prefe
 COMMON_FDA_SUBSTANCES_SET = set()  # Stores normalized canonical FDA substance names that are also common ingredients
 GTIN_TO_FDCID_MAP = {} # New: Maps GTIN to FDC ID
 
+# --- NEW: Mapping for Technical Effect Categories and Colors ---
+# This dictionary maps keywords found in "Used for (Technical Effect)" to
+# a user-friendly category name and a Tailwind CSS color class.
+# The order of entries here can matter if a phrase contains multiple keywords,
+# as the first match will be used for that specific phrase segment.
+TECHNICAL_EFFECT_MAPPING = {
+    "flavoring agent or adjuvant": ("Flavoring", "bg-purple-100 text-purple-800"),
+    "flavoring agent": ("Flavoring", "bg-purple-100 text-purple-800"),
+    "antioxidant": ("Antioxidant", "bg-green-100 text-green-800"),
+    "preservative": ("Preservative", "bg-red-100 text-red-800"),
+    "emulsifier or emulsifier salt": ("Emulsifier", "bg-blue-100 text-blue-800"),
+    "emulsifier": ("Emulsifier", "bg-blue-100 text-blue-800"),
+    "stabilizer or thickener": ("Stabilizer/Thickener", "bg-yellow-100 text-yellow-800"),
+    "stabilizer": ("Stabilizer", "bg-yellow-100 text-yellow-800"),
+    "thickener": ("Thickener", "bg-yellow-100 text-yellow-800"),
+    "color or coloring adjunct": ("Coloring", "bg-pink-100 text-pink-800"),
+    "color": ("Coloring", "bg-pink-100 text-pink-800"),
+    "sweetener": ("Sweetener", "bg-indigo-100 text-indigo-800"),
+    "humectant": ("Humectant", "bg-teal-100 text-teal-800"),
+    "ph control agent": ("pH Control", "bg-orange-100 text-orange-800"),
+    "nutrient supplement": ("Nutrient", "bg-cyan-100 text-cyan-800"),
+    "gelling agent": ("Gelling Agent", "bg-lime-100 text-lime-800"),
+    "leavening agent": ("Leavening Agent", "bg-fuchsia-100 text-fuchsia-800"),
+    "firming agent": ("Firming Agent", "bg-rose-100 text-rose-800"),
+    "anticaking agent or free-flow agent": ("Anti-caking", "bg-emerald-100 text-emerald-800"),
+    "anticaking agent": ("Anti-caking", "bg-emerald-100 text-emerald-800"),
+    "drying agent": ("Drying Agent", "bg-amber-100 text-amber-800"),
+    "processing aid": ("Processing Aid", "bg-violet-100 text-violet-800"),
+    "sequestrant": ("Sequestrant", "bg-sky-100 text-sky-800"),
+    "surface-active agent": ("Surface-Active", "bg-indigo-100 text-indigo-800"),
+    "texturizer": ("Texturizer", "bg-pink-100 text-pink-800"),
+    "enzyme": ("Enzyme", "bg-yellow-100 text-yellow-800"),
+    "dough strengthener": ("Dough Strengthener", "bg-orange-100 text-orange-800"),
+    "masticatory substance": ("Masticatory", "bg-gray-100 text-gray-800"),
+    "solvent or vehicle": ("Solvent/Vehicle", "bg-gray-100 text-gray-800"),
+    "maltodextrin": ("Thickener", "bg-yellow-100 text-yellow-800"), # Specific for maltodextrin
+    "corn syrup": ("Sweetener", "bg-indigo-100 text-indigo-800"), # Specific for corn syrup
+}
+
 def load_data_lookups():
     """
     Loads all necessary lookup data (additives, common ingredients, GTIN-FDCID map)
@@ -232,6 +271,47 @@ def calculate_nova_score(identified_fda_non_common, identified_fda_common, ident
 
     return 3, "Processed Food (Categorization Ambiguous)"
 
+# --- NEW HELPER FUNCTION: Get Categories and Colors from Technical Effect ---
+def get_categories_and_colors_from_effect(used_for_raw_string):
+    """
+    Parses the 'Used for (Technical Effect)' string to extract categories and assign Tailwind colors.
+    """
+    categories = []
+    colors = []
+    
+    if used_for_raw_string and used_for_raw_string != "N/A":
+        # Clean and normalize the raw string
+        # Replace <br /> with a comma for easier splitting
+        normalized_raw = used_for_raw_string.lower().replace('<br />', ', ').replace('<br/>', ', ').strip()
+        
+        # Split by commas, semicolons, or "and" to get individual phrases/effects
+        # Use regex to handle multiple delimiters and potential extra spaces
+        phrases = [p.strip() for p in re.split(r',\s*|;\s*|\s+and\s+', normalized_raw) if p.strip()]
+
+        seen_categories = set() # To avoid duplicate categories if multiple keywords map to the same category
+
+        for phrase in phrases:
+            matched = False
+            # Iterate through the mapping to find a match. Longest keyword first might be better,
+            # but for simplicity, current order is fine.
+            for keyword, (category, color) in TECHNICAL_EFFECT_MAPPING.items():
+                if keyword in phrase:
+                    if category not in seen_categories: # Add only if not already added
+                        categories.append(category)
+                        colors.append(color)
+                        seen_categories.add(category)
+                    matched = True
+                    break # Move to the next phrase after finding a match for this phrase
+            
+            # If a phrase didn't match any specific keyword, categorize as "Other"
+            if not matched and phrase and "Other" not in seen_categories:
+                categories.append("Other")
+                colors.append("bg-gray-100 text-gray-800") # Default color for others
+                seen_categories.add("Other") # Mark "Other" as seen
+
+
+    return categories, colors
+
 
 # --- Ingredient Analysis Function (Revised for Data Score and Phrase Matching) ---
 def analyze_ingredients(ingredients_string):
@@ -306,41 +386,64 @@ def analyze_ingredients(ingredients_string):
         component_categorized = False
 
         # Pass 1: Try to match against FDA Additives (longest match first for phrases)
-        words = normalized_component.split()
         matched_additive_canonical = None
-        for i in range(len(words)):
-            for j in range(len(words), i, -1):
-                phrase = " ".join(words[i:j])
-                if phrase in ADDITIVES_LOOKUP:
-                    matched_additive_canonical = ADDITIVES_LOOKUP[phrase]
+        # Iterate through TECHNICAL_EFFECT_MAPPING to prioritize matching based on common effect terms
+        # This helps in cases where the ingredient name itself might be generic but its effect is specific
+        for keyword in sorted(TECHNICAL_EFFECT_MAPPING.keys(), key=len, reverse=True):
+            if keyword in normalized_component:
+                # Find the canonical name from ADDITIVES_LOOKUP for the full component
+                # This ensures we get the correct additive details
+                if normalized_component in ADDITIVES_LOOKUP:
+                    matched_additive_canonical = ADDITIVES_LOOKUP[normalized_component]
                     break
-            if matched_additive_canonical:
-                break
+                # If the full component isn't a direct match, try to find canonical name based on keyword
+                # This part might need refinement based on how ADDITIVES_LOOKUP is built
+                # For now, we'll rely on the full component match or fall through to phrase matching
+        
+        # Fallback to phrase matching if no direct keyword match for the full component
+        if not matched_additive_canonical:
+            words = normalized_component.split()
+            for i in range(len(words)):
+                for j in range(len(words), i, -1):
+                    phrase = " ".join(words[i:j])
+                    if phrase in ADDITIVES_LOOKUP:
+                        matched_additive_canonical = ADDITIVES_LOOKUP[phrase]
+                        break
+                if matched_additive_canonical:
+                    break
+
 
         if matched_additive_canonical:
             # Get full details for the matched additive
             additive_details = ADDITIVE_DETAILS_MAP.get(matched_additive_canonical, {})
             
+            # Extract raw used_for string
+            used_for_raw = additive_details.get("Used for (Technical Effect)", "N/A")
+            
+            # NEW: Get categories and colors using the helper function
+            used_for_categories, used_for_colors = get_categories_and_colors_from_effect(used_for_raw)
+
             # Prepare the ingredient object to be added to the list
             ingredient_obj = {
                 "name": original_component, # Keep original casing for display
                 "canonical_name": matched_additive_canonical,
-                "used_for_raw": additive_details.get("Used for (Technical Effect)", "N/A"),
-                "used_for_categories": additive_details.get("Used for (Category)", []),
-                "used_for_colors": additive_details.get("Used for (Color)", []), # Ensure colors are passed
+                "used_for_raw": used_for_raw,
+                "used_for_categories": used_for_categories, # Populated by new helper
+                "used_for_colors": used_for_colors,         # Populated by new helper
                 "other_names": additive_details.get("Other Names", [])
             }
 
             if matched_additive_canonical in COMMON_FDA_SUBSTANCES_SET:
                 identified_fda_common.append(ingredient_obj)
-                print(f"[Analyze] Identified FDA Common: {original_component}")
+                print(f"[Analyze] Identified FDA Common: {original_component} (Categories: {used_for_categories})")
             else:
                 identified_fda_non_common.append(ingredient_obj)
-                print(f"[Analyze] Identified FDA Non-Common: {original_component}")
+                print(f"[Analyze] Identified FDA Non-Common: {original_component} (Categories: {used_for_categories})")
             component_categorized = True
         else:
             # Pass 2: If not an FDA Additive, try to match against Common Ingredients (longest match first)
             matched_common_ingredient_original_casing = None
+            words = normalized_component.split()
             for i in range(len(words)):
                 for j in range(len(words), i, -1):
                     phrase = " ".join(words[i:j])
