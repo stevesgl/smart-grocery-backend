@@ -383,7 +383,7 @@ def analyze_ingredients(ingredients_string):
 
     components = [comp for comp in components if comp]
 
-    total_analyzed_items = len(components)
+    total_analyzed_items = len(components) # Define total_analyzed_items here
     categorized_items_count = 0
 
     for original_component in components:
@@ -457,7 +457,7 @@ def analyze_ingredients(ingredients_string):
     if total_analyzed_items == 0:
         data_score_percentage = 100.0
     else:
-        data_score_percentage = (categorized_items_count / total_analyized_items) * 100.0
+        data_score_percentage = (categorized_items_count / total_analyzed_items) * 100.0
         data_score_percentage = max(0.0, min(100.0, data_score_percentage))
 
     # Convert score to High/Medium/Low
