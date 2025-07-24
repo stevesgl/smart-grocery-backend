@@ -457,7 +457,7 @@ def analyze_ingredients(ingredients_string):
     if total_analyzed_items == 0:
         data_score_percentage = 100.0
     else:
-        data_score_percentage = (categorized_items_count / total_analyzed_items) * 100.0
+        data_score_percentage = (categorized_items_count / total_analyized_items) * 100.0
         data_score_percentage = max(0.0, min(100.0, data_score_percentage))
 
     # Convert score to High/Medium/Low
@@ -507,15 +507,23 @@ def check_airtable_cache(gtin):
             print(f"[Backend] ✅ Cache hit. Updated count: {updated_fields['lookup_count']}")
 
             # Return the full fields, which now include the individual ingredient lists, NOVA, etc.
-            # Ensure JSON strings are loaded back into Python objects
+            # Ensure JSON strings are loaded back into Python objects.
+            # IMPORTANT: Add a type check here to handle cases where data might already be a list
+            # from older cache entries, or a string from newer ones.
             for key in ['identified_fda_non_common', 'identified_fda_common', 
                          'identified_common_ingredients_only', 'truly_unidentified_ingredients']:
-                if key in fields and isinstance(fields[key], str):
-                    try:
-                        fields[key] = json.loads(fields[key])
-                    except json.JSONDecodeError:
-                        print(f"[Backend] ⚠️ Error decoding JSON for field '{key}' from cache.")
-                        fields[key] = [] # Default to empty list on error
+                if key in fields:
+                    field_data = fields[key]
+                    if isinstance(field_data, str):
+                        try:
+                            fields[key] = json.loads(field_data)
+                        except json.JSONDecodeError:
+                            print(f"[Backend] ⚠️ Error decoding JSON for field '{key}' from cache. Setting to empty list.")
+                            fields[key] = [] # Default to empty list on error
+                    elif not isinstance(field_data, list):
+                        # If it's not a string and not already a list, default to empty list
+                        print(f"[Backend] ⚠️ Unexpected type for field '{key}' in cache ({type(field_data).__name__}). Setting to empty list.")
+                        fields[key] = []
             
             # Ensure nova_score is an int/float if it was stored as string
             if 'nova_score' in fields and isinstance(fields['nova_score'], str):
@@ -722,10 +730,38 @@ def gtin_lookup():
             # Retrieve pre-analyzed data from cache or re-analyze if ingredients changed/not present
             # We assume if product_ingredients are in cache, the analyzed lists are are JSON strings
             # Convert JSON strings back to Python lists of dictionaries
-            identified_fda_non_common = json.loads(cached_data.get('identified_fda_non_common', '[]'))
-            identified_fda_common = json.loads(cached_data.get('identified_fda_common', '[]'))
-            identified_common_ingredients_only = json.loads(cached_data.get('identified_common_ingredients_only', '[]'))
-            truly_unidentified_ingredients = json.loads(cached_data.get('truly_unidentified_ingredients', '[]'))
+            identified_fda_non_common = cached_data.get('identified_fda_non_common', [])
+            if isinstance(identified_fda_non_common, str): # Defensive check for older cache entries
+                try:
+                    identified_fda_non_common = json.loads(identified_fda_non_common)
+                except json.JSONDecodeError:
+                    print("[Backend] Error decoding identified_fda_non_common from cache. Resetting.")
+                    identified_fda_non_common = []
+
+            identified_fda_common = cached_data.get('identified_fda_common', [])
+            if isinstance(identified_fda_common, str): # Defensive check for older cache entries
+                try:
+                    identified_fda_common = json.loads(identified_fda_common)
+                except json.JSONDecodeError:
+                    print("[Backend] Error decoding identified_fda_common from cache. Resetting.")
+                    identified_fda_common = []
+
+            identified_common_ingredients_only = cached_data.get('identified_common_ingredients_only', [])
+            if isinstance(identified_common_ingredients_only, str): # Defensive check for older cache entries
+                try:
+                    identified_common_ingredients_only = json.loads(identified_common_ingredients_only)
+                except json.JSONDecodeError:
+                    print("[Backend] Error decoding identified_common_ingredients_only from cache. Resetting.")
+                    identified_common_ingredients_only = []
+
+            truly_unidentified_ingredients = cached_data.get('truly_unidentified_ingredients', [])
+            if isinstance(truly_unidentified_ingredients, str): # Defensive check for older cache entries
+                try:
+                    truly_unidentified_ingredients = json.loads(truly_unidentified_ingredients)
+                except json.JSONDecodeError:
+                    print("[Backend] Error decoding truly_unidentified_ingredients from cache. Resetting.")
+                    truly_unidentified_ingredients = []
+
             data_score = cached_data.get('data_score', 0.0)
             data_completeness_level = cached_data.get('data_completeness_level', "N/A")
             nova_score = cached_data.get('nova_score', "N/A")
