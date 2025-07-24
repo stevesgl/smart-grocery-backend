@@ -490,7 +490,8 @@ def count_airtable_rows():
 
     print("[Render Backend] Counting Airtable rows...")
     try:
-        records = airtable.get_all(fields=['id'])
+        # Corrected: Fetch all records without specifying fields to avoid "id" field issue
+        records = airtable.get_all()
         return len(records)
     except Exception as e:
         print(f"[Render Backend] ⚠️ Error counting Airtable rows: {e}")
