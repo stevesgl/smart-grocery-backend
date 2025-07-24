@@ -518,7 +518,7 @@ def check_airtable_cache(gtin):
                         try:
                             fields[key] = json.loads(field_data)
                         except json.JSONDecodeError:
-                            print(f"[Backend] ⚠️ Error decoding JSON for field '{key}' from cache. Setting to empty list.")
+                            print(f"[Backend] ⚠️ Error decoding JSON for field '{key}' from cache. Resetting.")
                             fields[key] = [] # Default to empty list on error
                     elif not isinstance(field_data, list):
                         # If it's not a string and not already a list, default to empty list
@@ -788,4 +788,94 @@ def gtin_lookup():
                 "nova_description": nova_description,
                 "identified_fda_non_common": identified_fda_non_common,
                 "identified_fda_common": identified_fda_common,
-                "identified_common_ingredients_only": identif
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level
+            }
+            return jsonify(response_data), 200, headers
+
+        # 2. If not in cache, fetch from USDA API
+        usda_product_data = fetch_from_usda_api(gtin)
+
+        if usda_product_data:
+            product_description = usda_product_data.get('description', "N/A")
+            product_ingredients = usda_product_data.get('ingredients', "N/A")
+
+            # Analyze ingredients and get all structured results
+            (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
+             truly_unidentified_ingredients, data_score, data_completeness_level,
+             nova_score, nova_description) = analyze_ingredients(product_ingredients)
+
+            status = "pulled_from_usda_and_cached"
+
+            # Prepare a dictionary of analyzed data to pass to store_to_airtable
+            analyzed_data_for_cache = {
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level,
+                "nova_score": nova_score,
+                "nova_description": nova_description
+            }
+
+            # Check if cache is full before adding new entry
+            current_row_count = count_airtable_rows()
+            if current_row_count >= AIRTABLE_MAX_ROWS:
+                delete_least_valuable_row()
+
+            # Store the new product data to Airtable, including the structured analysis results
+            store_to_airtable(gtin, usda_product_data, analyzed_data_for_cache)
+
+            # Prepare the response with structured data
+            response_data = {
+                "gtin": gtin,
+                "description": product_description,
+                "ingredients": product_ingredients,
+                "status": status,
+                "nova_score": nova_score,
+                "nova_description": nova_description,
+                "identified_fda_non_common": identified_fda_non_common,
+                "identified_fda_common": identified_fda_common,
+                "identified_common_ingredients_only": identified_common_ingredients_only,
+                "truly_unidentified_ingredients": truly_unidentified_ingredients,
+                "data_score": data_score,
+                "data_completeness_level": data_completeness_level
+            }
+            return jsonify(response_data), 200, headers
+        else:
+            # Product not found scenario
+            return jsonify({
+                "gtin": gtin,
+                "description": "N/A",
+                "ingredients": "N/A",
+                "status": "not_found",
+                "nova_score": "N/A",
+                "nova_description": "Cannot determine NOVA score.",
+                "identified_fda_non_common": [],
+                "identified_fda_common": [],
+                "identified_common_ingredients_only": [],
+                "truly_unidentified_ingredients": [],
+                "data_score": 0.0,
+                "data_completeness_level": "N/A"
+            }), 404, headers
+
+    except requests.exceptions.RequestException as e:
+        print(f"[Render Backend] Network or USDA API error caught: {e}")
+        return jsonify({"error": "Failed to connect to USDA FoodData Central or network issue.", "details": str(e)}), 500, headers
+    except Exception as e:
+        print(f"[Render Backend] An unexpected error occurred in handler: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500, headers
+
+
+# Standard way to run Flask app for local testing
+if __name__ == "__main__":
+    if not all([AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY]):
+        print(
+            "WARNING: Missing one or more environment variables (AIRTABLE_API_KEY, AIRTABLE_BASE_ID, USDA_API_KEY)."
+        )
+        print("Please set them for local testing or deployment.")
+    app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))
