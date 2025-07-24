@@ -19,15 +19,17 @@ AIRTABLE_TABLE_NAME = os.environ.get(
 )  # Default table name
 USDA_API_KEY = os.environ.get("USDA_API_KEY")
 
-# Path to your full additives JSON file
-# Assumes 'all_fda_substances_full.json' is in a 'data' subdirectory relative to app.py
+# Paths to your data files
+# Assumes data files are in a 'data' subdirectory relative to app.py
 ADDITIVES_DATA_FILE = os.path.join(
     os.path.dirname(__file__), "data", "all_fda_substances_full.json"
 )
-# Path to your common ingredients JSON file
 COMMON_INGREDIENTS_DATA_FILE = os.path.join(
     os.path.dirname(__file__), "data", "common_ingredients.json"
 )
+GTIN_FDCID_MAP_FILE = os.path.join(
+    os.path.dirname(__file__), "data", "gtin_map.json"
+) # Path to your new GTIN-FDCID map
 
 # Airtable max rows for the free tier (for eviction logic)
 AIRTABLE_MAX_ROWS = 1000
@@ -40,25 +42,26 @@ airtable = None
 if AIRTABLE_BASE_ID and AIRTABLE_TABLE_NAME and AIRTABLE_API_KEY:
     try:
         airtable = Airtable(AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME, AIRTABLE_API_KEY)
-        print("Airtable client initialized successfully.")
+        print("[Backend Init] Airtable client initialized successfully.")
     except Exception as e:
-        print(f"Error initializing Airtable client: {e}")
+        print(f"[Backend Init] Error initializing Airtable client: {e}")
 
-# USDA API search URL
-USDA_SEARCH_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
+# USDA API base URL for FDC ID lookup (used for the reliable FDC ID lookup)
+USDA_GET_FOOD_BY_FDCID_URL = 'https://api.nal.usda.gov/fdc/v1/food/'
 
 # --- Global Lookups (will be populated once on app startup) ---
 ADDITIVES_LOOKUP = {}  # Maps normalized alias to normalized canonical FDA substance name
 COMMON_INGREDIENTS_LOOKUP = {}  # Maps normalized common ingredient to its preferred original casing
 COMMON_FDA_SUBSTANCES_SET = set()  # Stores normalized canonical FDA substance names that are also common ingredients
+GTIN_TO_FDCID_MAP = {} # New: Maps GTIN to FDC ID
 
 def load_data_lookups():
     """
-    Loads the additive data and common ingredients data from JSON files
-    and builds the optimized lookup dictionaries/sets.
+    Loads all necessary lookup data (additives, common ingredients, GTIN-FDCID map)
+    from JSON files and builds the optimized lookup dictionaries/sets.
     This function should be called once at application startup.
     """
-    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET
+    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET, GTIN_TO_FDCID_MAP
 
     # Load additive data
     print(f"[Backend Init] Attempting to load additives data from: {ADDITIVES_DATA_FILE}")
@@ -163,6 +166,20 @@ def load_data_lookups():
         if canonical_fda_name in temp_common_ingredients_set:
             COMMON_FDA_SUBSTANCES_SET.add(canonical_fda_name)
     print(f"[Backend Init] Populated COMMON_FDA_SUBSTANCES_SET with {len(COMMON_FDA_SUBSTANCES_SET)} entries.")
+
+    # New: Load GTIN-to-FDC ID map
+    print(f"[Backend Init] Attempting to load GTIN-to-FDC ID map from: {GTIN_FDCID_MAP_FILE}")
+    try:
+        with open(GTIN_FDCID_MAP_FILE, 'r', encoding='utf-8') as f:
+            GTIN_TO_FDCID_MAP = json.load(f)
+        print(f"[Backend Init] ✅ Loaded {len(GTIN_TO_FDCID_MAP)} GTIN-to-FDC ID mappings.")
+    except FileNotFoundError:
+        print(f"[Backend Init] ❌ Error: GTIN-FDC ID map file not found at '{GTIN_FDCID_MAP_FILE}'. GTIN lookup by FDC ID will not work.")
+    except json.JSONDecodeError as e:
+        print(f"[Backend Init] ❌ Error decoding JSON from '{GTIN_FDCID_MAP_FILE}': {e}")
+    except Exception as e:
+        print(f"[Backend Init] ❌ An unexpected error occurred while loading GTIN-FDC ID map: {e}")
+
 
 # Call load_data_lookups() immediately when the script is imported/run
 load_data_lookups()
@@ -371,36 +388,43 @@ def check_airtable_cache(gtin):
 
 def fetch_from_usda_api(gtin):
     """
-    Queries the USDA FoodData Central API using the GTIN.
-    Returns the first matching food item's data if found, otherwise None.
+    NEW: Looks up FDC ID for a given GTIN in the local map,
+    then fetches product details from USDA API using the FDC ID.
+    This replaces the unreliable direct GTIN search on USDA API.
     """
     if not USDA_API_KEY:
-        print("[Render Backend] USDA API Key not set. Skipping USDA API fetch.")
+        print("[Render Backend] USDA API Key not set. Cannot fetch from USDA API.")
         return None
 
-    print(f"[Render Backend] Querying USDA API for GTIN: {gtin}...")
-    params = {
-        'query': gtin,
-        'api_key': USDA_API_KEY,
-        'dataType': ['Branded'],
-        'pageSize': 1
-    }
+    # Step 1: Look up FDC ID in the local GTIN_TO_FDCID_MAP
+    fdc_id = GTIN_TO_FDCID_MAP.get(gtin)
 
+    if not fdc_id:
+        print(f"[Render Backend] ❌ GTIN '{gtin}' not found in local GTIN-FDC ID map. Cannot proceed with FDC ID lookup.")
+        return None
+
+    print(f"[Render Backend] ✅ GTIN '{gtin}' mapped to FDC ID: '{fdc_id}' locally. Querying USDA API by FDC ID...")
+
+    # Step 2: Fetch product details from USDA API using the FDC ID
+    api_url = f"{USDA_GET_FOOD_BY_FDCID_URL}{fdc_id}?api_key={USDA_API_KEY}"
+    
     try:
-        response = requests.get(USDA_SEARCH_URL, params=params)
-        response.raise_for_status()
+        response = requests.get(api_url, timeout=10)
+        response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
         data = response.json()
 
-        if data.get('foods'):
-            print("[Render Backend] 📥 Pulled from USDA API.")
-            return data['foods'][0]
+        print(f"[Render Backend] ✅ Successfully fetched data for FDC ID '{fdc_id}'.")
+        return data
     except requests.exceptions.RequestException as e:
-        print(f"[Render Backend] ❌ Error fetching from USDA API for GTIN {gtin}: {e}")
-    except json.JSONDecodeError:
-        print(f"[Render Backend] ❌ JSON Decode Error from USDA API for GTIN {gtin}. Response: {response.text.strip()}")
+        print(f"[Render Backend] ❌ Error fetching from USDA API for FDC ID '{fdc_id}': {e}")
+        traceback.print_exc()
+    except json.JSONDecodeError as e:
+        print(f"[Render Backend] ❌ JSON Decode Error from USDA API for FDC ID '{fdc_id}'. Response: {response.text.strip()}")
+        traceback.print_exc()
     except Exception as e:
-        print(f"[Render Backend] ❌ Unexpected Error fetching from USDA: {e}")
-
+        print(f"[Render Backend] ❌ An unexpected error occurred: {e}")
+        traceback.print_exc()
+        
     return None
 
 def store_to_airtable(gtin, usda_data, analyzed_data):
