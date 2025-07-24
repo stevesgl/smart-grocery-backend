@@ -54,106 +54,6 @@ ADDITIVES_LOOKUP = {}  # Maps normalized alias to normalized canonical FDA subst
 COMMON_INGREDIENTS_LOOKUP = {}  # Maps normalized common ingredient to its preferred original casing
 COMMON_FDA_SUBSTANCES_SET = set()  # Stores normalized canonical FDA substance names that are also common ingredients
 GTIN_TO_FDCID_MAP = {} # New: Maps GTIN to FDC ID
-FDA_SUBSTANCE_DETAILS = {} # New: Stores full details for FDA substances (used_for, other_names, cas_no)
-
-# New: Define technical effect categories and their mappings
-# This dictionary maps a raw effect substring to a user-friendly category name
-# and its corresponding Tailwind color class.
-TECHNICAL_EFFECT_CATEGORIES = {
-    # Flavor & Aroma
-    "FLAVORING AGENT": {"category": "Flavor & Aroma", "color": "bg-teal-100 text-teal-800"},
-    "FLAVOR ENHANCER": {"category": "Flavor & Aroma", "color": "bg-teal-100 text-teal-800"},
-
-    # Texture & Structure
-    "STABILIZER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-    "THICKENER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-    "EMULSIFIER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-    "TEXTURIZER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-    "FIRMING AGENT": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-    "DOUGH STRENGTHENER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-    "MASTICATORY SUBSTANCE": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-    "GELTING AGENT": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
-
-
-    # Preservation & Shelf Life
-    "ANTIMICROBIAL": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
-    "ANTIOXIDANT": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
-    "CURING": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
-    "PICKLING": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
-    "PRESERVATIVE": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
-
-
-    # Nutrient & Sweetener
-    "NUTRIENT SUPPLEMENT": {"category": "Nutrient/Sweetener", "color": "bg-lime-100 text-lime-800"},
-    "SWEETENER": {"category": "Nutrient/Sweetener", "color": "bg-lime-100 text-lime-800"},
-
-
-    # Color
-    "COLOR": {"category": "Color", "color": "bg-rose-100 text-rose-800"},
-
-    # Processing & Formulation Aids (Catch-all for less specific or numerous roles)
-    "PROCESSING AID": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "FORMULATION AID": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "ANTICAKING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "FREE-FLOW AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "SOLVENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "VEHICLE": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "PH CONTROL": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "ENZYME": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "SURFACE-ACTIVE": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "SURFACE-FINISHING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "LUBRICANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "RELEASE AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "DRYING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "LEAVENING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "SEQUESTRANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "MALTING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "FERMENTING AID": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "FLOUR TREATING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "BOILER WATER ADDITIVE": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "PROPELLANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "WASHING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "OXIDIZING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "REDUCING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "FUMIGANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "SYNERGIST": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "FREEZING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "COOLING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "DIRECT CONTACT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "TRACER": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-    "PROCESSING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
-}
-
-def get_technical_effect_categories(raw_effects_string):
-    """
-    Parses a raw 'Used for (Technical Effect)' string and maps it to
-    a list of user-friendly categories and their colors.
-    """
-    categories_found = []
-    colors_found = []
-
-    if not raw_effects_string:
-        return [], []
-
-    # Split by common delimiters and clean up
-    individual_effects = re.split(r',\s*|<br\s*/>', raw_effects_string, flags=re.IGNORECASE)
-    
-    # Use a set to store unique categories to avoid duplicates
-    unique_categories = set()
-    unique_colors = set()
-
-    for effect_part in individual_effects:
-        cleaned_part = effect_part.strip().upper() # Convert to uppercase for consistent matching
-
-        # Iterate through the defined TECHNICAL_EFFECT_CATEGORIES to find a match
-        for keyword, details in TECHNICAL_EFFECT_CATEGORIES.items():
-            if keyword in cleaned_part:
-                unique_categories.add(details["category"])
-                unique_colors.add(details["color"])
-                break # Move to the next individual effect part once a match is found
-
-    return list(unique_categories), list(unique_colors)
-
 
 def load_data_lookups():
     """
@@ -161,7 +61,7 @@ def load_data_lookups():
     from JSON files and builds the optimized lookup dictionaries/sets.
     This function should be called once at application startup.
     """
-    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET, GTIN_TO_FDCID_MAP, FDA_SUBSTANCE_DETAILS
+    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET, GTIN_TO_FDCID_MAP
 
     # Load additive data
     print(f"[Backend Init] Attempting to load additives data from: {ADDITIVES_DATA_FILE}")
@@ -230,20 +130,6 @@ def load_data_lookups():
 
                     if normalized_alias:
                         ADDITIVES_LOOKUP[normalized_alias] = normalized_canonical_name_for_key
-            
-            # Populate FDA_SUBSTANCE_DETAILS for this canonical name
-            raw_used_for = entry.get("Used for (Technical Effect)", "").strip()
-            categories, colors = get_technical_effect_categories(raw_used_for)
-
-            FDA_SUBSTANCE_DETAILS[normalized_canonical_name_for_key] = {
-                "original_name": canonical_name,
-                "used_for_raw": raw_used_for,
-                "used_for_categories": categories,
-                "used_for_colors": colors, # Store colors directly for frontend
-                "other_names": entry.get("Other Names", []),
-                "cas_no": entry.get("CAS Reg No (or other ID)", "")
-            }
-
 
         print(f"[Backend Init] ✅ Successfully loaded {len(additives_raw)} additives and built lookup with {len(ADDITIVES_LOOKUP)} aliases.")
 
@@ -354,13 +240,16 @@ def analyze_ingredients(ingredients_string):
     Calculates a Data Score based on the completeness of identification.
     Returns categorized lists of ingredients for the four categories, plus estimated NOVA score.
     """
-    identified_fda_non_common = [] # Changed to list to store dicts
-    identified_fda_common = [] # Changed to list to store dicts
+    print(f"[Analyze] Starting analysis for ingredients string: {ingredients_string[:100]}...")
+
+    identified_fda_non_common = [] # Changed to list to store dictionaries
+    identified_fda_common = []     # Changed to list to store dictionaries
     identified_common_ingredients_only = set()
     truly_unidentified_ingredients = set()
 
     if not ingredients_string:
         nova_score, nova_description = calculate_nova_score([], [], [], [])
+        print(f"[Analyze] No ingredients string. Returning default. NOVA: {nova_score}")
         return [], [], [], [], 100.0, "High", nova_score, nova_description
 
     # Step 1: Initial cleanup and pre-processing
@@ -368,6 +257,7 @@ def analyze_ingredients(ingredients_string):
     cleaned_string = re.sub(r'\s+and/or\s+', ', ', cleaned_string, flags=re.IGNORECASE)
     cleaned_string = re.sub(r'\s*\((?:color|flavour|flavor|emulsifier|stabilizer|thickener|preservative|antioxidant|acidifier|sweetener|gelling agent|firming agent|nutrient|vitamin [a-z0-9]+)\)\s*', '', cleaned_string, flags=re.IGNORECASE)
     cleaned_string = re.sub(r'\s*\[vitamin b\d\]\s*', '', cleaned_string, flags=re.IGNORECASE)
+    print(f"[Analyze] Cleaned string: {cleaned_string[:100]}...")
 
 
     # Step 2: Extract content within parentheses and process separately
@@ -382,9 +272,27 @@ def analyze_ingredients(ingredients_string):
         components.extend(sub_components)
 
     components = [comp for comp in components if comp]
+    print(f"[Analyze] Extracted components: {components}")
 
-    total_analyzed_items = len(components) # Define total_analyzed_items here
+    total_analyzed_items = len(components)
     categorized_items_count = 0
+
+    # Load the full additives data to get 'used_for' and 'other_names'
+    # This should ideally be loaded once globally if not already for performance
+    full_additives_data = []
+    try:
+        with open(ADDITIVES_DATA_FILE, 'r', encoding='utf-8') as f:
+            full_additives_data = json.load(f)
+    except Exception as e:
+        print(f"[Analyze] Error loading full additives data for details: {e}")
+
+    # Create a quick lookup for additive details by canonical name
+    ADDITIVE_DETAILS_MAP = {
+        re.sub(r'[^a-z0-9\s\&\.\-#]', '', entry.get("Substance Name (Heading)", "").lower()).strip().replace('no.', 'no '): entry
+        for entry in full_additives_data if entry.get("Substance Name (Heading)")
+    }
+    print(f"[Analyze] Built ADDITIVE_DETAILS_MAP with {len(ADDITIVE_DETAILS_MAP)} entries.")
+
 
     for original_component in components:
         normalized_component = original_component.lower().strip()
@@ -398,8 +306,8 @@ def analyze_ingredients(ingredients_string):
         component_categorized = False
 
         # Pass 1: Try to match against FDA Additives (longest match first for phrases)
-        matched_additive_canonical = None
         words = normalized_component.split()
+        matched_additive_canonical = None
         for i in range(len(words)):
             for j in range(len(words), i, -1):
                 phrase = " ".join(words[i:j])
@@ -410,29 +318,29 @@ def analyze_ingredients(ingredients_string):
                 break
 
         if matched_additive_canonical:
-            # Retrieve full details from FDA_SUBSTANCE_DETAILS
-            substance_details = FDA_SUBSTANCE_DETAILS.get(matched_additive_canonical, {})
+            # Get full details for the matched additive
+            additive_details = ADDITIVE_DETAILS_MAP.get(matched_additive_canonical, {})
             
+            # Prepare the ingredient object to be added to the list
             ingredient_obj = {
-                "name": original_component, # Keep original casing from ingredient list
-                "canonical_name": substance_details.get("original_name", matched_additive_canonical),
-                "used_for_raw": substance_details.get("used_for_raw", "N/A"),
-                "used_for_categories": substance_details.get("used_for_categories", []),
-                "used_for_colors": substance_details.get("used_for_colors", []),
-                "other_names": substance_details.get("other_names", []),
-                "cas_no": substance_details.get("cas_no", "N/A")
+                "name": original_component, # Keep original casing for display
+                "canonical_name": matched_additive_canonical,
+                "used_for_raw": additive_details.get("Used for (Technical Effect)", "N/A"),
+                "used_for_categories": additive_details.get("Used for (Category)", []),
+                "used_for_colors": additive_details.get("Used for (Color)", []), # Ensure colors are passed
+                "other_names": additive_details.get("Other Names", [])
             }
 
             if matched_additive_canonical in COMMON_FDA_SUBSTANCES_SET:
-                # Use original casing if available from COMMON_INGREDIENTS_LOOKUP, else the canonical name
-                identified_fda_common.append(ingredient_obj) # Append dict
+                identified_fda_common.append(ingredient_obj)
+                print(f"[Analyze] Identified FDA Common: {original_component}")
             else:
-                identified_fda_non_common.append(ingredient_obj) # Append dict
+                identified_fda_non_common.append(ingredient_obj)
+                print(f"[Analyze] Identified FDA Non-Common: {original_component}")
             component_categorized = True
         else:
             # Pass 2: If not an FDA Additive, try to match against Common Ingredients (longest match first)
             matched_common_ingredient_original_casing = None
-            words = normalized_component.split()
             for i in range(len(words)):
                 for j in range(len(words), i, -1):
                     phrase = " ".join(words[i:j])
@@ -446,12 +354,18 @@ def analyze_ingredients(ingredients_string):
 
             if matched_common_ingredient_original_casing:
                 identified_common_ingredients_only.add(matched_common_ingredient_original_casing)
+                print(f"[Analyze] Identified Common Only: {original_component}")
                 component_categorized = True
             else:
                 truly_unidentified_ingredients.add(original_component)
+                print(f"[Analyze] Identified Unidentified: {original_component}")
 
         if component_categorized:
             categorized_items_count += 1
+
+    # Convert sets to lists for consistent return type
+    identified_common_ingredients_only_list = list(identified_common_ingredients_only)
+    truly_unidentified_ingredients_list = list(truly_unidentified_ingredients)
 
     # Calculate Data Score
     if total_analyzed_items == 0:
@@ -468,16 +382,20 @@ def analyze_ingredients(ingredients_string):
     else:
         data_completeness_level = "Low"
 
-    # Calculate NOVA score
+    # Calculate NOVA score - CORRECTED ARGUMENT ORDER HERE
     nova_score, nova_description = calculate_nova_score(
-        identified_fda_non_common, # These are now lists of dicts
-        identified_fda_common, # These are now lists of dicts
-        list(identified_common_ingredients_only),
-        list(truly_unidentified_ingredients)
+        identified_fda_non_common, # This is correct
+        identified_fda_common,     # This is correct
+        identified_common_ingredients_only_list, # Corrected
+        truly_unidentified_ingredients_list      # Corrected
     )
+    print(f"[Analyze] Analysis complete. Data Score: {data_score_percentage}%, NOVA: {nova_score}")
+    print(f"[Analyze] FDA Non-Common ({len(identified_fda_non_common)}): {identified_fda_non_common}")
+    print(f"[Analyze] FDA Common ({len(identified_fda_common)}): {identified_fda_common}")
 
-    return (identified_fda_non_common, identified_fda_common, # Return lists of dicts
-            list(identified_common_ingredients_only), list(truly_unidentified_ingredients),
+
+    return (identified_fda_non_common, identified_fda_common,
+            identified_common_ingredients_only_list, truly_unidentified_ingredients_list,
             data_score_percentage, data_completeness_level, nova_score, nova_description)
 
 def check_airtable_cache(gtin):
@@ -507,31 +425,6 @@ def check_airtable_cache(gtin):
             print(f"[Backend] ✅ Cache hit. Updated count: {updated_fields['lookup_count']}")
 
             # Return the full fields, which now include the individual ingredient lists, NOVA, etc.
-            # Ensure JSON strings are loaded back into Python objects.
-            # IMPORTANT: Add a type check here to handle cases where data might already be a list
-            # from older cache entries, or a string from newer ones.
-            for key in ['identified_fda_non_common', 'identified_fda_common', 
-                         'identified_common_ingredients_only', 'truly_unidentified_ingredients']:
-                if key in fields:
-                    field_data = fields[key]
-                    if isinstance(field_data, str):
-                        try:
-                            fields[key] = json.loads(field_data)
-                        except json.JSONDecodeError:
-                            print(f"[Backend] ⚠️ Error decoding JSON for field '{key}' from cache. Resetting.")
-                            fields[key] = [] # Default to empty list on error
-                    elif not isinstance(field_data, list):
-                        # If it's not a string and not already a list, default to empty list
-                        print(f"[Backend] ⚠️ Unexpected type for field '{key}' in cache ({type(field_data).__name__}). Setting to empty list.")
-                        fields[key] = []
-            
-            # Ensure nova_score is an int/float if it was stored as string
-            if 'nova_score' in fields and isinstance(fields['nova_score'], str):
-                try:
-                    fields['nova_score'] = int(fields['nova_score'])
-                except ValueError:
-                    pass # Keep as string if not convertible to int
-
             return fields
         else:
             print("[Backend] Cache miss.")
@@ -596,7 +489,6 @@ def store_to_airtable(gtin, usda_data, analyzed_data):
     product_ingredients = usda_data.get("ingredients", "")
 
     # Extracting data from analyzed_data
-    # These are now lists of dictionaries, so they need to be dumped to JSON strings
     identified_fda_non_common = analyzed_data.get("identified_fda_non_common", [])
     identified_fda_common = analyzed_data.get("identified_fda_common", [])
     identified_common_ingredients_only = analyzed_data.get("identified_common_ingredients_only", [])
@@ -617,7 +509,8 @@ def store_to_airtable(gtin, usda_data, analyzed_data):
         "last_access": datetime.now().isoformat(),
         "hot_score": 1, # Placeholder, can be calculated dynamically later
         "source": "USDA API",
-        # Store structured data points as JSON strings
+        # Store structured data points directly
+        # Ensure these are JSON strings as Airtable doesn't directly support nested arrays of objects
         "identified_fda_non_common": json.dumps(identified_fda_non_common), 
         "identified_fda_common": json.dumps(identified_fda_common),
         "identified_common_ingredients_only": json.dumps(identified_common_ingredients_only),
@@ -728,53 +621,38 @@ def gtin_lookup():
             product_ingredients = cached_data.get('ingredients', "N/A")
 
             # Retrieve pre-analyzed data from cache or re-analyze if ingredients changed/not present
-            # We assume if product_ingredients are in cache, the analyzed lists are are JSON strings
-            # Convert JSON strings back to Python lists of dictionaries
-            identified_fda_non_common = cached_data.get('identified_fda_non_common', [])
-            if isinstance(identified_fda_non_common, str): # Defensive check for older cache entries
-                try:
-                    identified_fda_non_common = json.loads(identified_fda_non_common)
-                except json.JSONDecodeError:
-                    print("[Backend] Error decoding identified_fda_non_common from cache. Resetting.")
-                    identified_fda_non_common = []
-
-            identified_fda_common = cached_data.get('identified_fda_common', [])
-            if isinstance(identified_fda_common, str): # Defensive check for older cache entries
-                try:
-                    identified_fda_common = json.loads(identified_fda_common)
-                except json.JSONDecodeError:
-                    print("[Backend] Error decoding identified_fda_common from cache. Resetting.")
-                    identified_fda_common = []
-
-            identified_common_ingredients_only = cached_data.get('identified_common_ingredients_only', [])
-            if isinstance(identified_common_ingredients_only, str): # Defensive check for older cache entries
-                try:
-                    identified_common_ingredients_only = json.loads(identified_common_ingredients_only)
-                except json.JSONDecodeError:
-                    print("[Backend] Error decoding identified_common_ingredients_only from cache. Resetting.")
-                    identified_common_ingredients_only = []
-
-            truly_unidentified_ingredients = cached_data.get('truly_unidentified_ingredients', [])
-            if isinstance(truly_unidentified_ingredients, str): # Defensive check for older cache entries
-                try:
-                    truly_unidentified_ingredients = json.loads(truly_unidentified_ingredients)
-                except json.JSONDecodeError:
-                    print("[Backend] Error decoding truly_unidentified_ingredients from cache. Resetting.")
-                    truly_unidentified_ingredients = []
-
+            # We assume if product_ingredients are in cache, the analyzed lists are too.
+            # Convert JSON strings back to Python lists
+            # IMPORTANT: Ensure these fields are always stored as JSON strings in Airtable
+            identified_fda_non_common = json.loads(cached_data.get('identified_fda_non_common', '[]'))
+            identified_fda_common = json.loads(cached_data.get('identified_fda_common', '[]'))
+            identified_common_ingredients_only = json.loads(cached_data.get('identified_common_ingredients_only', '[]'))
+            truly_unidentified_ingredients = json.loads(cached_data.get('truly_unidentified_ingredients', '[]'))
             data_score = cached_data.get('data_score', 0.0)
             data_completeness_level = cached_data.get('data_completeness_level', "N/A")
             nova_score = cached_data.get('nova_score', "N/A")
             nova_description = cached_data.get('nova_description', "N/A")
 
             # In case an older cache entry doesn't have the granular data, re-analyze
-            if (not identified_fda_non_common and not identified_fda_common and 
-                not identified_common_ingredients_only and not truly_unidentified_ingredients and product_ingredients != "N/A"):
+            # This block is crucial for ensuring the detailed ingredient objects are returned
+            if not identified_fda_non_common and not identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients and product_ingredients != "N/A":
                 print("[Backend] Cached data missing granular ingredient breakdown, re-analyzing...")
                 (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
                  truly_unidentified_ingredients, data_score, data_completeness_level,
                  nova_score, nova_description) = analyze_ingredients(product_ingredients)
                 # Potentially update the Airtable record with new granular data here if desired
+                # For now, we just ensure the response contains the re-analyzed data.
+            elif product_ingredients != "N/A": # If ingredients exist, but the lists might be empty from cache
+                 # Re-analyze to ensure ingredient objects with 'used_for' etc. are created
+                 # This is a defensive measure if Airtable somehow stored empty lists or simple strings
+                 # instead of the full objects.
+                 # Only re-analyze if the lists are empty, but ingredients string is not "N/A"
+                if not identified_fda_non_common and not identified_fda_common:
+                    print("[Backend] Cached FDA lists are empty, re-analyzing to populate details...")
+                    (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
+                     truly_unidentified_ingredients, data_score, data_completeness_level,
+                     nova_score, nova_description) = analyze_ingredients(product_ingredients)
+
 
             status = "found_in_cache"
 
