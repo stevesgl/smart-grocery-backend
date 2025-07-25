@@ -2,7 +2,7 @@ import os
 import json
 import re  # Import re for regex operations
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import Flask-Cors
+from flask_cors import CORS # Import Flask-Cors, already there but ensuring correct usage
 import requests  # For making HTTP requests to USDA
 from airtable import Airtable  # For interacting with Airtable
 from datetime import datetime
@@ -35,7 +35,8 @@ GTIN_FDCID_MAP_FILE = os.path.join(
 AIRTABLE_MAX_ROWS = 1000
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+# Configure CORS for all origins, allowing POST requests and Content-Type header
+CORS(app, resources={r"/api/*": {"origins": "*"}}) # Explicitly allow all origins for API routes
 
 # Initialize Airtable client globally
 airtable = None
@@ -541,7 +542,7 @@ def check_airtable_cache(gtin):
         else:
             print("[Backend] Cache miss.")
     except Exception as e:
-        print(f"[Backend]⚠️ Airtable lookup error: {e}")
+        print(f"[Backend] ⚠️ Airtable lookup error: {e}")
     return None
 
 def fetch_from_usda_api(gtin):
@@ -869,4 +870,3 @@ if __name__ == "__main__":
         )
         print("Please set them for local testing or deployment.")
     app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))
-
