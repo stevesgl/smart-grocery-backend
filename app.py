@@ -271,46 +271,54 @@ def calculate_nova_score(identified_fda_non_common, identified_fda_common, ident
 
     return 3, "Processed Food (Categorization Ambiguous)"
 
-# --- NEW HELPER FUNCTION: Get Categories and Colors from Technical Effect ---
+# --- NEW HELPER FUNCTION: Get Categories, Colors, and Individual Effects from Technical Effect ---
 def get_categories_and_colors_from_effect(used_for_raw_string):
     """
-    Parses the 'Used for (Technical Effect)' string to extract categories and assign Tailwind colors.
+    Parses the 'Used for (Technical Effect)' string to extract categories, assign Tailwind colors,
+    and also return individual technical effect phrases with their corresponding category and color.
     """
     categories = []
     colors = []
+    individual_technical_effects = [] # New list to store structured individual effects
     
     if used_for_raw_string and used_for_raw_string != "N/A":
         # Clean and normalize the raw string
-        # Replace <br /> with a comma for easier splitting
         normalized_raw = used_for_raw_string.lower().replace('<br />', ', ').replace('<br/>', ', ').strip()
         
         # Split by commas, semicolons, or "and" to get individual phrases/effects
-        # Use regex to handle multiple delimiters and potential extra spaces
         phrases = [p.strip() for p in re.split(r',\s*|;\s*|\s+and\s+', normalized_raw) if p.strip()]
 
         seen_categories = set() # To avoid duplicate categories if multiple keywords map to the same category
 
         for phrase in phrases:
             matched = False
-            # Iterate through the mapping to find a match. Longest keyword first might be better,
-            # but for simplicity, current order is fine.
-            for keyword, (category, color) in TECHNICAL_EFFECT_MAPPING.items():
+            # Find the category and color for this specific phrase
+            phrase_category = "Other"
+            phrase_color = "bg-gray-100 text-gray-800"
+
+            # Iterate through the mapping to find a match for the phrase.
+            # Use sorted(items(), key=lambda item: len(item[0]), reverse=True) for longest match first
+            for keyword, (category, color) in sorted(TECHNICAL_EFFECT_MAPPING.items(), key=lambda item: len(item[0]), reverse=True):
                 if keyword in phrase:
-                    if category not in seen_categories: # Add only if not already added
-                        categories.append(category)
-                        colors.append(color)
-                        seen_categories.add(category)
+                    phrase_category = category
+                    phrase_color = color
                     matched = True
-                    break # Move to the next phrase after finding a match for this phrase
+                    break
             
-            # If a phrase didn't match any specific keyword, categorize as "Other"
-            if not matched and phrase and "Other" not in seen_categories:
-                categories.append("Other")
-                colors.append("bg-gray-100 text-gray-800") # Default color for others
-                seen_categories.add("Other") # Mark "Other" as seen
+            # Add to main categories and colors lists (for the overall ingredient summary)
+            if phrase_category not in seen_categories:
+                categories.append(phrase_category)
+                colors.append(phrase_color)
+                seen_categories.add(phrase_category)
 
+            # Add the individual technical effect with its determined category and color
+            individual_technical_effects.append({
+                "phrase": phrase,
+                "category": phrase_category,
+                "color": phrase_color
+            })
 
-    return categories, colors
+    return categories, colors, individual_technical_effects
 
 
 # --- Ingredient Analysis Function (Revised for Data Score and Phrase Matching) ---
@@ -420,8 +428,8 @@ def analyze_ingredients(ingredients_string):
             # Extract raw used_for string
             used_for_raw = additive_details.get("Used for (Technical Effect)", "N/A")
             
-            # NEW: Get categories and colors using the helper function
-            used_for_categories, used_for_colors = get_categories_and_colors_from_effect(used_for_raw)
+            # NEW: Get categories, colors, and individual technical effects using the helper function
+            used_for_categories, used_for_colors, individual_technical_effects = get_categories_and_colors_from_effect(used_for_raw)
 
             # Prepare the ingredient object to be added to the list
             ingredient_obj = {
@@ -430,6 +438,7 @@ def analyze_ingredients(ingredients_string):
                 "used_for_raw": used_for_raw,
                 "used_for_categories": used_for_categories, # Populated by new helper
                 "used_for_colors": used_for_colors,         # Populated by new helper
+                "individual_technical_effects": individual_technical_effects, # NEW: for detailed display
                 "other_names": additive_details.get("Other Names", [])
             }
 
@@ -532,7 +541,7 @@ def check_airtable_cache(gtin):
         else:
             print("[Backend] Cache miss.")
     except Exception as e:
-        print(f"[Backend] ⚠️ Airtable lookup error: {e}")
+        print(f"[Backend]⚠️ Airtable lookup error: {e}")
     return None
 
 def fetch_from_usda_api(gtin):
@@ -860,3 +869,4 @@ if __name__ == "__main__":
         )
         print("Please set them for local testing or deployment.")
     app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000))
+
