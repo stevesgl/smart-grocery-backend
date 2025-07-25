@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS # Import Flask-Cors, already there but ensuring correct usage
 import requests  # For making HTTP requests to USDA
 from airtable import Airtable  # For interacting with Airtable
-from datetime import datetime
+from datetime import datetime, timedelta # Import timedelta for date calculations
 from pprint import pprint  # For debugging, can be removed later
 import traceback  # For printing full tracebacks
 import time
@@ -33,6 +33,8 @@ GTIN_FDCID_MAP_FILE = os.path.join(
 
 # Airtable max rows for the free tier (for eviction logic)
 AIRTABLE_MAX_ROWS = 1000
+FRESHNESS_WINDOW_DAYS = 7 # Define freshness window in days
+FRESHNESS_BONUS = 5 # Define the bonus for fresh items
 
 app = Flask(__name__)
 # Configure CORS for all origins, allowing POST requests and Content-Type header
@@ -55,45 +57,138 @@ ADDITIVES_LOOKUP = {}  # Maps normalized alias to normalized canonical FDA subst
 COMMON_INGREDIENTS_LOOKUP = {}  # Maps normalized common ingredient to its preferred original casing
 COMMON_FDA_SUBSTANCES_SET = set()  # Stores normalized canonical FDA substance names that are also common ingredients
 GTIN_TO_FDCID_MAP = {} # New: Maps GTIN to FDC ID
+FDA_SUBSTANCE_DETAILS = {} # New: Stores full details for FDA substances (used_for, other_names, cas_no)
 
-# --- NEW: Mapping for Technical Effect Categories and Colors ---
+# --- NEW: Mapping for Technical Effect Categories and Colors (more structured) ---
 # This dictionary maps keywords found in "Used for (Technical Effect)" to
 # a user-friendly category name and a Tailwind CSS color class.
 # The order of entries here can matter if a phrase contains multiple keywords,
 # as the first match will be used for that specific phrase segment.
-TECHNICAL_EFFECT_MAPPING = {
-    "flavoring agent or adjuvant": ("Flavoring", "bg-purple-100 text-purple-800"),
-    "flavoring agent": ("Flavoring", "bg-purple-100 text-purple-800"),
-    "antioxidant": ("Antioxidant", "bg-green-100 text-green-800"),
-    "preservative": ("Preservative", "bg-red-100 text-red-800"),
-    "emulsifier or emulsifier salt": ("Emulsifier", "bg-blue-100 text-blue-800"),
-    "emulsifier": ("Emulsifier", "bg-blue-100 text-blue-800"),
-    "stabilizer or thickener": ("Stabilizer/Thickener", "bg-yellow-100 text-yellow-800"),
-    "stabilizer": ("Stabilizer", "bg-yellow-100 text-yellow-800"),
-    "thickener": ("Thickener", "bg-yellow-100 text-yellow-800"),
-    "color or coloring adjunct": ("Coloring", "bg-pink-100 text-pink-800"),
-    "color": ("Coloring", "bg-pink-100 text-pink-800"),
-    "sweetener": ("Sweetener", "bg-indigo-100 text-indigo-800"),
-    "humectant": ("Humectant", "bg-teal-100 text-teal-800"),
-    "ph control agent": ("pH Control", "bg-orange-100 text-orange-800"),
-    "nutrient supplement": ("Nutrient", "bg-cyan-100 text-cyan-800"),
-    "gelling agent": ("Gelling Agent", "bg-lime-100 text-lime-800"),
-    "leavening agent": ("Leavening Agent", "bg-fuchsia-100 text-fuchsia-800"),
-    "firming agent": ("Firming Agent", "bg-rose-100 text-rose-800"),
-    "anticaking agent or free-flow agent": ("Anti-caking", "bg-emerald-100 text-emerald-800"),
-    "anticaking agent": ("Anti-caking", "bg-emerald-100 text-emerald-800"),
-    "drying agent": ("Drying Agent", "bg-amber-100 text-amber-800"),
-    "processing aid": ("Processing Aid", "bg-violet-100 text-violet-800"),
-    "sequestrant": ("Sequestrant", "bg-sky-100 text-sky-800"),
-    "surface-active agent": ("Surface-Active", "bg-indigo-100 text-indigo-800"),
-    "texturizer": ("Texturizer", "bg-pink-100 text-pink-800"),
-    "enzyme": ("Enzyme", "bg-yellow-100 text-yellow-800"),
-    "dough strengthener": ("Dough Strengthener", "bg-orange-100 text-orange-800"),
-    "masticatory substance": ("Masticatory", "bg-gray-100 text-gray-800"),
-    "solvent or vehicle": ("Solvent/Vehicle", "bg-gray-100 text-gray-800"),
-    "maltodextrin": ("Thickener", "bg-yellow-100 text-yellow-800"), # Specific for maltodextrin
-    "corn syrup": ("Sweetener", "bg-indigo-100 text-indigo-800"), # Specific for corn syrup
+TECHNICAL_EFFECT_CATEGORIES = {
+    # Flavor & Aroma
+    "FLAVORING AGENT": {"category": "Flavor & Aroma", "color": "bg-teal-100 text-teal-800"},
+    "FLAVOR ENHANCER": {"category": "Flavor & Aroma", "color": "bg-teal-100 text-teal-800"},
+    "FLAVORING AGENT OR ADJUVANT": {"category": "Flavor & Aroma", "color": "bg-teal-100 text-teal-800"}, # Added for completeness
+
+    # Texture & Structure
+    "STABILIZER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
+    "THICKENER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
+    "EMULSIFIER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
+    "EMULSIFIER OR EMULSIFIER SALT": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"}, # Added for completeness
+    "TEXTURIZER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
+    "FIRMING AGENT": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
+    "DOUGH STRENGTHENER": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
+    "MASTICATORY SUBSTANCE": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"},
+    "GELLING AGENT": {"category": "Texture & Structure", "color": "bg-purple-100 text-purple-800"}, # Corrected typo from GELTING
+
+    # Preservation & Shelf Life
+    "ANTIMICROBIAL": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
+    "ANTIOXIDANT": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
+    "PRESERVATIVE": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
+    "CURING": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
+    "PICKLING": {"category": "Preservation", "color": "bg-blue-100 text-blue-800"},
+
+
+    # Nutrient & Sweetener
+    "NUTRIENT SUPPLEMENT": {"category": "Nutrient/Sweetener", "color": "bg-lime-100 text-lime-800"},
+    "SWEETENER": {"category": "Nutrient/Sweetener", "color": "bg-lime-100 text-lime-800"},
+    "CORN SYRUP": {"category": "Nutrient/Sweetener", "color": "bg-lime-100 text-lime-800"}, # Specific for corn syrup
+
+    # Color
+    "COLOR": {"category": "Color", "color": "bg-rose-100 text-rose-800"},
+    "COLOR OR COLORING ADJUNCT": {"category": "Color", "color": "bg-rose-100 text-rose-800"}, # Added for completeness
+
+    # Processing & Formulation Aids (Catch-all for less specific or numerous roles)
+    "PROCESSING AID": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "FORMULATION AID": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "ANTICAKING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "ANTICAKING AGENT OR FREE-FLOW AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"}, # Added for completeness
+    "FREE-FLOW AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "SOLVENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "SOLVENT OR VEHICLE": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"}, # Added for completeness
+    "VEHICLE": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "PH CONTROL": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "PH CONTROL AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"}, # Added for completeness
+    "ENZYME": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "SURFACE-ACTIVE": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "SURFACE-FINISHING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "LUBRICANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "RELEASE AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "DRYING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "LEAVENING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "SEQUESTRANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "MALTING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "FERMENTING AID": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "FLOUR TREATING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "BOILER WATER ADDITIVE": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "PROPELLANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "WASHING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "OXIDIZING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "REDUCING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "FUMIGANT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "SYNERGIST": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "FREEZING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "COOLING AGENT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "DIRECT CONTACT": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "TRACER": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "PROCESSING": {"category": "Processing Aid", "color": "bg-gray-100 text-gray-800"},
+    "MALTODEXTRIN": {"category": "Thickener", "color": "bg-purple-100 text-purple-800"}, # Specific for maltodextrin, now using structured format
 }
+
+
+def get_technical_effect_categories(raw_effects_string):
+    """
+    Parses a raw 'Used for (Technical Effect)' string and maps it to
+    a list of user-friendly categories and their colors.
+    """
+    categories_found = []
+    colors_found = []
+    individual_technical_effects = [] # For detailed display if needed
+
+    if not raw_effects_string:
+        return [], [], []
+
+    # Split by common delimiters and clean up
+    individual_effect_phrases = re.split(r',\s*|<br\s*/>', raw_effects_string, flags=re.IGNORECASE)
+    
+    # Use sets to store unique categories and colors to avoid duplicates
+    unique_categories = set()
+    unique_colors = set()
+
+    for phrase_raw in individual_effect_phrases:
+        cleaned_phrase = phrase_raw.strip().upper() # Convert to uppercase for consistent matching
+
+        # Find the category and color for this specific phrase
+        phrase_category = "Other"
+        phrase_color = "bg-gray-100 text-gray-800"
+        matched = False
+
+        # Iterate through the defined TECHNICAL_EFFECT_CATEGORIES to find a match.
+        # Sort by length in reverse to match longer keywords first (e.g., "flavoring agent or adjuvant" before "flavoring agent").
+        for keyword, details in sorted(TECHNICAL_EFFECT_CATEGORIES.items(), key=lambda item: len(item[0]), reverse=True):
+            if keyword in cleaned_phrase:
+                phrase_category = details["category"]
+                phrase_color = details["color"]
+                matched = True
+                break
+        
+        # Add to main categories and colors lists (for the overall ingredient summary)
+        if phrase_category not in unique_categories:
+            categories_found.append(phrase_category)
+            colors_found.append(phrase_color)
+            unique_categories.add(phrase_category)
+            unique_colors.add(phrase_color) # Also track unique colors
+
+        # Add the individual technical effect with its determined category and color
+        if phrase_raw: # Only add if the original phrase was not empty
+            individual_technical_effects.append({
+                "phrase": phrase_raw.strip(), # Keep original casing for display of phrase
+                "category": phrase_category,
+                "color": phrase_color
+            })
+
+    return categories_found, colors_found, individual_technical_effects
+
 
 def load_data_lookups():
     """
@@ -101,7 +196,7 @@ def load_data_lookups():
     from JSON files and builds the optimized lookup dictionaries/sets.
     This function should be called once at application startup.
     """
-    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET, GTIN_TO_FDCID_MAP
+    global ADDITIVES_LOOKUP, COMMON_INGREDIENTS_LOOKUP, COMMON_FDA_SUBSTANCES_SET, GTIN_TO_FDCID_MAP, FDA_SUBSTANCE_DETAILS
 
     # Load additive data
     print(f"[Backend Init] Attempting to load additives data from: {ADDITIVES_DATA_FILE}")
@@ -170,6 +265,21 @@ def load_data_lookups():
 
                     if normalized_alias:
                         ADDITIVES_LOOKUP[normalized_alias] = normalized_canonical_name_for_key
+            
+            # Populate FDA_SUBSTANCE_DETAILS for this canonical name
+            raw_used_for = entry.get("Used for (Technical Effect)", "").strip()
+            categories, colors, individual_effects = get_technical_effect_categories(raw_used_for)
+
+            FDA_SUBSTANCE_DETAILS[normalized_canonical_name_for_key] = {
+                "original_name": canonical_name,
+                "used_for_raw": raw_used_for,
+                "used_for_categories": categories,
+                "used_for_colors": colors, # Store colors directly for frontend
+                "individual_technical_effects": individual_effects, # Store individual effects
+                "other_names": entry.get("Other Names", []),
+                "cas_no": entry.get("CAS Reg No (or other ID)", "")
+            }
+
 
         print(f"[Backend Init] ✅ Successfully loaded {len(additives_raw)} additives and built lookup with {len(ADDITIVES_LOOKUP)} aliases.")
 
@@ -272,55 +382,6 @@ def calculate_nova_score(identified_fda_non_common, identified_fda_common, ident
 
     return 3, "Processed Food (Categorization Ambiguous)"
 
-# --- NEW HELPER FUNCTION: Get Categories, Colors, and Individual Effects from Technical Effect ---
-def get_categories_and_colors_from_effect(used_for_raw_string):
-    """
-    Parses the 'Used for (Technical Effect)' string to extract categories, assign Tailwind colors,
-    and also return individual technical effect phrases with their corresponding category and color.
-    """
-    categories = []
-    colors = []
-    individual_technical_effects = [] # New list to store structured individual effects
-    
-    if used_for_raw_string and used_for_raw_string != "N/A":
-        # Clean and normalize the raw string
-        normalized_raw = used_for_raw_string.lower().replace('<br />', ', ').replace('<br/>', ', ').strip()
-        
-        # Split by commas, semicolons, or "and" to get individual phrases/effects
-        phrases = [p.strip() for p in re.split(r',\s*|;\s*|\s+and\s+', normalized_raw) if p.strip()]
-
-        seen_categories = set() # To avoid duplicate categories if multiple keywords map to the same category
-
-        for phrase in phrases:
-            matched = False
-            # Find the category and color for this specific phrase
-            phrase_category = "Other"
-            phrase_color = "bg-gray-100 text-gray-800"
-
-            # Iterate through the mapping to find a match for the phrase.
-            # Use sorted(items(), key=lambda item: len(item[0]), reverse=True) for longest match first
-            for keyword, (category, color) in sorted(TECHNICAL_EFFECT_MAPPING.items(), key=lambda item: len(item[0]), reverse=True):
-                if keyword in phrase:
-                    phrase_category = category
-                    phrase_color = color
-                    matched = True
-                    break
-            
-            # Add to main categories and colors lists (for the overall ingredient summary)
-            if phrase_category not in seen_categories:
-                categories.append(phrase_category)
-                colors.append(phrase_color)
-                seen_categories.add(phrase_category)
-
-            # Add the individual technical effect with its determined category and color
-            individual_technical_effects.append({
-                "phrase": phrase,
-                "category": phrase_category,
-                "color": phrase_color
-            })
-
-    return categories, colors, individual_technical_effects
-
 
 # --- Ingredient Analysis Function (Revised for Data Score and Phrase Matching) ---
 def analyze_ingredients(ingredients_string):
@@ -366,21 +427,9 @@ def analyze_ingredients(ingredients_string):
     total_analyzed_items = len(components)
     categorized_items_count = 0
 
-    # Load the full additives data to get 'used_for' and 'other_names'
-    # This should ideally be loaded once globally if not already for performance
-    full_additives_data = []
-    try:
-        with open(ADDITIVES_DATA_FILE, 'r', encoding='utf-8') as f:
-            full_additives_data = json.load(f)
-    except Exception as e:
-        print(f"[Analyze] Error loading full additives data for details: {e}")
-
     # Create a quick lookup for additive details by canonical name
-    ADDITIVE_DETAILS_MAP = {
-        re.sub(r'[^a-z0-9\s\&\.\-#]', '', entry.get("Substance Name (Heading)", "").lower()).strip().replace('no.', 'no '): entry
-        for entry in full_additives_data if entry.get("Substance Name (Heading)")
-    }
-    print(f"[Analyze] Built ADDITIVE_DETAILS_MAP with {len(ADDITIVE_DETAILS_MAP)} entries.")
+    # This map is now populated directly in load_data_lookups from FDA_SUBSTANCE_DETAILS
+    print(f"[Analyze] Using FDA_SUBSTANCE_DETAILS map with {len(FDA_SUBSTANCE_DETAILS)} entries.")
 
 
     for original_component in components:
@@ -396,59 +445,43 @@ def analyze_ingredients(ingredients_string):
 
         # Pass 1: Try to match against FDA Additives (longest match first for phrases)
         matched_additive_canonical = None
-        # Iterate through TECHNICAL_EFFECT_MAPPING to prioritize matching based on common effect terms
+        # Iterate through TECHNICAL_EFFECT_CATEGORIES to prioritize matching based on common effect terms
         # This helps in cases where the ingredient name itself might be generic but its effect is specific
-        for keyword in sorted(TECHNICAL_EFFECT_MAPPING.keys(), key=len, reverse=True):
-            if keyword in normalized_component:
-                # Find the canonical name from ADDITIVES_LOOKUP for the full component
-                # This ensures we get the correct additive details
-                if normalized_component in ADDITIVES_LOOKUP:
-                    matched_additive_canonical = ADDITIVES_LOOKUP[normalized_component]
+        # We need to find the canonical name from ADDITIVES_LOOKUP for the full component or a phrase within it.
+        # This logic is slightly complex as it needs to link a phrase match to a canonical name and then to FDA_SUBSTANCE_DETAILS.
+
+        # First, try direct match or longest phrase match from ADDITIVES_LOOKUP
+        words = normalized_component.split()
+        for i in range(len(words)):
+            for j in range(len(words), i, -1):
+                phrase = " ".join(words[i:j])
+                if phrase in ADDITIVES_LOOKUP:
+                    matched_additive_canonical = ADDITIVES_LOOKUP[phrase]
                     break
-                # If the full component isn't a direct match, try to find canonical name based on keyword
-                # This part might need refinement based on how ADDITIVES_LOOKUP is built
-                # For now, we'll rely on the full component match or fall through to phrase matching
+            if matched_additive_canonical:
+                break
         
-        # Fallback to phrase matching if no direct keyword match for the full component
-        if not matched_additive_canonical:
-            words = normalized_component.split()
-            for i in range(len(words)):
-                for j in range(len(words), i, -1):
-                    phrase = " ".join(words[i:j])
-                    if phrase in ADDITIVES_LOOKUP:
-                        matched_additive_canonical = ADDITIVES_LOOKUP[phrase]
-                        break
-                if matched_additive_canonical:
-                    break
-
-
         if matched_additive_canonical:
-            # Get full details for the matched additive
-            additive_details = ADDITIVE_DETAILS_MAP.get(matched_additive_canonical, {})
+            # Retrieve full details from FDA_SUBSTANCE_DETAILS
+            substance_details = FDA_SUBSTANCE_DETAILS.get(matched_additive_canonical, {})
             
-            # Extract raw used_for string
-            used_for_raw = additive_details.get("Used for (Technical Effect)", "N/A")
-            
-            # NEW: Get categories, colors, and individual technical effects using the helper function
-            used_for_categories, used_for_colors, individual_technical_effects = get_categories_and_colors_from_effect(used_for_raw)
-
-            # Prepare the ingredient object to be added to the list
             ingredient_obj = {
-                "name": original_component, # Keep original casing for display
-                "canonical_name": matched_additive_canonical,
-                "used_for_raw": used_for_raw,
-                "used_for_categories": used_for_categories, # Populated by new helper
-                "used_for_colors": used_for_colors,         # Populated by new helper
-                "individual_technical_effects": individual_technical_effects, # NEW: for detailed display
-                "other_names": additive_details.get("Other Names", [])
+                "name": original_component, # Keep original casing from ingredient list
+                "canonical_name": substance_details.get("original_name", matched_additive_canonical),
+                "used_for_raw": substance_details.get("used_for_raw", "N/A"),
+                "used_for_categories": substance_details.get("used_for_categories", []),
+                "used_for_colors": substance_details.get("used_for_colors", []),
+                "individual_technical_effects": substance_details.get("individual_technical_effects", []), # Use pre-analyzed individual effects
+                "other_names": substance_details.get("other_names", []),
+                "cas_no": substance_details.get("cas_no", "N/A")
             }
 
             if matched_additive_canonical in COMMON_FDA_SUBSTANCES_SET:
                 identified_fda_common.append(ingredient_obj)
-                print(f"[Analyze] Identified FDA Common: {original_component} (Categories: {used_for_categories})")
+                print(f"[Analyze] Identified FDA Common: {original_component} (Categories: {ingredient_obj['used_for_categories']})")
             else:
                 identified_fda_non_common.append(ingredient_obj)
-                print(f"[Analyze] Identified FDA Non-Common: {original_component} (Categories: {used_for_categories})")
+                print(f"[Analyze] Identified FDA Non-Common: {original_component} (Categories: {ingredient_obj['used_for_categories']})")
             component_categorized = True
         else:
             # Pass 2: If not an FDA Additive, try to match against Common Ingredients (longest match first)
@@ -529,15 +562,38 @@ def check_airtable_cache(gtin):
             record_id = record['id']
             fields = record['fields']
 
-            # Update usage stats
+            # Update usage stats: increment lookup_count and update last_access
             updated_fields = {
                 'lookup_count': fields.get('lookup_count', 0) + 1,
                 'last_access': datetime.now().isoformat()
             }
             airtable.update(record_id, updated_fields)
-            print(f"[Backend] ✅ Cache hit. Updated count: {updated_fields['lookup_count']}")
+            print(f"[Backend] ✅ Cache hit. Updated lookup_count: {updated_fields['lookup_count']}")
 
             # Return the full fields, which now include the individual ingredient lists, NOVA, etc.
+            # Ensure JSON strings are loaded back into Python objects.
+            for key in ['identified_fda_non_common', 'identified_fda_common', 
+                         'identified_common_ingredients_only', 'truly_unidentified_ingredients']:
+                if key in fields:
+                    field_data = fields[key]
+                    if isinstance(field_data, str):
+                        try:
+                            fields[key] = json.loads(field_data)
+                        except json.JSONDecodeError:
+                            print(f"[Backend] ⚠️ Error decoding JSON for field '{key}' from cache. Setting to empty list.")
+                            fields[key] = [] # Default to empty list on error
+                    elif not isinstance(field_data, list):
+                        # If it's not a string and not already a list, default to empty list
+                        print(f"[Backend] ⚠️ Unexpected type for field '{key}' in cache ({type(field_data).__name__}). Setting to empty list.")
+                        fields[key] = []
+            
+            # Ensure nova_score is an int/float if it was stored as string
+            if 'nova_score' in fields and isinstance(fields['nova_score'], str):
+                try:
+                    fields['nova_score'] = int(fields['nova_score'])
+                except ValueError:
+                    pass # Keep as string if not convertible to int
+
             return fields
         else:
             print("[Backend] Cache miss.")
@@ -602,6 +658,7 @@ def store_to_airtable(gtin, usda_data, analyzed_data):
     product_ingredients = usda_data.get("ingredients", "")
 
     # Extracting data from analyzed_data
+    # These are now lists of dictionaries, so they need to be dumped to JSON strings
     identified_fda_non_common = analyzed_data.get("identified_fda_non_common", [])
     identified_fda_common = analyzed_data.get("identified_fda_common", [])
     identified_common_ingredients_only = analyzed_data.get("identified_common_ingredients_only", [])
@@ -618,12 +675,10 @@ def store_to_airtable(gtin, usda_data, analyzed_data):
         "brand_owner": usda_data.get("brandOwner", ""),
         "description": product_description,
         "ingredients": product_ingredients,
-        "lookup_count": 1,
+        "lookup_count": 1, # Initialize lookup_count to 1 on first insertion
         "last_access": datetime.now().isoformat(),
-        "hot_score": 1, # Placeholder, can be calculated dynamically later
         "source": "USDA API",
-        # Store structured data points directly
-        # Ensure these are JSON strings as Airtable doesn't directly support nested arrays of objects
+        # Store structured data points as JSON strings
         "identified_fda_non_common": json.dumps(identified_fda_non_common), 
         "identified_fda_common": json.dumps(identified_fda_common),
         "identified_common_ingredients_only": json.dumps(identified_common_ingredients_only),
@@ -659,30 +714,60 @@ def count_airtable_rows():
 
 def delete_least_valuable_row():
     """
-    Deletes the least valuable record in Airtable based on lookup_count and last_access.
-    Least valuable = lowest lookup_count, then oldest last_access for ties.
+    Deletes the least valuable record in Airtable based on an effective score
+    that combines lookup_count and freshness (last_access).
+    Least valuable = lowest effective score, then oldest last_access for ties.
     """
     if not airtable:
         print("[Render Backend] Airtable client not initialized. Skipping row deletion.")
         return
 
-    print("[Render Backend] Checking for least valuable row to evict...")
+    print("[Render Backend] Checking for least valuable row to evict using effective score...")
     try:
+        # Fetch records with 'lookup_count' and 'last_access' fields
         records = airtable.get_all(fields=['lookup_count', 'last_access'])
 
         if records:
-            records_sorted = sorted(records, key=lambda r: (
-                r["fields"].get("lookup_count", 0),
-                r["fields"].get("last_access", "0000-01-01T00:00:00.000Z")
+            # Calculate effective score for each record
+            records_with_effective_score = []
+            now = datetime.now()
+            for r in records:
+                fields = r["fields"]
+                lookup_count = fields.get("lookup_count", 0)
+                last_access_str = fields.get("last_access", "0000-01-01T00:00:00.000Z")
+                
+                try:
+                    last_access_dt = datetime.fromisoformat(last_access_str.replace('Z', '+00:00')) # Handle 'Z' for UTC
+                except ValueError:
+                    last_access_dt = datetime.min # Fallback for invalid date string
+
+                effective_score = lookup_count
+
+                # Apply freshness bonus if within the freshness window
+                if now - last_access_dt < timedelta(days=FRESHNESS_WINDOW_DAYS):
+                    effective_score += FRESHNESS_BONUS
+                
+                records_with_effective_score.append({
+                    'id': r['id'],
+                    'fields': fields, # Keep original fields for logging
+                    'effective_score': effective_score,
+                    'last_access_dt': last_access_dt # Store datetime object for direct comparison
+                })
+
+            # Sort records: first by effective_score (ascending), then by last_access_dt (ascending for oldest)
+            records_sorted = sorted(records_with_effective_score, key=lambda r: (
+                r["effective_score"],
+                r["last_access_dt"]
             ))
 
-            least_valuable_record = records_sorted[0]
-            record_id_to_delete = least_valuable_record['id']
-
+            least_valuable_record_info = records_sorted[0]
+            record_id_to_delete = least_valuable_record_info['id']
+            
             airtable.delete(record_id_to_delete)
             print(f"[Render Backend] 🗑️ Deleted least valuable entry (ID: {record_id_to_delete}, "
-                  f"Lookup: {least_valuable_record['fields'].get('lookup_count', 0)}, "
-                  f"Last Access: {least_valuable_record['fields'].get('last_access', 'N/A')}).")
+                  f"Lookup Count: {least_valuable_record_info['fields'].get('lookup_count', 0)}, "
+                  f"Last Access: {least_valuable_record_info['fields'].get('last_access', 'N/A')}), "
+                  f"Effective Score: {least_valuable_record_info['effective_score']}).")
         else:
             print("[Render Backend] No records to evict.")
     except Exception as e:
@@ -736,11 +821,13 @@ def gtin_lookup():
             # Retrieve pre-analyzed data from cache or re-analyze if ingredients changed/not present
             # We assume if product_ingredients are in cache, the analyzed lists are too.
             # Convert JSON strings back to Python lists
-            # IMPORTANT: Ensure these fields are always stored as JSON strings in Airtable
-            identified_fda_non_common = json.loads(cached_data.get('identified_fda_non_common', '[]'))
-            identified_fda_common = json.loads(cached_data.get('identified_fda_common', '[]'))
-            identified_common_ingredients_only = json.loads(cached_data.get('identified_common_ingredients_only', '[]'))
-            truly_unidentified_ingredients = json.loads(cached_data.get('truly_unidentified_ingredients', '[]'))
+            # IMPORTANT: The check_airtable_cache function now handles the JSON parsing,
+            # so these should already be lists of dicts or lists of strings.
+            identified_fda_non_common = cached_data.get('identified_fda_non_common', [])
+            identified_fda_common = cached_data.get('identified_fda_common', [])
+            identified_common_ingredients_only = cached_data.get('identified_common_ingredients_only', [])
+            truly_unidentified_ingredients = cached_data.get('truly_unidentified_ingredients', [])
+            
             data_score = cached_data.get('data_score', 0.0)
             data_completeness_level = cached_data.get('data_completeness_level', "N/A")
             nova_score = cached_data.get('nova_score', "N/A")
@@ -748,7 +835,8 @@ def gtin_lookup():
 
             # In case an older cache entry doesn't have the granular data, re-analyze
             # This block is crucial for ensuring the detailed ingredient objects are returned
-            if not identified_fda_non_common and not identified_fda_common and not identified_common_ingredients_only and not truly_unidentified_ingredients and product_ingredients != "N/A":
+            if (not identified_fda_non_common and not identified_fda_common and 
+                not identified_common_ingredients_only and not truly_unidentified_ingredients and product_ingredients != "N/A"):
                 print("[Backend] Cached data missing granular ingredient breakdown, re-analyzing...")
                 (identified_fda_non_common, identified_fda_common, identified_common_ingredients_only,
                  truly_unidentified_ingredients, data_score, data_completeness_level,
