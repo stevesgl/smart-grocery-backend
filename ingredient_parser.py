@@ -389,3 +389,11 @@ if __name__ == "__main__":
             for j, result in enumerate(results):
                 print(f"  Parsed Ingredient {j+1}:")
                 print(json.dumps(result, indent=4, ensure_ascii=False))
+
+def normalize_string(s):
+    """
+    Normalizes an ingredient string by removing non-alphanumeric characters
+    and converting to lowercase.
+    """
+    return re.sub(r'[^a-zA-Z0-9]', '', s.lower().strip())
+
