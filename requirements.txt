@@ -5,3 +5,5 @@ airtable-python-wrapper
 gunicorn
 python-dotenv
 markdown
+pandas
+
