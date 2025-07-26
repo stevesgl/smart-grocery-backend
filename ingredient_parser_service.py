@@ -1,9 +1,15 @@
-# app.py
+# ingredient_parser_service.py
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # ← import CORS here
 import json
 import os
 import sys
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Enable CORS for your Vercel frontend
+CORS(app, origins=["https://barcode-vercel-ten.vercel.app"])
 
 # Add the directory containing ingredient_parser.py to the Python path
 # This assumes app.py and ingredient_parser.py are in the same directory.
