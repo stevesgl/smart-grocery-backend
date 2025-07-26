@@ -1,0 +1,3489 @@
+[
+    {
+        "original_string": "water",
+        "base_ingredient": "water",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "milk",
+        "base_ingredient": "milk",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "cream",
+        "base_ingredient": "cream",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "butter",
+        "base_ingredient": "butter",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "eggs",
+        "base_ingredient": "eggs",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "flour",
+        "base_ingredient": "flour",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "wheat flour",
+        "base_ingredient": "wheat flour",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "enriched flour",
+        "base_ingredient": "enriched flour",
+        "modifiers": [
+            "enriched"
+        ],
+        "attributes": {
+            "nutritional_enhancement": true,
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "enriched bleached flour",
+        "base_ingredient": "enriched bleached flour",
+        "modifiers": [
+            "bleached",
+            "enriched"
+        ],
+        "attributes": {
+            "nutritional_enhancement": true,
+            "processing": true,
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sugar",
+        "base_ingredient": "sugar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "brown sugar",
+        "base_ingredient": "brown sugar",
+        "modifiers": [
+            "brown"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "powdered sugar",
+        "base_ingredient": "powdered sugar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "salt",
+        "base_ingredient": "salt",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "pepper",
+        "base_ingredient": "pepper",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "garlic",
+        "base_ingredient": "garlic",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "onion",
+        "base_ingredient": "onion",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "tomato",
+        "base_ingredient": "tomato",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "potatoes",
+        "base_ingredient": "potatoes",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "carrots",
+        "base_ingredient": "carrots",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "celery",
+        "base_ingredient": "celery",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "broccoli",
+        "base_ingredient": "broccoli",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "spinach",
+        "base_ingredient": "spinach",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "corn",
+        "base_ingredient": "corn",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "rice",
+        "base_ingredient": "rice",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "pasta",
+        "base_ingredient": "pasta",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "bread",
+        "base_ingredient": "bread",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "chicken",
+        "base_ingredient": "chicken",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "beef",
+        "base_ingredient": "beef",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "pork",
+        "base_ingredient": "pork",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "fish",
+        "base_ingredient": "fish",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "soybean",
+        "base_ingredient": "soybean",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sunflower",
+        "base_ingredient": "sunflower",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "canola",
+        "base_ingredient": "canola",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "palm",
+        "base_ingredient": "palm",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "palm kernel oil",
+        "base_ingredient": "palm kernel oil",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "vegetable oil",
+        "base_ingredient": "vegetable oil",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "partially hydrogenated soybean oil",
+        "base_ingredient": "partially hydrogenated soybean oil",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "olive oil",
+        "base_ingredient": "olive oil",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "coconut oil",
+        "base_ingredient": "coconut oil",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "vinegar",
+        "base_ingredient": "vinegar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "lemon juice",
+        "base_ingredient": "lemon juice",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "lime juice",
+        "base_ingredient": "lime juice",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "orange juice",
+        "base_ingredient": "orange juice",
+        "modifiers": [
+            "orange"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "apple cider vinegar",
+        "base_ingredient": "apple cider vinegar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "baking powder",
+        "base_ingredient": "baking powder",
+        "modifiers": [
+            "powder"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "baking soda",
+        "base_ingredient": "baking soda",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "yeast",
+        "base_ingredient": "yeast",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "vanilla extract",
+        "base_ingredient": "vanilla extract",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "cocoa powder",
+        "base_ingredient": "cocoa powder",
+        "modifiers": [
+            "powder"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "chocolate",
+        "base_ingredient": "chocolate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "coffee",
+        "base_ingredient": "coffee",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "tea",
+        "base_ingredient": "tea",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "honey",
+        "base_ingredient": "honey",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "maple syrup",
+        "base_ingredient": "maple syrup",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "corn syrup",
+        "base_ingredient": "corn syrup",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "high fructose corn syrup",
+        "base_ingredient": "high fructose corn syrup",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gelatin",
+        "base_ingredient": "gelatin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "pectin",
+        "base_ingredient": "pectin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "lecithin",
+        "base_ingredient": "lecithin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "xanthan gum",
+        "base_ingredient": "xanthan gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "guar gum",
+        "base_ingredient": "guar gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "carrageenan",
+        "base_ingredient": "carrageenan",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "cellulose gum",
+        "base_ingredient": "cellulose gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "carboxymethylcellulose",
+        "base_ingredient": "carboxymethylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "cmc",
+        "base_ingredient": "cmc",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "mono and diglycerides",
+        "base_ingredient": "mono and diglycerides",
+        "modifiers": [
+            "and"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "polysorbate 80",
+        "base_ingredient": "polysorbate 80",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "citric acid",
+        "base_ingredient": "citric acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "lactic acid",
+        "base_ingredient": "lactic acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "malic acid",
+        "base_ingredient": "malic acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "phosphoric acid",
+        "base_ingredient": "phosphoric acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "ascorbic acid",
+        "base_ingredient": "ascorbic acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium citrate",
+        "base_ingredient": "sodium citrate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium citrate",
+        "base_ingredient": "potassium citrate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium carbonate",
+        "base_ingredient": "calcium carbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium phosphate",
+        "base_ingredient": "calcium phosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium bicarbonate",
+        "base_ingredient": "sodium bicarbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium aluminum phosphate",
+        "base_ingredient": "sodium aluminum phosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "artificial flavor",
+        "base_ingredient": "flavors",
+        "modifiers": [
+            "artificial"
+        ],
+        "attributes": {
+            "source_type": "artificial",
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "natural flavor",
+        "base_ingredient": "flavors",
+        "modifiers": [
+            "natural"
+        ],
+        "attributes": {
+            "source_type": "natural",
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "natural flavors",
+        "base_ingredient": "flavors",
+        "modifiers": [
+            "natural"
+        ],
+        "attributes": {
+            "source_type": "natural",
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "spices",
+        "base_ingredient": "spices",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "turmeric",
+        "base_ingredient": "turmeric",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "paprika",
+        "base_ingredient": "paprika",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "annatto",
+        "base_ingredient": "annatto",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "caramel color",
+        "base_ingredient": "caramel color",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "red 40",
+        "base_ingredient": "red 40",
+        "modifiers": [
+            "red"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "yellow 5",
+        "base_ingredient": "yellow 5",
+        "modifiers": [
+            "yellow"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "blue 1",
+        "base_ingredient": "blue 1",
+        "modifiers": [
+            "blue"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "titanium dioxide",
+        "base_ingredient": "titanium dioxide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "caffeine",
+        "base_ingredient": "caffeine",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium benzoate",
+        "base_ingredient": "sodium benzoate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium sorbate",
+        "base_ingredient": "potassium sorbate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "dextrose",
+        "base_ingredient": "dextrose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "maltodextrin",
+        "base_ingredient": "maltodextrin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "whey",
+        "base_ingredient": "whey",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "casein",
+        "base_ingredient": "casein",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gluten",
+        "base_ingredient": "gluten",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "starch",
+        "base_ingredient": "starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "modified food starch",
+        "base_ingredient": "modified food starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "corn starch",
+        "base_ingredient": "corn starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potato starch",
+        "base_ingredient": "potato starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "tapioca starch",
+        "base_ingredient": "tapioca starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "rice starch",
+        "base_ingredient": "rice starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gelatin",
+        "base_ingredient": "gelatin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "agar",
+        "base_ingredient": "agar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gellan gum",
+        "base_ingredient": "gellan gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "locust bean gum",
+        "base_ingredient": "locust bean gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "gum arabic",
+        "base_ingredient": "gum arabic",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "carrageenan",
+        "base_ingredient": "carrageenan",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "carrageenan gum",
+        "base_ingredient": "carrageenan gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "malt",
+        "base_ingredient": "malt",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "barley malt",
+        "base_ingredient": "barley malt",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "corn syrup solids",
+        "base_ingredient": "corn syrup solids",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "glucose syrup",
+        "base_ingredient": "glucose syrup",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "invert syrup",
+        "base_ingredient": "invert syrup",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "molasses",
+        "base_ingredient": "molasses",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "fructose",
+        "base_ingredient": "fructose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "lactose",
+        "base_ingredient": "lactose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sucrose",
+        "base_ingredient": "sucrose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium metabisulfite",
+        "base_ingredient": "sodium metabisulfite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium metabisulfite",
+        "base_ingredient": "potassium metabisulfite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sulfur dioxide",
+        "base_ingredient": "sulfur dioxide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium sulfite",
+        "base_ingredient": "sodium sulfite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium sulfite",
+        "base_ingredient": "potassium sulfite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium propionate",
+        "base_ingredient": "calcium propionate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium propionate",
+        "base_ingredient": "sodium propionate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium propionate",
+        "base_ingredient": "potassium propionate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sorbic acid",
+        "base_ingredient": "sorbic acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium disodium edta",
+        "base_ingredient": "calcium disodium edta",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "bht",
+        "base_ingredient": "bht",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "bha",
+        "base_ingredient": "bha",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "propyl gallate",
+        "base_ingredient": "propyl gallate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "tocopherols",
+        "base_ingredient": "tocopherols",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "rosemary extract",
+        "base_ingredient": "rosemary extract",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "green tea extract",
+        "base_ingredient": "green tea extract",
+        "modifiers": [
+            "green"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "ascorbyl palmitate",
+        "base_ingredient": "ascorbyl palmitate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium erythorbate",
+        "base_ingredient": "sodium erythorbate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium nitrite",
+        "base_ingredient": "sodium nitrite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium nitrate",
+        "base_ingredient": "sodium nitrate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium nitrite",
+        "base_ingredient": "potassium nitrite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium nitrate",
+        "base_ingredient": "potassium nitrate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "smoke flavor",
+        "base_ingredient": "flavors",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "yeast extract",
+        "base_ingredient": "yeast extract",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "monosodium glutamate",
+        "base_ingredient": "monosodium glutamate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "msg",
+        "base_ingredient": "msg",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "disodium inosinate",
+        "base_ingredient": "disodium inosinate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "disodium guanylate",
+        "base_ingredient": "disodium guanylate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "hydrolyzed vegetable protein",
+        "base_ingredient": "hydrolyzed vegetable protein",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "hydrolyzed soy protein",
+        "base_ingredient": "hydrolyzed soy protein",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "hydrolyzed corn protein",
+        "base_ingredient": "hydrolyzed corn protein",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "soy protein isolate",
+        "base_ingredient": "soy protein isolate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "pea protein",
+        "base_ingredient": "pea protein",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "rice protein",
+        "base_ingredient": "rice protein",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "oat fiber",
+        "base_ingredient": "oat fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "inulin",
+        "base_ingredient": "inulin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "chicory root fiber",
+        "base_ingredient": "chicory root fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "resistant starch",
+        "base_ingredient": "resistant starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "polydextrose",
+        "base_ingredient": "polydextrose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "tagatose",
+        "base_ingredient": "tagatose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "allulose",
+        "base_ingredient": "allulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "stevia leaf extract",
+        "base_ingredient": "stevia leaf extract",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "monk fruit extract",
+        "base_ingredient": "monk fruit extract",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "erythritol",
+        "base_ingredient": "erythritol",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "xylitol",
+        "base_ingredient": "xylitol",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sorbitol",
+        "base_ingredient": "sorbitol",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "mannitol",
+        "base_ingredient": "mannitol",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "maltitol",
+        "base_ingredient": "maltitol",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "isomalt",
+        "base_ingredient": "isomalt",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sucralose",
+        "base_ingredient": "sucralose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "aspartame",
+        "base_ingredient": "aspartame",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "acesulfame potassium",
+        "base_ingredient": "acesulfame potassium",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "saccharin",
+        "base_ingredient": "saccharin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "neotame",
+        "base_ingredient": "neotame",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "advantame",
+        "base_ingredient": "advantame",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gum base",
+        "base_ingredient": "gum base",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "confectioner's glaze",
+        "base_ingredient": "confectioner's glaze",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [
+            "'"
+        ],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "shellac",
+        "base_ingredient": "shellac",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "carnauba wax",
+        "base_ingredient": "carnauba wax",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "beeswax",
+        "base_ingredient": "beeswax",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "resinous glaze",
+        "base_ingredient": "resinous glaze",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "food glaze",
+        "base_ingredient": "food glaze",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "modified starch",
+        "base_ingredient": "modified starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "modified corn starch",
+        "base_ingredient": "modified corn starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "modified tapioca starch",
+        "base_ingredient": "modified tapioca starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "modified potato starch",
+        "base_ingredient": "modified potato starch",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "gelatin",
+        "base_ingredient": "gelatin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "agar-agar",
+        "base_ingredient": "agar-agar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "carrageenan",
+        "base_ingredient": "carrageenan",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gellan gum",
+        "base_ingredient": "gellan gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "locust bean gum",
+        "base_ingredient": "locust bean gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "guar gum",
+        "base_ingredient": "guar gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gum arabic",
+        "base_ingredient": "gum arabic",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "xanthan gum",
+        "base_ingredient": "xanthan gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "cellulose gum",
+        "base_ingredient": "cellulose gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium carboxymethylcellulose",
+        "base_ingredient": "sodium carboxymethylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "methylcellulose",
+        "base_ingredient": "methylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "hydroxypropyl methylcellulose",
+        "base_ingredient": "hydroxypropyl methylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "ethylcellulose",
+        "base_ingredient": "ethylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "microcrystalline cellulose",
+        "base_ingredient": "microcrystalline cellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "polydextrose",
+        "base_ingredient": "polydextrose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "inulin",
+        "base_ingredient": "inulin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "chicory root fiber",
+        "base_ingredient": "chicory root fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "resistant dextrin",
+        "base_ingredient": "resistant dextrin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "soluble corn fiber",
+        "base_ingredient": "soluble corn fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "oat fiber",
+        "base_ingredient": "oat fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "wheat fiber",
+        "base_ingredient": "wheat fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "bamboo fiber",
+        "base_ingredient": "bamboo fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "psyllium husk",
+        "base_ingredient": "psyllium husk",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "pectin",
+        "base_ingredient": "pectin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "agar",
+        "base_ingredient": "agar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "alginate",
+        "base_ingredient": "alginate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "carrageenan",
+        "base_ingredient": "carrageenan",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "konjac gum",
+        "base_ingredient": "konjac gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "gellan gum",
+        "base_ingredient": "gellan gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "locust bean gum",
+        "base_ingredient": "locust bean gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "guar gum",
+        "base_ingredient": "guar gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "gum arabic",
+        "base_ingredient": "gum arabic",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "xanthan gum",
+        "base_ingredient": "xanthan gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "cellulose gum",
+        "base_ingredient": "cellulose gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "carboxymethylcellulose",
+        "base_ingredient": "carboxymethylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "methylcellulose",
+        "base_ingredient": "methylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "hydroxypropyl methylcellulose",
+        "base_ingredient": "hydroxypropyl methylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "ethylcellulose",
+        "base_ingredient": "ethylcellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "microcrystalline cellulose",
+        "base_ingredient": "microcrystalline cellulose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "polydextrose",
+        "base_ingredient": "polydextrose",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "inulin",
+        "base_ingredient": "inulin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "chicory root fiber",
+        "base_ingredient": "chicory root fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "resistant dextrin",
+        "base_ingredient": "resistant dextrin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "soluble corn fiber",
+        "base_ingredient": "soluble corn fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "oat fiber",
+        "base_ingredient": "oat fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "wheat fiber",
+        "base_ingredient": "wheat fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "bamboo fiber",
+        "base_ingredient": "bamboo fiber",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "psyllium husk",
+        "base_ingredient": "psyllium husk",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "pectin",
+        "base_ingredient": "pectin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "agar",
+        "base_ingredient": "agar",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "alginate",
+        "base_ingredient": "alginate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "konjac gum",
+        "base_ingredient": "konjac gum",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "lecithin",
+        "base_ingredient": "lecithin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "soy lecithin",
+        "base_ingredient": "soy lecithin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sunflower lecithin",
+        "base_ingredient": "sunflower lecithin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "egg lecithin",
+        "base_ingredient": "egg lecithin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "polysorbate 20",
+        "base_ingredient": "polysorbate 20",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "polysorbate 60",
+        "base_ingredient": "polysorbate 60",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "polysorbate 65",
+        "base_ingredient": "polysorbate 65",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "polysorbate 80",
+        "base_ingredient": "polysorbate 80",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "mono- and diglycerides",
+        "base_ingredient": "mono- and diglycerides",
+        "modifiers": [
+            "and"
+        ],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "datem",
+        "base_ingredient": "datem",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium stearoyl lactylate",
+        "base_ingredient": "sodium stearoyl lactylate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "calcium stearoyl lactylate",
+        "base_ingredient": "calcium stearoyl lactylate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "propylene glycol monoesters",
+        "base_ingredient": "propylene glycol monoesters",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sorbitan monostearate",
+        "base_ingredient": "sorbitan monostearate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sucrose esters of fatty acids",
+        "base_ingredient": "sucrose esters of fatty acids",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "polyglycerol esters of fatty acids",
+        "base_ingredient": "polyglycerol esters of fatty acids",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium carbonate",
+        "base_ingredient": "calcium carbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium sulfate",
+        "base_ingredient": "calcium sulfate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium chloride",
+        "base_ingredient": "calcium chloride",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium lactate",
+        "base_ingredient": "calcium lactate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "calcium gluconate",
+        "base_ingredient": "calcium gluconate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium chloride",
+        "base_ingredient": "potassium chloride",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium iodide",
+        "base_ingredient": "potassium iodide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium bicarbonate",
+        "base_ingredient": "potassium bicarbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium carbonate",
+        "base_ingredient": "potassium carbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium bicarbonate",
+        "base_ingredient": "sodium bicarbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium carbonate",
+        "base_ingredient": "sodium carbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium phosphate",
+        "base_ingredient": "sodium phosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium acid pyrophosphate",
+        "base_ingredient": "sodium acid pyrophosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium aluminum phosphate",
+        "base_ingredient": "sodium aluminum phosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "monocalcium phosphate",
+        "base_ingredient": "monocalcium phosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "dicalcium phosphate",
+        "base_ingredient": "dicalcium phosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "tricalcium phosphate",
+        "base_ingredient": "tricalcium phosphate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "ammonium bicarbonate",
+        "base_ingredient": "ammonium bicarbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "ammonium carbonate",
+        "base_ingredient": "ammonium carbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "magnesium carbonate",
+        "base_ingredient": "magnesium carbonate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "magnesium oxide",
+        "base_ingredient": "magnesium oxide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "magnesium hydroxide",
+        "base_ingredient": "magnesium hydroxide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "ferrous sulfate",
+        "base_ingredient": "ferrous sulfate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "reduced iron",
+        "base_ingredient": "reduced iron",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "zinc oxide",
+        "base_ingredient": "zinc oxide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "copper gluconate",
+        "base_ingredient": "copper gluconate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "manganese sulfate",
+        "base_ingredient": "manganese sulfate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium iodide",
+        "base_ingredient": "potassium iodide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium selenite",
+        "base_ingredient": "sodium selenite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "chromium chloride",
+        "base_ingredient": "chromium chloride",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium molybdate",
+        "base_ingredient": "sodium molybdate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium fluoride",
+        "base_ingredient": "sodium fluoride",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium iodide",
+        "base_ingredient": "potassium iodide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "niacin",
+        "base_ingredient": "niacin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "thiamin mononitrate",
+        "base_ingredient": "thiamin mononitrate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "riboflavin",
+        "base_ingredient": "riboflavin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "folic acid",
+        "base_ingredient": "folic acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "vitamin a palmitate",
+        "base_ingredient": "vitamin a palmitate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "vitamin d3",
+        "base_ingredient": "vitamin d3",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "vitamin e acetate",
+        "base_ingredient": "vitamin e acetate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "vitamin c",
+        "base_ingredient": "vitamin c",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "vitamin b6",
+        "base_ingredient": "vitamin b6",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "vitamin b12",
+        "base_ingredient": "vitamin b12",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "biotin",
+        "base_ingredient": "biotin",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "pantothenic acid",
+        "base_ingredient": "pantothenic acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "choline",
+        "base_ingredient": "choline",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "inositol",
+        "base_ingredient": "inositol",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "para-aminobenzoic acid",
+        "base_ingredient": "para-aminobenzoic acid",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "calcium pantothenate",
+        "base_ingredient": "calcium pantothenate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium ascorbate",
+        "base_ingredient": "sodium ascorbate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium chloride",
+        "base_ingredient": "potassium chloride",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium iodide",
+        "base_ingredient": "potassium iodide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "sodium selenite",
+        "base_ingredient": "sodium selenite",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "chromium chloride",
+        "base_ingredient": "chromium chloride",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium molybdate",
+        "base_ingredient": "sodium molybdate",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_food"
+    },
+    {
+        "original_string": "sodium fluoride",
+        "base_ingredient": "sodium fluoride",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "potassium iodide",
+        "base_ingredient": "potassium iodide",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "specific"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "leavening",
+        "base_ingredient": "leavening",
+        "modifiers": [],
+        "attributes": {
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    },
+    {
+        "original_string": "natural and artificial flavors",
+        "base_ingredient": "flavors",
+        "modifiers": [
+            "and",
+            "artificial",
+            "natural"
+        ],
+        "attributes": {
+            "source_type": "artificial",
+            "ingredient_type": "category"
+        },
+        "parenthetical_info": {},
+        "unusual_punctuation_found": [],
+        "trust_report_category": "common_fda_regulated"
+    }
+]
