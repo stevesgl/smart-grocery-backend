@@ -9,7 +9,7 @@ import sys
 app = Flask(__name__)
 
 # Enable CORS for your Vercel frontend
-CORS(app, origins=["https://barcode-vercel-ten.vercel.app"])
+CORS(app, resources={r"/*": {"origins": ["https://barcode-vercel-ten.vercel.app"]}}, supports_credentials=True)
 
 # Add the directory containing ingredient_parser.py to the Python path
 # This assumes app.py and ingredient_parser.py are in the same directory.
@@ -30,9 +30,6 @@ except ImportError as e:
     print(f"Error importing ingredient_parser: {e}")
     print("Please ensure 'ingredient_parser.py' is in the same directory as 'app.py'.")
     sys.exit(1) # Exit if essential module cannot be imported
-
-app = Flask(__name__)
-CORS(app) # Enable CORS for all routes, allowing frontend to access
 
 # --- Global Data Loading ---
 # Load all necessary data once when the Flask app starts
