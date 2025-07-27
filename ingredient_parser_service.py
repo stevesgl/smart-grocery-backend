@@ -114,7 +114,9 @@ def gtin_lookup():
             common_ingredients_set,
             fda_substances_map # Pass the map here, not the set
         )
-
+        print(f"DEBUG_SERVICE: Raw Ingredients: {ingredients_raw}")
+        print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}") # ADD THIS LINE
+        
         # 3. Categorize parsed ingredients
         parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
             categorize_parsed_ingredients(parsed_ingredients, fda_substances_map) # Pass the map here

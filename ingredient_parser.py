@@ -4,6 +4,7 @@ import json
 import re
 import os
 import pandas as pd # Ensure pandas is installed if this is used elsewhere
+import sys
 
 def load_patterns(file_path="data/ingredient_naming_patterns.json"):
     """
@@ -161,40 +162,46 @@ def parse_ingredient_string(ingredient_string, patterns, common_ingredients_set,
     return parsed_results
 
 def categorize_parsed_ingredients(parsed_ingredients, fda_substances_map):
-    """
-    Categorizes parsed ingredients into common FDA, non-common FDA, common only,
-    and truly unidentified.
-    Returns: parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report
-    """
     parsed_fda_common = []
     parsed_fda_non_common = []
     parsed_common_only = []
     truly_unidentified = []
     all_fda_parsed_for_report = {} # Use a dictionary to store unique FDA items by their lowercase name
 
+    print(f"DEBUG_PARSER: Starting categorization for {len(parsed_ingredients)} ingredients.")
+
     for ingredient in parsed_ingredients:
         category = ingredient.get("trust_report_category")
         base_ingredient = ingredient.get("base_ingredient")
+        original_string = ingredient.get("original_string") # Ensure original_string is fetched
+
+        print(f"DEBUG_PARSER: Processing: '{original_string}' (Base: '{base_ingredient}') - Initial Category: '{category}'") # ADD/UPDATE THIS LINE
 
         # Get the original FDA substance object from the map if it exists
         fda_substance_obj = fda_substances_map.get(base_ingredient)
 
-        if category == "common_fda_regulated":
-            parsed_fda_common.append(ingredient)
-            if fda_substance_obj:
+        if fda_substance_obj: # Check if a match was found BEFORE relying on 'category' from parser
+            print(f"DEBUG_PARSER: Match found in fda_substances_map for '{base_ingredient}': {fda_substance_obj['name']}") # ADD THIS LINE
+            # Now, categorize based on whether the matched FDA substance is common or not
+            if fda_substance_obj.get("is_common_substance", False):
+                # Ensure the ingredient dict itself has the correct category if it came in wrong
+                ingredient["trust_report_category"] = "common_fda_regulated"
+                parsed_fda_common.append(ingredient)
                 all_fda_parsed_for_report[fda_substance_obj['name'].lower()] = fda_substance_obj
-        elif category == "fda_non_common":
-            parsed_fda_non_common.append(ingredient)
-            if fda_substance_obj:
+            else:
+                ingredient["trust_report_category"] = "fda_non_common"
+                parsed_fda_non_common.append(ingredient)
                 all_fda_parsed_for_report[fda_substance_obj['name'].lower()] = fda_substance_obj
-        elif category == "common_food":
+        elif category == "common_food": # Only if no FDA match, check for common food
             parsed_common_only.append(ingredient)
-        else: # "truly_unidentified" or any other unhandled category
+        else: # If neither FDA nor common_food, it's unidentified
+            ingredient["trust_report_category"] = "truly_unidentified"
             truly_unidentified.append(ingredient)
+        
+        print(f"DEBUG_PARSER: Final category for '{base_ingredient}': {ingredient.get('trust_report_category')}") # ADD THIS LINE
 
     # Convert the dictionary values to a list for the report
     return parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, list(all_fda_parsed_for_report.values())
-
 def calculate_data_completeness(parsed_ingredients, truly_unidentified):
     """Calculates the data completeness score and level."""
     total_ingredients = len(parsed_ingredients)
