@@ -20,23 +20,31 @@ def load_patterns(file_path="data/ingredient_naming_patterns.json"):
 
 def load_fda_substances(file_path="data/all_fda_substances_full_live.json"):
     """
-    Loads FDA substances into a normalized lowercase set for quick lookup.
+    Loads FDA substances into a dictionary for quick lookup by name or alias,
+    returning the full substance object.
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        substances = set()
+        
+        # This will store {lowercase_name_or_alias: full_substance_dict}
+        fda_substances_map = {} 
         for item in data:
-            name = item.get("name", "").lower()
-            if name:
-                substances.add(name)
+            primary_name = item.get("name")
+            if primary_name:
+                fda_substances_map[primary_name.lower()] = item
+            
+            # Also map all 'other_names' to the same substance item
             for alias in item.get("other_names", []):
-                substances.add(alias.lower())
+                fda_substances_map[alias.lower()] = item
+                
         print(f"Loaded FDA substances from: {file_path}")
-        return substances
-    except Exception as e:
-        print(f"Failed to load FDA substances from {file_path}: {e}")
-        return set()
+        return fda_substances_map
+    except FileNotFoundError:
+        print(f"Error: FDA substances file not found at {file_path}. Please ensure it exists.")
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {file_path}. Please check file format.")
+    return {}
 
 def load_common_ingredients(file_path="data/structured_common_ingredients_live.json"):
     """
@@ -105,17 +113,38 @@ def parse_ingredient_string(input_string, patterns, common_ingredients_set, fda_
         base = base.replace("  ", " ")
         base_normalized = base.lower().strip()
 
-        # Classification
+# Classification
         ingredient_type = "unknown"
         trust_report_category = "unknown"
+        fda_details = {} # Initialize empty dictionary for FDA details
 
-        if base_normalized in fda_substances_set:
+        # Use the fda_substances_map for lookup
+        # fda_substances_set is now fda_substances_map
+        if base_normalized in fda_substances_map: 
             ingredient_type = "fda_additive"
-            trust_report_category = "FDA Substance"
+            trust_report_category = "fda_non_common" # Ensure this matches the category expected by ingredient_parser_service.py
+            
+            # Retrieve the full FDA substance details
+            fda_item_data = fda_substances_map[base_normalized]
+            fda_details = {
+                "name": fda_item_data.get("name", original), # Use original string as fallback
+                "used_for": fda_item_data.get("used_for", []),
+                "other_names": fda_item_data.get("other_names", [])
+            }
         elif base_normalized in common_ingredients_set:
             ingredient_type = "common_food"
-            trust_report_category = "Common Ingredient"
+            # Decide if this should be 'common_food' or 'common_fda_regulated' if applicable
+            # Based on SGL pre MVP Trust Report.pdf, 'Common & Minimally Processed Ingredients' and 'Common FDA-Regulated Substances' are distinct categories.
+            # Assuming for now 'common_food' maps to 'Common & Minimally Processed Ingredients'
+            # and other file (e.g., structured_common_ingredients_live.json) handles 'common_fda_regulated'.
+            # For this fix, we'll maintain the current logic of 'Common Ingredient' for common_ingredients_set.
+            trust_report_category = "common_food" 
+            
+            # If common ingredients also have specific details, they would be added here.
+            # For now, we only focus on enriching fda_non_common.
 
+
+        # Construct the result dictionary
         result = {
             "original_string": original,
             "base_ingredient": base_normalized,
@@ -127,7 +156,13 @@ def parse_ingredient_string(input_string, patterns, common_ingredients_set, fda_
                 "trust_report_category": trust_report_category
             }
         }
-
+        
+        # Add FDA details if the ingredient is an FDA additive
+        if ingredient_type == "fda_additive":
+            # Merge fda_details into the result dictionary. 
+            # These keys (name, used_for, other_names) are directly expected by ingredient_parser_service.py
+            result.update(fda_details)
+            
         results.append(result)
 
     return results
