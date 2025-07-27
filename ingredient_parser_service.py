@@ -17,6 +17,11 @@ CORS(app, resources={r"/*": {
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
+# ✅ Load gtin_map.json
+GTIN_MAP_PATH = os.path.join(current_dir, "gtin_map.json")
+with open(GTIN_MAP_PATH, "r") as f:
+    GTIN_TO_FDC = json.load(f)
+
 try:
     from ingredient_parser import (
         load_patterns,
@@ -25,7 +30,7 @@ try:
         parse_ingredient_string
     )
     from cache_manager import get_cached_product, update_lookup_count, write_to_cache
-    from gtin_map import GTIN_TO_FDC
+
     from usda import fetch_product_from_usda
 except Exception as e:
     print("Import error:", str(e))
