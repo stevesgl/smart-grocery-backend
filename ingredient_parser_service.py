@@ -215,12 +215,11 @@ def test_write():
         #     nova_score=1,
         #     nova_description="Unprocessed or minimally processed",
         #     parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
-        # )
+        # ) # <--- THIS LINE IS NOW CORRECTLY COMMENTED OUT
         return jsonify({"message": f"Attempted to write test GTIN {test_gtin} to cache (no-op in MVP)."}), 200
     except Exception as e:
         print("Error in /test-write:", str(e))
         return jsonify({"error": str(e)}), 500
-
-
-if __name__ == '__main__':
+        
+    if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=os.getenv("PORT", 5001))
