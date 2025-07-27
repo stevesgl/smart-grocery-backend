@@ -168,7 +168,7 @@ def gtin_lookup():
             "data_score": data_score,
             "data_completeness_level": completeness,
             "nova_score": nova_score,
-            "nova_description": nova_description
+            "nova_description": nova_description,
             "trust_report_html": trust_report_html
         })
 
