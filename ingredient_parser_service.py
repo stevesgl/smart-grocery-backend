@@ -47,7 +47,7 @@ except Exception as e:
 
 # ✅ Load reference data once
 patterns_data = load_patterns()
-fda_substances_set = load_fda_substances()
+fda_substances_map = load_fda_substances() # Changed to fda_substances_map
 common_ingredients_set = load_common_ingredients()
 
 @app.route('/')
@@ -65,11 +65,11 @@ def gtin_lookup():
         if not gtin:
             return jsonify({"error": "GTIN is required"}), 400
 
-        # ✅ Step 1: Check Airtable cache
-        cached = get_cached_product(gtin)
-        if cached:
-            update_lookup_count(cached["id"])
-            return jsonify(cached["fields"])
+        # ✅ Step 1: Check Airtable cache (Deferred for MVP)
+        # cached = get_cached_product(gtin)
+        # if cached:
+        #     update_lookup_count(cached["id"])
+        #     return jsonify(cached["fields"])
 
         # ✅ Step 2: Get FDC ID from GTIN mapping
         fdc_id = gtin_to_fdc.get(gtin)
@@ -84,7 +84,7 @@ def gtin_lookup():
         # ✅ Step 4: Parse ingredient string
         ingredients_raw = usda_product.get("ingredients", "")
         parsed = parse_ingredient_string(
-            ingredients_raw, patterns_data, common_ingredients_set, fda_substances_set
+            ingredients_raw, patterns_data, common_ingredients_set, fda_substances_map # Pass fda_substances_map
         )
 
         # ✅ Step 4.5: Build FDA Additive Blocks for Trust Report
@@ -99,7 +99,7 @@ def gtin_lookup():
 
         # ✅ Step 4.6: Generate Trust Report HTML
         trust_report_html = generate_trust_report_html(fda_additive_blocks)
-        print("DEBUG: Value of trust_report_html before jsonify:", trust_report_html) # <--- DEBUG LINE
+        print("DEBUG: Value of trust_report_html before jsonify:", trust_report_html) # DEBUG LINE
 
         # ✅ Step 5: Categorize parsed output
         parsed_fda_non_common = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "fda_non_common"]
@@ -127,29 +127,29 @@ def gtin_lookup():
             4: "Ultra-processed food"
         }.get(nova_score, "Unknown")
 
-        # ✅ Step 8: Write to Airtable cache
-        try:
-            print(f"[Debug] Attempting to cache GTIN {gtin} in Airtable...")
-# # write_to_cache(
-# #     gtin=gtin,
-# #     fdc_id=fdc_id,
-# #     brand_name=brand_name,
-# #     brand_owner=brand_owner,
-# #     description=description,
-# #     ingredients_raw=ingredients_raw,
-# #     parsed_fda_non_common=json.dumps([item['base_ingredient'] for item in parsed_fda_non_common]),
-# #     parsed_fda_common=json.dumps([item['base_ingredient'] for item in parsed_fda_common]),
-# #     parsed_common_only=json.dumps([item['base_ingredient'] for item in parsed_common_only]),
-# #     truly_unidentified=json.dumps([item['original_string'] for item in truly_unidentified]),
-# #     data_score=data_score,
-# #     completeness=completeness,
-# #     nova_score=nova_score,
-# #     nova_description=nova_description,
-# #     parsed=json.dumps(parsed), # Cache the full parsed object for flexibility
-# # )
-            print(f"[Debug] ✅ write_to_cache() succeeded.")
-        except Exception as e:
-            print(f"[Airtable] ❌ Failed to write GTIN {gtin} to Airtable: {e}")
+        # ✅ Step 8: Write to Airtable cache (Deferred for MVP)
+        # try:
+        #     print(f"[Debug] Attempting to cache GTIN {gtin} in Airtable...")
+        #     write_to_cache(
+        #         gtin=gtin,
+        #         fdc_id=fdc_id,
+        #         brand_name=usda_product.get("brandName", ""),
+        #         brand_owner=usda_product.get("brandOwner", ""),
+        #         description=usda_product.get("description", ""),
+        #         ingredients_raw=ingredients_raw,
+        #         parsed_fda_non_common=json.dumps(parsed_fda_non_common),
+        #         parsed_fda_common=json.dumps(parsed_fda_common),
+        #         parsed_common_only=json.dumps(parsed_common_only),
+        #         truly_unidentified=json.dumps(truly_unidentified),
+        #         data_score=data_score,
+        #         completeness=completeness,
+        #         nova_score=nova_score,
+        #         nova_description=nova_description,
+        #         parsed=json.dumps(parsed), # Cache the full parsed object for flexibility
+        #     )
+        #     print(f"[Debug] ✅ write_to_cache() succeeded.")
+        # except Exception as e:
+        #     print(f"[Airtable] ❌ Failed to write GTIN {gtin} to Airtable: {e}")
 
         return jsonify({
             "gtin": gtin,
@@ -158,7 +158,7 @@ def gtin_lookup():
             "brand_owner": usda_product.get("brandOwner", ""),
             "description": usda_product.get("description", ""),
             "ingredients": ingredients_raw,
-            "lookup_count": 1,
+            "lookup_count": 1, # Since cache is deferred, always 1 for now
             "last_access": datetime.datetime.utcnow().isoformat(),
             "source": "USDA API",
             "identified_fda_non_common": parsed_fda_non_common,
@@ -178,28 +178,31 @@ def gtin_lookup():
 
 @app.route('/test-write', methods=['GET'])
 def test_write():
-    try:
-        test_gtin = "999999999999"
-# # write_to_cache(
-# #     gtin=test_gtin,
-# #     fdc_id="000000",
-# #     brand_name="Test Brand",
-# #     brand_owner="Test Owner",
-# #     description="This is a test description",
-# #     ingredients_raw="SUGAR, SALT, TEST INGREDIENT",
-# #     parsed_fda_non_common=json.dumps(["sugar"]),
-# #     parsed_fda_common=json.dumps(["salt"]),
-# #     parsed_common_only=json.dumps(["test ingredient"]),
-# #     truly_unidentified=json.dumps([]),
-# #     data_score=1.0,
-# #     completeness="High",
-# #     nova_score=1,
-# #     nova_description="Unprocessed or minimally processed",
-# #     parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
-# # )
-        return jsonify({"status": f"✅ Successfully wrote test GTIN {test_gtin} to Airtable"})
-    except Exception as e:
-        return jsonify({"error": str(e)})
+    # This route is for testing write_to_cache, which is currently deferred for MVP.
+    # It remains commented out to reflect the MVP strategy.
+    # try:
+    #     test_gtin = "999999999999"
+    #     write_to_cache(
+    #         gtin=test_gtin,
+    #         fdc_id="000000",
+    #         brand_name="Test Brand",
+    #         brand_owner="Test Owner",
+    #         description="This is a test description",
+    #         ingredients_raw="SUGAR, SALT, TEST INGREDIENT",
+    #         parsed_fda_non_common=json.dumps(["sugar"]),
+    #         parsed_fda_common=json.dumps(["salt"]),
+    #         parsed_common_only=json.dumps(["test ingredient"]),
+    #         truly_unidentified=json.dumps([]),
+    #         data_score=1.0,
+    #         completeness="High",
+    #         nova_score=1,
+    #         nova_description="Unprocessed or minimally processed",
+    #         parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
+    #     )
+    #     return jsonify({"status": f"✅ Successfully wrote test GTIN {test_gtin} to Airtable"})
+    # except Exception as e:
+    #     return jsonify({"error": str(e)})
+    return jsonify({"status": "Test write route is currently inactive as cache is deferred for MVP."})
 
 
 if __name__ == '__main__':
