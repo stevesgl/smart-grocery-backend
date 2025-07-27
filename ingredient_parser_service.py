@@ -3,49 +3,9 @@ from flask_cors import CORS
 import json
 import os
 import sys
+import datetime
 
-app = Flask(__name__)
-
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import json
-import os
-import sys
-from airtable import Airtable
-
-# Airtable helpers
-def check_airtable_cache(gtin):
-    airtable = Airtable(
-        os.getenv("AIRTABLE_BASE_ID"),
-        os.getenv("AIRTABLE_TABLE_NAME"),
-        api_key=os.getenv("AIRTABLE_API_KEY")
-    )
-    records = airtable.search('gtin_upc', gtin)
-    if records:
-        fields = records[0].get('fields', {})
-        cached = fields.get("data_report")
-        if cached:
-            try:
-                return json.loads(cached)
-            except Exception:
-                return cached  # fallback if it's already parsed
-    return None
-
-def update_airtable_cache(gtin, data_report):
-    airtable = Airtable(
-        os.getenv("AIRTABLE_BASE_ID"),
-        os.getenv("AIRTABLE_TABLE_NAME"),
-        api_key=os.getenv("AIRTABLE_API_KEY")
-    )
-    records = airtable.search('gtin_upc', gtin)
-    json_report = json.dumps(data_report)
-    if records:
-        record_id = records[0]['id']
-        airtable.update(record_id, {"gtin_upc": gtin, "data_report": json_report})
-    else:
-        airtable.insert({"gtin_upc": gtin, "data_report": json_report})
-
-# Flask config
+# ✅ Setup Flask app and CORS
 app = Flask(__name__)
 CORS(app, resources={r"/*": {
     "origins": ["https://barcode-vercel-ten.vercel.app"],
@@ -53,22 +13,25 @@ CORS(app, resources={r"/*": {
     "allow_headers": ["Content-Type"]
 }})
 
-# Parser imports
+# ✅ Import parsers and utilities
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
+
 try:
     from ingredient_parser import (
         load_patterns,
         load_fda_substances,
         load_common_ingredients,
-        parse_ingredient_string,
-        normalize_string
+        parse_ingredient_string
     )
+    from cache_manager import get_cached_product, update_lookup_count, write_to_cache
+    from gtin_map import GTIN_TO_FDC
+    from usda import fetch_product_from_usda
 except Exception as e:
     print("Import error:", str(e))
     raise
 
-# Load parsing data once
+# ✅ Load reference data once
 patterns_data = load_patterns()
 fda_substances_set = load_fda_substances()
 common_ingredients_set = load_common_ingredients()
@@ -88,31 +51,96 @@ def gtin_lookup():
         if not gtin:
             return jsonify({"error": "GTIN is required"}), 400
 
-        # ✅ Check Airtable cache first
-        cached_data = check_airtable_cache(gtin)
-        if cached_data:
-            return jsonify(cached_data)
+        # ✅ Step 1: Check Airtable cache
+        cached = get_cached_product(gtin)
+        if cached:
+            update_lookup_count(cached["id"])
+            return jsonify(cached["fields"])
 
-        # 🔧 Fallback to stubbed parse until USDA product lookup is re-enabled
-        ingredient_string = "sugar, water, natural flavor, red 40"
+        # ✅ Step 2: Get FDC ID from GTIN mapping
+        fdc_id = GTIN_TO_FDC.get(gtin)
+        if not fdc_id:
+            return jsonify({"error": f"GTIN {gtin} not found in gtin_map."}), 404
 
+        # ✅ Step 3: Get USDA product data
+        usda_product = fetch_product_from_usda(fdc_id)
+        if not usda_product:
+            return jsonify({"error": f"FDC ID {fdc_id} not found in USDA API."}), 404
+
+        # ✅ Step 4: Parse ingredient string
+        ingredients_raw = usda_product.get("ingredients", "")
         parsed = parse_ingredient_string(
-            ingredient_string, patterns_data, common_ingredients_set, fda_substances_set
+            ingredients_raw, patterns_data, common_ingredients_set, fda_substances_set
         )
 
-        response_data = {
+        # ✅ Step 5: Categorize parsed output
+        parsed_fda_non_common = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "fda_non_common"]
+        parsed_fda_common = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "fda_common"]
+        parsed_common_only = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "common_only"]
+        truly_unidentified = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "unknown"]
+
+        # ✅ Step 6: Compute scores
+        total = len(parsed)
+        identified = total - len(truly_unidentified)
+        data_score = round(identified / total, 2) if total > 0 else 0.0
+        if data_score >= 0.9:
+            completeness = "High"
+        elif data_score >= 0.5:
+            completeness = "Medium"
+        else:
+            completeness = "Low"
+
+        # ✅ Step 7: Estimate NOVA score
+        nova_score = 4 if data_score < 0.3 else 3 if data_score < 0.7 else 2
+        nova_description = {
+            1: "Unprocessed or minimally processed",
+            2: "Processed culinary ingredient",
+            3: "Processed food",
+            4: "Ultra-processed food"
+        }.get(nova_score, "Unknown")
+
+        # ✅ Step 8: Write to Airtable cache
+        write_to_cache(
+            gtin=gtin,
+            fdc_id=fdc_id,
+            brand_name=usda_product.get("brandName", ""),
+            brand_owner=usda_product.get("brandOwner", ""),
+            description=usda_product.get("description", ""),
+            ingredients_raw=ingredients_raw,
+            parsed_fda_non_common=json.dumps(parsed_fda_non_common),
+            parsed_fda_common=json.dumps(parsed_fda_common),
+            parsed_common_only=json.dumps(parsed_common_only),
+            truly_unidentified=json.dumps(truly_unidentified),
+            data_score=data_score,
+            completeness=completeness,
+            nova_score=nova_score,
+            nova_description=nova_description
+        )
+
+        return jsonify({
             "gtin": gtin,
-            "ingredientsRaw": ingredient_string,
-            "parsedIngredients": parsed
-        }
-
-        # ✅ Save to Airtable
-        update_airtable_cache(gtin, response_data)
-
-        return jsonify(response_data)
+            "fdc_id": fdc_id,
+            "brand_name": usda_product.get("brandName", ""),
+            "brand_owner": usda_product.get("brandOwner", ""),
+            "description": usda_product.get("description", ""),
+            "ingredients": ingredients_raw,
+            "lookup_count": 1,
+            "last_access": datetime.datetime.utcnow().isoformat(),
+            "source": "USDA API",
+            "identified_fda_non_common": parsed_fda_non_common,
+            "identified_fda_common": parsed_fda_common,
+            "identified_common_ingredients_only": parsed_common_only,
+            "truly_unidentified_ingredients": truly_unidentified,
+            "data_score": data_score,
+            "data_completeness_level": completeness,
+            "nova_score": nova_score,
+            "nova_description": nova_description
+        })
 
     except Exception as e:
+        print("Error in /gtin-lookup:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
