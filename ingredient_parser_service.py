@@ -1,6 +1,5 @@
 # FILE: backend/ingredient_parser_service.py
 
-# Temporary comment 2025-07-27 (You can remove this if it's not serving a purpose)
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from report_generator import generate_trust_report_html
@@ -26,8 +25,9 @@ try:
     from ingredient_parser import (
         parse_ingredient_string,
         load_patterns,
-        load_fda_substances, # This will now load a map/dict
+        load_fda_substances,
         load_common_ingredients,
+        load_common_fda_additives, # New import
         categorize_parsed_ingredients,
         calculate_data_completeness,
         calculate_nova_score,
@@ -38,7 +38,7 @@ except ImportError as e:
     print(f"❌ Error importing ingredient_parser: {e}")
     sys.exit(1)
 
-# Import fetch_product_from_usda from usda.py
+# Import fetch_product_from_usda from usda.py (assuming usda.py exists and has this function)
 try:
     from usda import fetch_product_from_usda
     print("✅ Successfully imported fetch_product_from_usda from usda.py.")
@@ -47,18 +47,19 @@ except ImportError as e:
     sys.exit(1)
 
 
-# ✅ Load gtin_map.json with error fallback
+# ✅ Load gtin_map.json with error fallback (Your existing logic for GTIN map)
 DATA_DIR = os.path.join(current_dir, "data")
 GTIN_MAP_PATH = os.path.join(DATA_DIR, "gtin_map.json")
 
 try:
     with open(GTIN_MAP_PATH, "r") as f:
         gtin_to_fdc = json.load(f)
+    print("✅ gtin_map.json loaded successfully.")
 except FileNotFoundError:
-    print(f"[Startup Error] gtin_map.json not found at: {GTIN_MAP_PATH}")
+    print(f"[Startup Error] gtin_map.json not found at: {GTIN_MAP_PATH}. Initializing empty map.")
     gtin_to_fdc = {}
 except json.JSONDecodeError as e:
-    print(f"[Startup Error] Failed to decode gtin_map.json: {e}")
+    print(f"[Startup Error] Failed to decode gtin_map.json: {e}. Initializing empty map.")
     gtin_to_fdc = {}
 
 
@@ -66,18 +67,36 @@ except json.JSONDecodeError as e:
 # These variables must be defined here, outside the route functions,
 # so they are loaded once when the app starts.
 try:
-    # Ensure these file paths are correct relative to DATA_DIR
     patterns_data = load_patterns(os.path.join(DATA_DIR, "ingredient_naming_patterns.json"))
-    # Renamed from _set to _map for clarity, as it will now hold a dict/map
     fda_substances_map = load_fda_substances(os.path.join(DATA_DIR, "all_fda_substances_full_live.json"))
-    # Ensure this points to common_ingredients_live.json (list of strings)
     common_ingredients_set = load_common_ingredients(os.path.join(DATA_DIR, "common_ingredients_live.json"))
+    common_fda_additives_set = load_common_fda_additives(os.path.join(DATA_DIR, "common_fda_additives.json")) # <--- ADDED/CONFIRMED THIS LINE!
 
-    print("✅ All ingredient parser data loaded successfully.")
+    if not patterns_data or not fda_substances_map or not common_ingredients_set or not common_fda_additives_set:
+        print("❌ Critical: Some essential parsing data failed to load. App may not function correctly.")
+        sys.exit(1) # Exit if critical data isn't loaded
+    else:
+        print("✅ All ingredient parser data loaded successfully.")
 except Exception as e:
     print(f"❌ Error loading ingredient parser data: {e}")
     sys.exit(1)
 
+
+@app.route('/')
+def home():
+    """Basic home route to confirm service is running."""
+    return "Smart Grocery Backend Service is running!"
+
+@app.route('/test-cache', methods=['GET'])
+def test_cache():
+    """
+    A temporary endpoint to simulate writing to cache and confirm data structure.
+    As per 'onboarding_sgl_gtin_cache_072720251656.md', caching is deferred to MVP+1.
+    This function is a no-op in MVP, so it just prints a message and returns None.
+    """
+    test_gtin = "1234567890123" # Example GTIN
+    print(f"Attempted to write test GTIN {test_gtin} to cache (no-op in MVP).")
+    return jsonify({"message": f"Attempted to write test GTIN {test_gtin} to cache (no-op in MVP)."}), 200
 
 @app.route('/gtin-lookup', methods=['POST'])
 def gtin_lookup():
@@ -107,19 +126,25 @@ def gtin_lookup():
         if not ingredients_raw:
             return jsonify({"error": "No ingredients found for this product."}), 404
 
+        # DEBUG: Print raw ingredients from USDA
+        print(f"DEBUG_SERVICE: Raw Ingredients: {ingredients_raw}")
+
         # 2. Parse ingredients using the globally loaded data
+        # Corrected parse_ingredient_string call
         parsed_ingredients = parse_ingredient_string(
             ingredients_raw,
-            patterns_data,
-            common_ingredients_set,
-            fda_substances_map # Pass the map here, not the set
+            patterns_data # Only these two arguments are needed here
         )
-        print(f"DEBUG_SERVICE: Raw Ingredients: {ingredients_raw}")
-        print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}") # ADD THIS LINE
-        
-        # 3. Categorize parsed ingredients
+        print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}") # ADDED DEBUG PRINT
+
+        # 3. Categorize parsed ingredients using all loaded data
         parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
-            categorize_parsed_ingredients(parsed_ingredients, fda_substances_map) # Pass the map here
+            categorize_parsed_ingredients(
+                parsed_ingredients=parsed_ingredients,
+                fda_substances_map=fda_substances_map,
+                common_ingredients_set=common_ingredients_set,
+                common_fda_additives_set=common_fda_additives_set # Correctly passing this
+            )
 
         # 4. Calculate data completeness
         data_score, completeness = calculate_data_completeness(parsed_ingredients, truly_unidentified)
@@ -129,7 +154,21 @@ def gtin_lookup():
         nova_description = get_nova_description(nova_score)
 
         # 6. Generate Trust Report HTML
-        trust_report_html = generate_trust_report_html(all_fda_parsed_for_report)
+        # Ensured all parameters derived from ingredient_parser.py's test logic are passed
+        trust_report_html = generate_trust_report_html(
+            product_name=description, # Or brand_name + description
+            ingredients_raw=ingredients_raw,
+            parsed_ingredients=parsed_ingredients,
+            parsed_fda_common=parsed_fda_common,
+            parsed_fda_non_common=parsed_fda_non_common,
+            parsed_common_only=parsed_common_only,
+            truly_unidentified=truly_unidentified,
+            data_completeness_score=data_score,
+            data_completeness_level=completeness,
+            nova_score=nova_score,
+            nova_description=nova_description,
+            all_fda_parsed_for_report=all_fda_parsed_for_report
+        )
 
         # 7. Return response
         print(f"✅ Successfully processed GTIN {gtin}. Returning response.")
@@ -153,38 +192,12 @@ def gtin_lookup():
         })
 
     except Exception as e:
-        print("Error in /gtin-lookup:", str(e))
+        print(f"❌ Error in /gtin-lookup for GTIN {gtin}: {str(e)}")
+        import traceback
+        traceback.print_exc() # Print full traceback for debugging
         return jsonify({"error": str(e)}), 500
 
-@app.route('/test-write', methods=['GET'])
-def test_write():
-    try:
-        test_gtin = "999999999999"
-        # The write_to_cache function is a no-op in MVP, so this will just
-        # print a message and return None. It won't actually write to Airtable.
-        # As per 'onboarding_sgl_gtin_cache_072720251656.md', caching is deferred to MVP+1.
-        # write_to_cache(
-        #     gtin=test_gtin,
-        #     fdc_id="000000",
-        #     brand_name="Test Brand",
-        #     brand_owner="Test Owner",
-        #     description="This is a test description",
-        #     ingredients_raw="SUGAR, SALT, TEST INGREDIENT",
-        #     parsed_fda_non_common=json.dumps([{"name": "sugar"}]),
-        #     parsed_fda_common=json.dumps([{"name": "salt"}]),
-        #     parsed_common_only=json.dumps([{"name": "test ingredient"}]),
-        #     truly_unidentified=json.dumps([]),
-        #     data_score=1.0,
-        #     completeness="High",
-        #     nova_score=1,
-        #     nova_description="Unprocessed or minimally processed",
-        #     parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
-        # )
-        return jsonify({"message": f"Attempted to write test GTIN {test_gtin} to cache (no-op in MVP)."}), 200
-    except Exception as e:
-        print("Error in /test-write:", str(e))
-        return jsonify({"error": str(e)}), 500
-
-# THIS BLOCK NEEDS TO BE DE-INDENTED TO THE SAME LEVEL AS 'app = Flask(__name__)'
+# This block ensures the app runs when executed directly
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=os.getenv("PORT", 5001))
+    print("Running Flask app locally...")
+    app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000)) # Use PORT env var or default 5000
