@@ -3,12 +3,15 @@
 import json
 import re
 import os
-import pandas as pd
+import pandas as pd # Ensure pandas is installed if this is used elsewhere
 import sys
 
 def load_patterns(file_path="data/ingredient_naming_patterns.json"):
-    # ... (keep this function as is) ...
+    """
+    Loads descriptive modifiers, parenthetical examples, and punctuation patterns from JSON.
+    """
     try:
+        # Construct absolute path for consistency
         abs_file_path = os.path.join(os.path.dirname(__file__), file_path)
         with open(abs_file_path, 'r', encoding='utf-8') as f:
             patterns = json.load(f)
@@ -21,8 +24,13 @@ def load_patterns(file_path="data/ingredient_naming_patterns.json"):
     return {}
 
 def load_fda_substances(file_path="data/all_fda_substances_full_live.json"):
-    # ... (keep this function as is) ...
+    """
+    Loads FDA substances into a dictionary for quick lookup by normalized name or alias,
+    returning the full substance object.
+    The keys will be lowercase names/aliases, and values will be the original full dicts.
+    """
     try:
+        # Construct absolute path for consistency
         abs_file_path = os.path.join(os.path.dirname(__file__), file_path)
         with open(abs_file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -43,8 +51,12 @@ def load_fda_substances(file_path="data/all_fda_substances_full_live.json"):
     return {}
 
 def load_common_ingredients(file_path="data/common_ingredients_live.json"):
-    # ... (keep this function as is) ...
+    """
+    Loads common ingredients from a JSON file into a set for quick lookup.
+    Assumes the JSON file contains a list of strings.
+    """
     try:
+        # Construct absolute path for consistency
         abs_file_path = os.path.join(os.path.dirname(__file__), file_path)
         with open(abs_file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -64,7 +76,7 @@ def load_common_ingredients(file_path="data/common_ingredients_live.json"):
 
 def normalize_string(s):
     """Normalizes a string by lowercasing and removing extra spaces/punctuation.
-       This is for general normalization, specific parsing needs more logic."""
+        This is for general normalization, specific parsing needs more logic."""
     s = s.lower()
     # Remove non-alphanumeric except spaces. Keep hyphen for now if part of a name.
     s = re.sub(r'[^a-z0-9\s-]', '', s) # Allow hyphens.
@@ -198,75 +210,70 @@ def categorize_parsed_ingredients(parsed_ingredients, fda_substances_map):
 
     return parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, list(all_fda_parsed_for_report.values())
 
-# ... (keep calculate_data_completeness, calculate_nova_score, get_nova_description as is) ...
+def calculate_data_completeness(parsed_ingredients, truly_unidentified):
+    """
+    Calculates the data completeness score based on parsed ingredients.
+    Score is higher if fewer ingredients are 'truly_unidentified'.
+    Returns a percentage score and a descriptive completeness level.
+    """
+    total_ingredients = len(parsed_ingredients)
+    unidentified_count = len(truly_unidentified)
 
-# --- Main execution for testing purposes (keep as is) ---
-if __name__ == '__main__':
-    # ... (keep this block as is) ...
-    print("Running ingredient_parser.py directly for testing...")
-    # Load data for testing
-    patterns_data_test = load_patterns()
-    fda_substances_map_test = load_fda_substances()
-    common_ingredients_set_test = load_common_ingredients()
+    if total_ingredients == 0:
+        return 100.0, "Perfect (No Ingredients)"
+    
+    # Calculate identified count
+    identified_count = total_ingredients - unidentified_count
+    
+    # Ensure identified_count is not negative
+    if identified_count < 0:
+        identified_count = 0
 
-    if not patterns_data_test or not fda_substances_map_test or not common_ingredients_set_test:
-        print("Failed to load necessary data for testing. Exiting.")
-        sys.exit(1)
+    score = (identified_count / total_ingredients) * 100
 
-    test_strings = [
-        "chicken breast, boneless, skinless, raw",
-        "enriched bleached wheat flour (niacin, reduced iron, thiamin mononitrate, riboflavin, folic acid)",
-        "water (filtered) and sugar",
-        "natural and artificial flavors",
-        "sugar, brown",
-        "sodium selenite",
-        "calcium carbonate (fortified)",
-        "milk, whole, pasteurized, vitamin d added",
-        "WATER, PINTO BEANS, ONION, TOMATO, SALT, JALAPENO PEPPER, SOYBEAN OIL, SPICES",
-        "ENRICHED WHEAT FLOUR (WHEAT FLOUR, NIACIN, REDUCED IRON, THIAMIN MONONITRATE, RIBOFLAVIN, FOLIC ACID), WATER, HIGH FRUCTOSE CORN SYRUP, YEAST, SALT, VEGETABLE OIL (SOYBEAN OIL, PALM OIL, CANOLA OIL), MONOGLYCERIDES, CALCIUM PROPIONATE (PRESERVATIVE), CALCIUM SULFATE, ENZYMES, AMMONIUM SULFATE, ASCORBIC ACID (DOUGH CONDITIONER), AZODICARBONAMIDE, L-CYSTEINE HYDROCHLORIDE.",
-        # Add a specific test case for Sodium Benzoate to confirm
-        "0.1% SODIUM BENZOATE AS A PRESERVATIVE"
-    ]
+    if score >= 90:
+        completeness_level = "High"
+    elif score >= 70:
+        completeness_level = "Medium"
+    elif score >= 50:
+        completeness_level = "Low"
+    else:
+        completeness_level = "Very Low"
 
-    print("\n--- Running ingredient parsing tests ---")
-    for i, s in enumerate(test_strings):
-        print(f"\n--- Test Case {i+1}: {s} ---")
-        parsed = parse_ingredient_string(s, patterns_data_test, common_ingredients_set_test, fda_substances_map_test)
-        print("Parsed Ingredients:")
-        for p_ing in parsed:
-            print(f"   - Original: '{p_ing['original_string']}' -> Base: '{p_ing['base_ingredient']}' (Category: {p_ing['trust_report_category']})")
-            if p_ing['modifiers']:
-                print(f"     Modifiers: {p_ing['modifiers']}")
-            if p_ing['parenthetical_info']:
-                print(f"     Parenthetical: {p_ing['parenthetical_info']['raw']}")
-            if p_ing['attributes']:
-                print(f"     Attributes: {p_ing['attributes']}")
+    return round(score, 2), completeness_level
 
-        # Test categorization
-        parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
-            categorize_parsed_ingredients(parsed, fda_substances_map_test)
+def calculate_nova_score(parsed_ingredients):
+    """
+    Calculates the NOVA score for a list of parsed ingredients.
+    This is a simplified implementation based on typical NOVA criteria.
+    Score 1: Unprocessed or minimally processed foods.
+    Score 2: Processed culinary ingredients.
+    Score 3: Processed foods.
+    Score 4: Ultra-processed foods.
+    """
+    nova_score = 1 # Start with the assumption of minimally processed
 
-        print("\nCategorized Results:")
-        print(f"   Common FDA-regulated ({len(parsed_fda_common)}): {[p['base_ingredient'] for p in parsed_fda_common]}")
-        print(f"   Non-Common FDA-regulated ({len(parsed_fda_non_common)}): {[p['base_ingredient'] for p in parsed_fda_non_common]}")
-        print(f"   Common Food Only ({len(parsed_common_only)}): {[p['base_ingredient'] for p in parsed_common_only]}")
-        print(f"   Truly Unidentified ({len(truly_unidentified)}): {[p['base_ingredient'] for p in truly_unidentified]}")
-        print(f"   All FDA Additives for Report ({len(all_fda_parsed_for_report)}): {[p['name'] for p in all_fda_parsed_for_report]}")
+    # Check for NOVA Group 4 (Ultra-processed foods)
+    # Look for common markers of ultra-processed foods
+    # Additives: Flavors, colors, emulsifiers, sweeteners, thickeners, preservatives not typically used in home cooking.
+    # Ingredients: High Fructose Corn Syrup, hydrogenated oils, modified starches, protein isolates.
+    
+    # Prioritize NOVA 4 detection
+    for ingredient in parsed_ingredients:
+        base = ingredient['base_ingredient']
+        original_string = ingredient['original_string'].lower()
+        category = ingredient['trust_report_category']
 
+        # Rule 1: Check for explicit "fda_non_common" (strong indicator of NOVA 4)
+        if category == "fda_non_common":
+            nova_score = 4
+            break # Found an ultra-processed indicator, no need to check further
 
-        # Test data completeness
-        score, completeness_level = calculate_data_completeness(parsed, truly_unidentified)
-        print(f"Data Completeness: {score}% ({completeness_level})")
-
-        # Test NOVA score
-        nova_score_val = calculate_nova_score(parsed)
-        nova_desc = get_nova_description(nova_score_val)
-        print(f"NOVA Score: {nova_score_val} ({nova_desc})")
-
-        # Test HTML generation (optional, requires report_generator.py to be importable)
-        try:
-            from report_generator import generate_trust_report_html
-            html_report = generate_trust_report_html(all_fda_parsed_for_report)
-            # print("\nGenerated HTML (first 500 chars):\n", html_report[:500])
-        except ImportError:
-            print("report_generator.py not found, skipping HTML generation test.")
+        # Rule 2: Check for specific NOVA 4 ingredient names (even if not explicitly fda_non_common)
+        # These are commonly known ultra-processed indicators
+        if any(keyword in base for keyword in [
+            "high fructose corn syrup", "hydrogenated oil", "modified starch",
+            "protein isolate", "maltodextrin", "carrageenan", "artificial flavor",
+            "artificial color", "monosodium glutamate", "msg", "emulsifier",
+            "lecithin"
+        ]) or "artificial" in original_string or ("fortified" in original_string and
