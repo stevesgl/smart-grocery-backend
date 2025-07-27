@@ -97,15 +97,9 @@ def gtin_lookup():
                     "other_names": item["attributes"].get("other_names", [])
                 })
 
-# ✅ Step 4.6: Generate Trust Report HTML
-trust_report_html = generate_trust_report_html(fda_additive_blocks)
-print("DEBUG: Value of trust_report_html before jsonify:", trust_report_html) # <--- ADD THIS LINE
-
-return jsonify({
-    # ... your existing fields ...
-    "trust_report_html": trust_report_html
-})
-
+        # ✅ Step 4.6: Generate Trust Report HTML
+        trust_report_html = generate_trust_report_html(fda_additive_blocks)
+        print("DEBUG: Value of trust_report_html before jsonify:", trust_report_html) # <--- DEBUG LINE
 
         # ✅ Step 5: Categorize parsed output
         parsed_fda_non_common = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "fda_non_common"]
