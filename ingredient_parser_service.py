@@ -1,4 +1,6 @@
-# Temporary comment 2025-07-27
+# FILE: backend/ingredient_parser_service.py
+
+# Temporary comment 2025-07-27 (You can remove this if it's not serving a purpose)
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from report_generator import generate_trust_report_html
@@ -24,7 +26,7 @@ try:
     from ingredient_parser import (
         parse_ingredient_string,
         load_patterns,
-        load_fda_substances,
+        load_fda_substances, # This will now load a map/dict
         load_common_ingredients,
         categorize_parsed_ingredients,
         calculate_data_completeness,
@@ -41,7 +43,7 @@ try:
     from usda import fetch_product_from_usda
     print("✅ Successfully imported fetch_product_from_usda from usda.py.")
 except ImportError as e:
-    print(f"❌ Error importing fetch_product_from_usda from usda.py: {e}")
+    print(f"❌ Error importing usda.py: {e}")
     sys.exit(1)
 
 
@@ -52,7 +54,6 @@ GTIN_MAP_PATH = os.path.join(DATA_DIR, "gtin_map.json")
 try:
     with open(GTIN_MAP_PATH, "r") as f:
         gtin_to_fdc = json.load(f)
-    print(f"✅ Loaded GTIN map from {GTIN_MAP_PATH}")
 except FileNotFoundError:
     print(f"[Startup Error] gtin_map.json not found at: {GTIN_MAP_PATH}")
     gtin_to_fdc = {}
@@ -60,137 +61,98 @@ except json.JSONDecodeError as e:
     print(f"[Startup Error] Failed to decode gtin_map.json: {e}")
     gtin_to_fdc = {}
 
-# Load parsing data
-patterns_data = load_patterns(os.path.join(DATA_DIR, "ingredient_naming_patterns.json"))
-fda_substances_data = load_fda_substances(os.path.join(DATA_DIR, "all_fda_substances_full_live.json"))
-common_ingredients_set = load_common_ingredients(os.path.join(DATA_DIR, "structured_common_ingredients_live.json"))
 
-# Mock cache manager for MVP (no-op functions)
-# The cache_manager.py functions are no-ops for MVP to defer caching to MVP+1
-from cache_manager import read_from_cache, write_to_cache
+# --- Global data loading for ingredient_parser functions ---
+# These variables must be defined here, outside the route functions,
+# so they are loaded once when the app starts.
+try:
+    # Ensure these file paths are correct relative to DATA_DIR
+    patterns_data = load_patterns(os.path.join(DATA_DIR, "ingredient_naming_patterns.json"))
+    # Renamed from _set to _map for clarity, as it will now hold a dict/map
+    fda_substances_map = load_fda_substances(os.path.join(DATA_DIR, "all_fda_substances_full_live.json"))
+    # Ensure this points to common_ingredients_live.json (list of strings)
+    common_ingredients_set = load_common_ingredients(os.path.join(DATA_DIR, "common_ingredients_live.json"))
+
+    print("✅ All ingredient parser data loaded successfully.")
+except Exception as e:
+    print(f"❌ Error loading ingredient parser data: {e}")
+    sys.exit(1)
+
 
 @app.route('/gtin-lookup', methods=['POST'])
 def gtin_lookup():
-    data = request.get_json()
-    gtin = data.get('gtin')
+    try:
+        data = request.get_json()
+        gtin = data.get('gtin')
 
-    if not gtin:
-        return jsonify({"error": "GTIN is required"}), 400
+        if not gtin:
+            return jsonify({"error": "GTIN is required"}), 400
 
-    print(f"📥 Received GTIN: {gtin}")
+        # 1. Fetch data from USDA
+        fdc_id_from_map = gtin_to_fdc.get(gtin)
+        if not fdc_id_from_map:
+            return jsonify({"error": "GTIN not found in local map."}), 404
 
-    # 1. Check local GTIN map
-    fdc_id = gtin_to_fdc.get(gtin)
-    if not fdc_id:
-        print(f"🔍 GTIN {gtin} not found in local map.")
+        usda_data = fetch_product_from_usda(fdc_id_from_map)
+
+        if not usda_data:
+            return jsonify({"error": f"Product not found for FDC ID {fdc_id_from_map} or USDA API error."}), 404
+
+        fdc_id = usda_data.get('fdcId')
+        brand_name = usda_data.get('brandName')
+        brand_owner = usda_data.get('brandOwner')
+        description = usda_data.get('description')
+        ingredients_raw = usda_data.get('ingredients')
+
+        if not ingredients_raw:
+            return jsonify({"error": "No ingredients found for this product."}), 404
+
+        # 2. Parse ingredients using the globally loaded data
+        parsed_ingredients = parse_ingredient_string(
+            ingredients_raw,
+            patterns_data,
+            common_ingredients_set,
+            fda_substances_map # Pass the map here, not the set
+        )
+
+        # 3. Categorize parsed ingredients
+        parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
+            categorize_parsed_ingredients(parsed_ingredients, fda_substances_map) # Pass the map here
+
+        # 4. Calculate data completeness
+        data_score, completeness = calculate_data_completeness(parsed_ingredients, truly_unidentified)
+
+        # 5. Calculate NOVA score
+        nova_score = calculate_nova_score(parsed_ingredients)
+        nova_description = get_nova_description(nova_score)
+
+        # 6. Generate Trust Report HTML
+        trust_report_html = generate_trust_report_html(all_fda_parsed_for_report)
+
+        # 7. Return response
+        print(f"✅ Successfully processed GTIN {gtin}. Returning response.")
         return jsonify({
-            "error": "Product not found",
-            "message": "GTIN not in our current mapping. Try another one."
-        }), 404
-
-    # 2. Fetch data from USDA (caching is no-op for MVP)
-    print(f"Calling USDA API for FDC ID: {fdc_id}")
-    # Use fetch_product_from_usda from usda.py
-    product_data = fetch_product_from_usda(fdc_id)
-
-    if not product_data:
-        print(f"❌ Failed to fetch product data for FDC ID: {fdc_id}")
-        return jsonify({"error": "Failed to fetch product data from USDA"}), 500
-
-    brand_name = product_data.get('brandName', 'N/A')
-    brand_owner = product_data.get('brandOwner', 'N/A')
-    description = product_data.get('description', 'N/A')
-    ingredients_raw = product_data.get('ingredients', '')
-
-    if not ingredients_raw:
-        print(f"⚠️ No ingredients found for FDC ID: {fdc_id}")
-        return jsonify({
-            "description": description,
+            "gtin": gtin,
+            "fdc_id": fdc_id,
             "brand_name": brand_name,
             "brand_owner": brand_owner,
-            "ingredients_raw": "No ingredients listed.",
-            "parsed_ingredients": [],
-            "trust_report_html": "<p class='text-sm text-gray-500'>No ingredients found to generate a Trust Report.</p>",
-            "data_score": 0,
-            "data_completeness_level": "Low",
-            "nova_score": None,
-            "nova_description": "N/A",
-            "parsed_fda_common": [],
-            "parsed_fda_non_common": [],
-            "parsed_common_only": [],
-            "truly_unidentified_ingredients": []
+            "description": description,
+            "ingredients_raw": ingredients_raw,
+            "parsed_ingredients": parsed_ingredients,
+            "parsed_fda_common": parsed_fda_common,
+            "parsed_fda_non_common": parsed_fda_non_common,
+            "parsed_common_only": parsed_common_only,
+            "truly_unidentified_ingredients": truly_unidentified,
+            "data_score": data_score,
+            "data_completeness_level": completeness,
+            "nova_score": nova_score,
+            "nova_description": nova_description,
+            "trust_report_html": trust_report_html
         })
 
-    # 3. Parse and categorize ingredients
-    print(f"⚙️ Parsing ingredients: {ingredients_raw[:100]}...") # Log first 100 chars
-    parsed_ingredients = parse_ingredient_string(
-        ingredients_raw,
-        patterns_data,
-        common_ingredients_set,
-        fda_substances_data # Pass the full data for detailed lookup
-    )
-
-    (parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified) = \
-        categorize_parsed_ingredients(parsed_ingredients, fda_substances_data)
-
-    # 4. Calculate scores
-    data_score, completeness = calculate_data_completeness(
-        len(ingredients_raw.split(',')), # Simple count of comma-separated items
-        len(parsed_fda_common) + len(parsed_fda_non_common) + len(parsed_common_only)
-    )
-    nova_score = calculate_nova_score(parsed_fda_non_common, truly_unidentified)
-    nova_description = get_nova_description(nova_score)
-
-    # 5. Generate Trust Report HTML
-    # Combine all FDA-related parsed ingredients for the report
-    all_fda_parsed_for_report = []
-    for ingredient in parsed_fda_non_common + parsed_fda_common:
-        # For each FDA-related ingredient, find its full data from fda_substances_data
-        # This allows us to retrieve 'used_for' and 'other_names'
-        original_name = ingredient.get("base_ingredient", "").lower()
-        fda_detail = fda_substances_data.get(original_name)
-        if fda_detail:
-            all_fda_parsed_for_report.append({
-                "name": fda_detail.get("name"),
-                "used_for": fda_detail.get("used_for", []),
-                "other_names": fda_detail.get("other_names", [])
-            })
-        else:
-            # Fallback if for some reason detail isn't found (shouldn't happen if categorized correctly)
-            all_fda_parsed_for_report.append({
-                "name": ingredient.get("base_ingredient", "Unknown Additive"),
-                "used_for": [],
-                "other_names": []
-            })
-
-
-    trust_report_html = generate_trust_report_html(all_fda_parsed_for_report)
-
-
-    # 6. Return response
-    print(f"✅ Successfully processed GTIN {gtin}. Returning response.")
-    return jsonify({
-        "gtin": gtin,
-        "fdc_id": fdc_id,
-        "brand_name": brand_name,
-        "brand_owner": brand_owner,
-        "description": description,
-        "ingredients_raw": ingredients_raw,
-        "parsed_ingredients": parsed_ingredients,
-        "parsed_fda_common": parsed_fda_common,
-        "parsed_fda_non_common": parsed_fda_non_common,
-        "parsed_common_only": parsed_common_only,
-        "truly_unidentified_ingredients": truly_unidentified,
-        "data_score": data_score,
-        "data_completeness_level": completeness,
-        "nova_score": nova_score,
-        "nova_description": nova_description,
-        "trust_report_html": trust_report_html
-    })
-
-except Exception as e:
-    print("Error in /gtin-lookup:", str(e))
-    return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        print("Error in /gtin-lookup:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/test-write', methods=['GET'])
 def test_write():
@@ -215,11 +177,12 @@ def test_write():
         #     nova_score=1,
         #     nova_description="Unprocessed or minimally processed",
         #     parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
-        # ) # <--- THIS LINE IS NOW CORRECTLY COMMENTED OUT
+        # )
         return jsonify({"message": f"Attempted to write test GTIN {test_gtin} to cache (no-op in MVP)."}), 200
     except Exception as e:
         print("Error in /test-write:", str(e))
         return jsonify({"error": str(e)}), 500
-        
-    if __name__ == '__main__':
+
+# THIS BLOCK NEEDS TO BE DE-INDENTED TO THE SAME LEVEL AS 'app = Flask(__name__)'
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=os.getenv("PORT", 5001))
