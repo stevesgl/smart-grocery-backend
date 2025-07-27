@@ -104,7 +104,7 @@ def normalize_string(s):
     s = re.sub(r'\[.*?\]', '', s)
     # Replace common punctuation with spaces
     s = re.sub(r'[.,;!?:/\\-_"\'`]+', ' ', s)
-    s = re.strip()
+    s = s.strip()
     return s
 
 def parse_ingredient_string(ingredient_string, patterns):
