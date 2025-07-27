@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from report_generator import generate_trust_report_html
 import json
 import os
 import sys
@@ -86,6 +87,20 @@ def gtin_lookup():
             ingredients_raw, patterns_data, common_ingredients_set, fda_substances_set
         )
 
+        # ✅ Step 4.5: Build FDA Additive Blocks for Trust Report
+        fda_additive_blocks = []
+        for item in parsed:
+            if item["attributes"]["trust_report_category"] == "fda_non_common":
+                fda_additive_blocks.append({
+                    "name": item["base_ingredient"],
+                    "used_for": item["attributes"].get("used_for", []),
+                    "other_names": item["attributes"].get("other_names", [])
+                })
+
+        # ✅ Step 4.6: Generate Trust Report HTML
+        trust_report_html = generate_trust_report_html(fda_additive_blocks)
+
+
         # ✅ Step 5: Categorize parsed output
         parsed_fda_non_common = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "fda_non_common"]
         parsed_fda_common = [i["base_ingredient"] for i in parsed if i["attributes"]["trust_report_category"] == "fda_common"]
@@ -154,6 +169,7 @@ def gtin_lookup():
             "data_completeness_level": completeness,
             "nova_score": nova_score,
             "nova_description": nova_description
+            "trust_report_html": trust_report_html
         })
 
     except Exception as e:
