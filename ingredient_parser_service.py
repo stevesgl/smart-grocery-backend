@@ -113,22 +113,24 @@ def gtin_lookup():
         }.get(nova_score, "Unknown")
 
         # ✅ Step 8: Write to Airtable cache
-        write_to_cache(
-            gtin=gtin,
-            fdc_id=fdc_id,
-            brand_name=usda_product.get("brandName", ""),
-            brand_owner=usda_product.get("brandOwner", ""),
-            description=usda_product.get("description", ""),
-            ingredients_raw=ingredients_raw,
-            parsed_fda_non_common=json.dumps(parsed_fda_non_common),
-            parsed_fda_common=json.dumps(parsed_fda_common),
-            parsed_common_only=json.dumps(parsed_common_only),
-            truly_unidentified=json.dumps(truly_unidentified),
-            data_score=data_score,
-            completeness=completeness,
-            nova_score=nova_score,
-            nova_description=nova_description
-        )
+write_to_cache(
+    gtin=gtin,
+    fdc_id=fdc_id,
+    brand_name=usda_product.get("brandName", ""),
+    brand_owner=usda_product.get("brandOwner", ""),
+    description=usda_product.get("description", ""),
+    ingredients_raw=ingredients_raw,
+    parsed_fda_non_common=json.dumps(parsed_fda_non_common),
+    parsed_fda_common=json.dumps(parsed_fda_common),
+    parsed_common_only=json.dumps(parsed_common_only),
+    truly_unidentified=json.dumps(truly_unidentified),
+    data_score=data_score,
+    completeness=completeness,
+    nova_score=nova_score,
+    nova_description=nova_description,
+    parsed=parsed  # ✅ THIS MUST BE INCLUDED
+)
+
 
         return jsonify({
             "gtin": gtin,
