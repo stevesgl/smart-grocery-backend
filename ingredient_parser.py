@@ -253,11 +253,6 @@ def calculate_nova_score(parsed_ingredients):
     """
     nova_score = 1 # Start with the assumption of minimally processed
 
-    # Check for NOVA Group 4 (Ultra-processed foods)
-    # Look for common markers of ultra-processed foods
-    # Additives: Flavors, colors, emulsifiers, sweeteners, thickeners, preservatives not typically used in home cooking.
-    # Ingredients: High Fructose Corn Syrup, hydrogenated oils, modified starches, protein isolates.
-    
     # Prioritize NOVA 4 detection
     for ingredient in parsed_ingredients:
         base = ingredient['base_ingredient']
@@ -271,9 +266,137 @@ def calculate_nova_score(parsed_ingredients):
 
         # Rule 2: Check for specific NOVA 4 ingredient names (even if not explicitly fda_non_common)
         # These are commonly known ultra-processed indicators
-        if any(keyword in base for keyword in [
+        is_nova4_keyword = any(keyword in base for keyword in [
             "high fructose corn syrup", "hydrogenated oil", "modified starch",
             "protein isolate", "maltodextrin", "carrageenan", "artificial flavor",
             "artificial color", "monosodium glutamate", "msg", "emulsifier",
             "lecithin"
-        ]) or "artificial" in original_string or ("fortified" in original_string and
+        ])
+        is_artificial_flavor = "artificial" in original_string
+        is_fortified_non_essential = ("fortified" in original_string and not (base in ["calcium carbonate", "iron", "folic acid", "niacin", "thiamin mononitrate", "riboflavin"]))
+
+        if is_nova4_keyword or is_artificial_flavor or is_fortified_non_essential:
+            nova_score = 4
+            break
+
+    # If not NOVA 4, check for NOVA 3 (Processed Foods)
+    # Foods made from NOVA 1 & 2 ingredients, but processed to extend shelf-life or alter taste.
+    # Examples: Canned vegetables with salt/sugar, simple breads (flour, water, yeast, salt), cheeses.
+    # Indicators: Presence of multiple common ingredients + salt/sugar/oil, basic preservatives,
+    # or the overall structure suggests simple processing.
+    if nova_score < 4:
+        # Check if there are multiple ingredients that are not just "unprocessed"
+        # If there's more than just a single basic ingredient (like "water" or "chicken"),
+        # and it includes common processed culinary ingredients, it leans towards Group 3.
+        # This is a heuristic.
+        num_processed_culinary_or_common = 0
+        for ingredient in parsed_ingredients:
+            category = ingredient['trust_report_category']
+            if category in ["common_food", "common_fda_regulated"] and ingredient['base_ingredient'] not in ["water", "chicken", "beef", "milk", "eggs"]:
+                num_processed_culinary_or_common += 1
+        
+        # Heuristic: If there are multiple identified ingredients, and some are processed culinary
+        # (e.g., flour, sugar, salt, oil) or common_fda_regulated, it's likely Group 3.
+        # This is a very simplified heuristic.
+        if num_processed_culinary_or_common >= 2: # At least two non-water/basic ingredients that are processed/common
+            nova_score = max(nova_score, 3) # Elevate to 3 if it was 1 or 2
+
+    # If still low, check for NOVA 2 (Processed Culinary Ingredients)
+    # Single ingredients like sugar, salt, butter, oils, flour
+    if nova_score < 3:
+        for ingredient in parsed_ingredients:
+            base = ingredient['base_ingredient']
+            category = ingredient['trust_report_category']
+            # If it's a common food that's typically a processed culinary ingredient, set to NOVA 2.
+            # This is a very simplified list, should be more comprehensive.
+            if category == "common_food" and base in ["sugar", "salt", "oil", "flour", "butter", "vinegar"]:
+                nova_score = max(nova_score, 2)
+                # Don't break here, as another ingredient might push it higher
+
+    # Default if no specific indicators found remains NOVA 1
+
+    return nova_score
+
+def get_nova_description(nova_score):
+    """Returns a descriptive string for a given NOVA score."""
+    if nova_score == 1:
+        return "Unprocessed or minimally processed foods"
+    elif nova_score == 2:
+        return "Processed culinary ingredients"
+    elif nova_score == 3:
+        return "Processed foods"
+    elif nova_score == 4:
+        return "Ultra-processed foods"
+    else:
+        return "Unknown NOVA score"
+
+
+# --- Main execution for testing purposes ---
+if __name__ == '__main__':
+    print("Running ingredient_parser.py directly for testing...")
+    # Load data for testing
+    patterns_data_test = load_patterns()
+    fda_substances_map_test = load_fda_substances()
+    common_ingredients_set_test = load_common_ingredients()
+
+    if not patterns_data_test or not fda_substances_map_test or not common_ingredients_set_test:
+        print("Failed to load necessary data for testing. Exiting.")
+        sys.exit(1)
+
+    test_strings = [
+        "chicken breast, boneless, skinless, raw",
+        "enriched bleached wheat flour (niacin, reduced iron, thiamin mononitrate, riboflavin, folic acid)",
+        "water (filtered) and sugar",
+        "natural and artificial flavors",
+        "sugar, brown",
+        "sodium selenite",
+        "calcium carbonate (fortified)",
+        "milk, whole, pasteurized, vitamin d added",
+        "WATER, PINTO BEANS, ONION, TOMATO, SALT, JALAPENO PEPPER, SOYBEAN OIL, SPICES",
+        "ENRICHED WHEAT FLOUR (WHEAT FLOUR, NIACIN, REDUCED IRON, THIAMIN MONONITRATE, RIBOFLAVIN, FOLIC ACID), WATER, HIGH FRUCTOSE CORN SYRUP, YEAST, SALT, VEGETABLE OIL (SOYBEAN OIL, PALM OIL, CANOLA OIL), MONOGLYCERIDES, CALCIUM PROPIONATE (PRESERVATIVE), CALCIUM SULFATE, ENZYMES, AMMONIUM SULFATE, ASCORBIC ACID (DOUGH CONDITIONER), AZODICARBONAMIDE, L-CYSTEINE HYDROCHLORIDE.",
+        # Add a specific test case for Sodium Benzoate to confirm
+        "0.1% SODIUM BENZOATE AS A PRESERVATIVE"
+    ]
+
+    print("\n--- Running ingredient parsing tests ---")
+    for i, s in enumerate(test_strings):
+        print(f"\n--- Test Case {i+1}: {s} ---")
+        parsed = parse_ingredient_string(s, patterns_data_test, common_ingredients_set_test, fda_substances_map_test)
+        print("Parsed Ingredients:")
+        for p_ing in parsed:
+            print(f"    - Original: '{p_ing['original_string']}' -> Base: '{p_ing['base_ingredient']}' (Category: {p_ing['trust_report_category']})")
+            if p_ing['modifiers']:
+                print(f"      Modifiers: {p_ing['modifiers']}")
+            if p_ing['parenthetical_info']:
+                print(f"      Parenthetical: {p_ing['parenthetical_info']['raw']}")
+            if p_ing['attributes']:
+                print(f"      Attributes: {p_ing['attributes']}")
+
+        # Test categorization
+        parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
+            categorize_parsed_ingredients(parsed, fda_substances_map_test)
+
+        print("\nCategorized Results:")
+        print(f"    Common FDA-regulated ({len(parsed_fda_common)}): {[p['base_ingredient'] for p in parsed_fda_common]}")
+        print(f"    Non-Common FDA-regulated ({len(parsed_fda_non_common)}): {[p['base_ingredient'] for p in parsed_fda_non_common]}")
+        print(f"    Common Food Only ({len(parsed_common_only)}): {[p['base_ingredient'] for p in parsed_common_only]}")
+        print(f"    Truly Unidentified ({len(truly_unidentified)}): {[p['base_ingredient'] for p in truly_unidentified]}")
+        print(f"    All FDA Additives for Report ({len(all_fda_parsed_for_report)}): {[p['name'] for p in all_fda_parsed_for_report]}")
+
+
+        # Test data completeness
+        score, completeness_level = calculate_data_completeness(parsed, truly_unidentified)
+        print(f"Data Completeness: {score}% ({completeness_level})")
+
+        # Test NOVA score
+        nova_score_val = calculate_nova_score(parsed)
+        nova_desc = get_nova_description(nova_score_val)
+        print(f"NOVA Score: {nova_score_val} ({nova_desc})")
+
+        # Test HTML generation (optional, requires report_generator.py to be importable)
+        try:
+            from report_generator import generate_trust_report_html
+            html_report = generate_trust_report_html(all_fda_parsed_for_report)
+            # print("\nGenerated HTML (first 500 chars):\n", html_report[:500])
+        except ImportError:
+            print("report_generator.py not found, skipping HTML generation test.")
