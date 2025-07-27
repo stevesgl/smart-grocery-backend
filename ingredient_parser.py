@@ -37,10 +37,10 @@ def load_fda_substances(file_path="data/all_fda_substances_full_live.json"):
 
         fda_substances_map = {}
         for item in data:
-            primary_name = item.get("name")
+            primary_name = item.get("Substance Name (Heading)")
             if primary_name:
                 fda_substances_map[primary_name.lower()] = item
-            for alias in item.get("other_names", []):
+            for alias in item.get("Other Names", []):
                 fda_substances_map[alias.lower()] = item
         print(f"Loaded FDA substances map from: {abs_file_path}")
         return fda_substances_map
