@@ -197,23 +197,24 @@ def test_write():
         test_gtin = "999999999999"
         # The write_to_cache function is a no-op in MVP, so this will just
         # print a message and return None. It won't actually write to Airtable.
-        write_to_cache(
-            gtin=test_gtin,
-            fdc_id="000000",
-            brand_name="Test Brand",
-            brand_owner="Test Owner",
-            description="This is a test description",
-            ingredients_raw="SUGAR, SALT, TEST INGREDIENT",
-            parsed_fda_non_common=json.dumps([{"name": "sugar"}]),
-            parsed_fda_common=json.dumps([{"name": "salt"}]),
-            parsed_common_only=json.dumps([{"name": "test ingredient"}]),
-            truly_unidentified=json.dumps([]),
-            data_score=1.0,
-            completeness="High",
-            nova_score=1,
-            nova_description="Unprocessed or minimally processed",
-            parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
-        )
+        # As per 'onboarding_sgl_gtin_cache_072720251656.md', caching is deferred to MVP+1.
+        # write_to_cache(
+        #     gtin=test_gtin,
+        #     fdc_id="000000",
+        #     brand_name="Test Brand",
+        #     brand_owner="Test Owner",
+        #     description="This is a test description",
+        #     ingredients_raw="SUGAR, SALT, TEST INGREDIENT",
+        #     parsed_fda_non_common=json.dumps([{"name": "sugar"}]),
+        #     parsed_fda_common=json.dumps([{"name": "salt"}]),
+        #     parsed_common_only=json.dumps([{"name": "test ingredient"}]),
+        #     truly_unidentified=json.dumps([]),
+        #     data_score=1.0,
+        #     completeness="High",
+        #     nova_score=1,
+        #     nova_description="Unprocessed or minimally processed",
+        #     parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
+        # )
         return jsonify({"message": f"Attempted to write test GTIN {test_gtin} to cache (no-op in MVP)."}), 200
     except Exception as e:
         print("Error in /test-write:", str(e))
