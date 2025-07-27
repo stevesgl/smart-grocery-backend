@@ -48,7 +48,6 @@ def update_lookup_count(record_id):
     except Exception as e:
         print(f"[Airtable] ❌ Error updating lookup_count for {record_id}: {e}")
 
-
 def write_to_cache(gtin, fdc_id, brand_name, brand_owner, description, ingredients_raw,
                    parsed_fda_non_common, parsed_fda_common, parsed_common_only,
                    truly_unidentified, data_score, completeness, nova_score, nova_description,
@@ -81,3 +80,5 @@ def write_to_cache(gtin, fdc_id, brand_name, brand_owner, description, ingredien
         print(f"[Airtable] ✅ Inserted GTIN {gtin} into cache.")
     except Exception as e:
         print(f"[Airtable] ❌ Error inserting GTIN {gtin} into cache: {e}")
+
+ 

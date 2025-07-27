@@ -114,6 +114,7 @@ def gtin_lookup():
 
         # ✅ Step 8: Write to Airtable cache
         try:
+            print(f"[Debug] Attempting to cache GTIN {gtin} in Airtable...")
             write_to_cache(
                 gtin=gtin,
                 fdc_id=fdc_id,
@@ -131,6 +132,7 @@ def gtin_lookup():
                 nova_description=nova_description,
                 parsed=parsed  # ✅ THIS MUST BE INCLUDED
             )
+            print(f"[Debug] ✅ write_to_cache() succeeded.")
         except Exception as e:
             print(f"[Airtable] ❌ Failed to write GTIN {gtin} to Airtable: {e}")
 
@@ -157,6 +159,32 @@ def gtin_lookup():
     except Exception as e:
         print("Error in /gtin-lookup:", str(e))
         return jsonify({"error": str(e)}), 500
+
+@app.route('/test-write', methods=['GET'])
+def test_write():
+    try:
+        test_gtin = "999999999999"
+        write_to_cache(
+            gtin=test_gtin,
+            fdc_id="000000",
+            brand_name="Test Brand",
+            brand_owner="Test Owner",
+            description="This is a test description",
+            ingredients_raw="SUGAR, SALT, TEST INGREDIENT",
+            parsed_fda_non_common=json.dumps(["sugar"]),
+            parsed_fda_common=json.dumps(["salt"]),
+            parsed_common_only=json.dumps(["test ingredient"]),
+            truly_unidentified=json.dumps([]),
+            data_score=1.0,
+            completeness="High",
+            nova_score=1,
+            nova_description="Unprocessed or minimally processed",
+            parsed=[{"base_ingredient": "sugar", "attributes": {"trust_report_category": "fda_non_common"}}]
+        )
+        return jsonify({"status": f"✅ Successfully wrote test GTIN {test_gtin} to Airtable"})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
