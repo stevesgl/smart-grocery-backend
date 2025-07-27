@@ -40,20 +40,27 @@ def load_fda_substances(file_path="data/all_fda_substances_full_live.json"):
 
 def load_common_ingredients(file_path="data/structured_common_ingredients_live.json"):
     """
-    Loads common ingredients as a normalized set for lookup.
+    Loads common ingredients into a normalized lowercase set for quick lookup.
+    This uses the 'original_string' field from the structured JSON.
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        if isinstance(data, dict):
-            return set(k.lower() for k in data.keys())
-        elif isinstance(data, list):
-            return set(i.lower() for i in data)
-        else:
-            raise ValueError("Unexpected format for common ingredients file.")
+        common_ingredients = set()
+        for item in data:
+            # Ensure 'original_string' exists and is a string before converting to lowercase
+            original_string = item.get("original_string")
+            if isinstance(original_string, str):
+                common_ingredients.add(original_string.lower())
+        print(f"Loaded common ingredients from: {file_path}")
+        return common_ingredients
+    except FileNotFoundError:
+        print(f"Error: Common ingredients file not found at {file_path}. Please ensure it exists.")
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {file_path}. Please check file format.")
     except Exception as e:
-        print(f"Failed to load common ingredients from {file_path}: {e}")
-        return set()
+        print(f"An unexpected error occurred while loading common ingredients: {e}")
+    return set()
 
 def normalize_string(s):
     """
