@@ -17,10 +17,19 @@ CORS(app, resources={r"/*": {
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
-# ✅ Load gtin_map.json
-GTIN_MAP_PATH = os.path.join(current_dir, "gtin_map.json")
-with open(GTIN_MAP_PATH, "r") as f:
-    GTIN_TO_FDC = json.load(f)
+# ✅ Load gtin_map.json with error fallback
+DATA_DIR = os.path.join(current_dir, "data")
+GTIN_MAP_PATH = os.path.join(DATA_DIR, "gtin_map.json")
+
+try:
+    with open(GTIN_MAP_PATH, "r") as f:
+        gtin_to_fdc = json.load(f)
+except FileNotFoundError:
+    print(f"[Startup Error] gtin_map.json not found at: {GTIN_MAP_PATH}")
+    gtin_to_fdc = {}
+except json.JSONDecodeError as e:
+    print(f"[Startup Error] Failed to decode gtin_map.json: {e}")
+    gtin_to_fdc = {}
 
 try:
     from ingredient_parser import (
@@ -30,7 +39,6 @@ try:
         parse_ingredient_string
     )
     from cache_manager import get_cached_product, update_lookup_count, write_to_cache
-
     from usda import fetch_product_from_usda
 except Exception as e:
     print("Import error:", str(e))
@@ -63,7 +71,7 @@ def gtin_lookup():
             return jsonify(cached["fields"])
 
         # ✅ Step 2: Get FDC ID from GTIN mapping
-        fdc_id = GTIN_TO_FDC.get(gtin)
+        fdc_id = gtin_to_fdc.get(gtin)
         if not fdc_id:
             return jsonify({"error": f"GTIN {gtin} not found in gtin_map."}), 404
 
@@ -145,7 +153,6 @@ def gtin_lookup():
     except Exception as e:
         print("Error in /gtin-lookup:", str(e))
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(debug=True)
