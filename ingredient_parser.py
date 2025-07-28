@@ -100,46 +100,88 @@ def normalize_string(s):
         return ""
     s = s.lower()
     # Remove content in parentheses and brackets
-    s = re.sub(r'\(.*?\)', '', s)
+    s = re.sub(r'\((.*?)\)', '', s)
     s = re.sub(r'\[.*?\]', '', s)
     # Replace common punctuation with spaces
     s = re.sub(r'[.,;!?:/\\-_"\'`]+', ' ', s)
-    s = s.strip()
+    s = s.strip() # THIS IS THE PREVIOUS FIX: ensure it's s.strip()
     return s
 
-def parse_ingredient_string(ingredient_string, patterns):
+def parse_ingredient_string(ingredients_raw, patterns_data):
     """
-    Parses a single ingredient string to extract base ingredient, modifiers,
-    parenthetical info, and identify unusual punctuation.
+    Parses a raw string of ingredients (e.g., from a food label) into a list of structured
+    ingredient dictionaries. Each dictionary represents an individual parsed ingredient.
     """
-    parsed_info = {
-        "original_string": ingredient_string,
-        "base_ingredient": normalize_string(ingredient_string),
-        "modifiers": [],
-        "attributes": {"trust_report_category": "truly_unidentified"}, # Default category, updated later
-        "parenthetical_info": {},
-        "unusual_punctuation_found": []
-    }
+    parsed_ingredients_list = [] # This will store all parsed ingredient dictionaries
 
-    # Extract parenthetical information
-    parenthetical_matches = re.findall(r'\((.*?)\)|\[(.*?)\]', ingredient_string)
-    if parenthetical_matches:
-        for match in parenthetical_matches:
-            # Take the non-empty group
-            content = match[0] if match[0] else match[1]
-            # Further parse parenthetical content if it contains a common modifier
-            for key, pattern_list in patterns.get("parenthetical_examples", {}).items():
-                for pattern in pattern_list:
-                    if re.search(r'\b' + re.escape(pattern) + r'\b', content, re.IGNORECASE):
-                        parsed_info["parenthetical_info"][key] = content
-                        break
-            # If not categorized, just store it under 'other'
-            if not parsed_info["parenthetical_info"]:
-                parsed_info["parenthetical_info"]["other"] = content
-        
-        # Remove parenthetical content from the base string for modifier extraction
-        parsed_info["base_ingredient"] = re.sub(r'\s*\(.*?\)\s*|\s*\[.*?\]\s*', ' ', parsed_info["base_ingredient"]).strip()
-        parsed_info["base_ingredient"] = normalize_string(parsed_info["base_ingredient"])
+    if not isinstance(ingredients_raw, str) or not ingredients_raw.strip():
+        return parsed_ingredients_list # Return empty list for invalid input
+
+    # Step 1: Split the raw string into individual ingredient phrases.
+    # We split by comma and remove empty strings from potential multiple commas.
+    # We also clean leading/trailing whitespace from each phrase.
+    individual_ingredient_phrases = [
+        phrase.strip() for phrase in ingredients_raw.split(',') if phrase.strip()
+    ]
+
+    for ingredient_phrase in individual_ingredient_phrases:
+        # Initialize a dictionary for each individual parsed ingredient
+        parsed_ingredient_info = {
+            "original_string": ingredient_phrase,
+            "base_ingredient": normalize_string(ingredient_phrase),
+            "modifiers": [],
+            "attributes": {"trust_report_category": "truly_unidentified"}, # Default
+            "parenthetical_info": {},
+            "unusual_punctuation_found": []
+        }
+
+        # --- APPLY YOUR EXISTING PARSING LOGIC TO THIS 'ingredient_phrase' ---
+
+        # Extract parenthetical information (from your snippet)
+        temp_base_ingredient_for_parentheticals = ingredient_phrase # Use the original phrase for finding parentheses
+        parenthetical_matches = re.findall(r'\((.*?)\)|\[(.*?)\]', temp_base_ingredient_for_parentheticals)
+
+        if parenthetical_matches:
+            for match in parenthetical_matches:
+                # Take the non-empty group
+                content = match[0] if match[0] else match[1]
+                
+                # Further parse parenthetical content if it contains a common modifier
+                # Ensure patterns.get("parenthetical_examples", {}) is not None before iterating
+                if patterns_data and "parenthetical_examples" in patterns_data:
+                    for key, pattern_list in patterns_data["parenthetical_examples"].items():
+                        for pattern in pattern_list:
+                            # Use content for regex search
+                            if re.search(r'\b' + re.escape(pattern) + r'\b', content, re.IGNORECASE):
+                                parsed_ingredient_info["parenthetical_info"][key] = content
+                                break # Found a match for this content, move to next key/pattern
+                        if key in parsed_ingredient_info["parenthetical_info"]:
+                            break # Move to next match in parenthetical_matches if already categorized
+
+                # If not categorized by "parenthetical_examples", just store it under 'other'
+                if not parsed_ingredient_info["parenthetical_info"]:
+                    parsed_ingredient_info["parenthetical_info"]["other"] = content
+            
+            # Remove parenthetical content from the base string for modifier extraction
+            # Apply to the original phrase, then re-normalize
+            temp_base_ingredient_for_removal = re.sub(r'\s*\(.*?\)\s*|\s*\[.*?\]\s*', ' ', ingredient_phrase).strip()
+            parsed_ingredient_info["base_ingredient"] = normalize_string(temp_base_ingredient_for_removal)
+
+
+        # --- Continue with other parsing logic here for 'ingredient_phrase' and 'parsed_ingredient_info' ---
+        # For example, if you have logic for 'descriptive_modifiers':
+        if patterns_data and "descriptive_modifiers" in patterns_data:
+            for modifier_key, modifier_patterns in patterns_data["descriptive_modifiers"].items():
+                for pattern in modifier_patterns:
+                    if re.search(r'\b' + re.escape(pattern) + r'\b', parsed_ingredient_info["base_ingredient"], re.IGNORECASE):
+                        parsed_ingredient_info["modifiers"].append(modifier_key)
+                        # Optionally remove modifier from base_ingredient if it's no longer needed
+                        # parsed_ingredient_info["base_ingredient"] = re.sub(r'\b' + re.escape(pattern) + r'\b', '', parsed_ingredient_info["base_ingredient"]).strip()
+
+        # Add the fully parsed individual ingredient to our list
+        parsed_ingredients_list.append(parsed_ingredient_info)
+
+    return parsed_ingredients_list # Return the list of all parsed ingredients
 
 
     # Extract modifiers
