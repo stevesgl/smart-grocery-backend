@@ -71,7 +71,7 @@ try:
     patterns_data = load_patterns() # This uses default 'data/ingredient_naming_patterns.json' defined in ingredient_parser.py
     fda_substances_map = load_fda_substances() # This uses default 'data/all_fda_substances_full_live.json'
     common_ingredients_set = load_common_ingredients() # This uses default 'data/common_ingredients_live.json'
-    common_fda_addives_set = load_common_fda_additives() # This uses default 'data/common_fda_additives.json'
+    common_fda_additives_set = load_common_fda_additives() # This uses default 'data/common_fda_additives.json'
 
     if not patterns_data or not fda_substances_map or not common_ingredients_set or not common_fda_additives_set:
         print("❌ Critical: Some essential parsing data failed to load. App may not function correctly.")
