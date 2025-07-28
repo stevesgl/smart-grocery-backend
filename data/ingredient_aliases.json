@@ -1,0 +1,21 @@
+{
+  "red 40": "fd&c red no 40",
+  "red #40": "fd&c red no 40",
+  "yellow 5": "fd&c yellow no 5",
+  "baking soda": "sodium bicarbonate",
+  "sugar": "sucrose",
+  "cane sugar": "sucrose",
+  "pure cane sugar": "sucrose",
+  "salt": "sodium chloride",
+  "mono and diglycerides": "mono- and diglycerides",
+  "cellulose gum": "cellulose gum",
+  "carboxymethylcellulose": "cellulose gum",
+  "cmc": "cellulose gum",
+  "annatto": "annatto (color)",
+  "dehydrated garlic": "garlic",
+  "garlic powder": "garlic",
+  "vinegar": "vinegar", # To explicitly cover the general term if specific types are in common_ingredients_live.json
+  "chili peppers": "chili peppers", # To cover the general term
+  "spices": "spices" # To cover the general term
+  // ... add more as you encounter them or review common names
+}

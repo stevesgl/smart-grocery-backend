@@ -54,6 +54,25 @@ def load_fda_substances(file_path="data/all_fda_substances_full_live.json"):
         print(f"Error: Could not decode JSON from {abs_file_path}. Please check file format.")
     return {}
 
+def load_ingredient_aliases(file_path="data/ingredient_aliases.json"):
+    """
+    Loads ingredient alias mappings from a JSON file.
+    The file should contain a dictionary where keys are alias names (lowercase)
+    and values are their canonical names (lowercase).
+    """
+    aliases_map = {}
+    try:
+        abs_file_path = os.path.join(os.path.dirname(__file__), file_path)
+        with open(abs_file_path, 'r', encoding='utf-8') as f:
+            aliases_map = json.load(f)
+        print(f"Loaded ingredient aliases from: {abs_file_path} (Items loaded: {len(aliases_map)})")
+        return aliases_map
+    except FileNotFoundError:
+        print(f"Error: Ingredient aliases file not found at {abs_file_path}. Please ensure it exists.")
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {abs_file_path}. Please check file format.")
+    return {}
+
 def load_common_ingredients(file_path="data/common_ingredients_live.json"):
     """
     Loads common ingredients into a set for quick lookup.
@@ -107,118 +126,148 @@ def normalize_string(s):
     s = s.strip() # THIS IS THE PREVIOUS FIX: ensure it's s.strip()
     return s
 
-def parse_ingredient_string(ingredients_raw, patterns_data):
+# In backend/ingredient_parser.py
+
+# ... (ensure normalize_string is defined above this function if it's a custom helper) ...
+# Example:
+# def normalize_string(s):
+#     if isinstance(s, str):
+#         return re.sub(r'[^a-z0-9\s]', '', s.lower()).strip()
+#     return ""
+
+def parse_ingredient_string(ingredients_raw, patterns_data, ingredient_aliases_map=None):
     """
     Parses a raw string of ingredients (e.g., from a food label) into a list of structured
     ingredient dictionaries. Each dictionary represents an individual parsed ingredient.
     """
-    parsed_ingredients_list = [] # This will store all parsed ingredient dictionaries
+    parsed_ingredients_list = []
 
     if not isinstance(ingredients_raw, str) or not ingredients_raw.strip():
-        return parsed_ingredients_list # Return empty list for invalid input
+        return parsed_ingredients_list
 
-    # Step 1: Split the raw string into individual ingredient phrases.
-    # We split by comma and remove empty strings from potential multiple commas.
-    # We also clean leading/trailing whitespace from each phrase.
+    # This regex splits by comma, semicolon, or "and", but not inside parentheses.
+    # It accounts for various common delimiters and edge cases.
+    # Note: Using `re.split` with a regex that handles "and" outside of parentheses is complex.
+    # For simplicity and robustness, often a split by comma, then iterating and refining
+    # is more manageable. Let's simplify the split and refine within the loop for now.
+    # Original logic of splitting by comma is safer initially.
     individual_ingredient_phrases = [
         phrase.strip() for phrase in ingredients_raw.split(',') if phrase.strip()
     ]
 
     for ingredient_phrase in individual_ingredient_phrases:
-        # Initialize a dictionary for each individual parsed ingredient
         parsed_ingredient_info = {
             "original_string": ingredient_phrase,
-            "base_ingredient": normalize_string(ingredient_phrase),
+            "base_ingredient": "", # Will be refined below
             "modifiers": [],
             "attributes": {"trust_report_category": "truly_unidentified"}, # Default
             "parenthetical_info": {},
             "unusual_punctuation_found": []
         }
 
-        # --- APPLY YOUR EXISTING PARSING LOGIC TO THIS 'ingredient_phrase' ---
+        temp_base_ingredient = ingredient_phrase # Start with the full phrase
 
-        # Extract parenthetical information (from your snippet)
-        temp_base_ingredient_for_parentheticals = ingredient_phrase # Use the original phrase for finding parentheses
-        parenthetical_matches = re.findall(r'\((.*?)\)|\[(.*?)\]', temp_base_ingredient_for_parentheticals)
-
+        # 1. Extract and store parenthetical information
+        # Matches content in ( ) or [ ]
+        parenthetical_matches = re.findall(r'\((.*?)\)|\[(.*?)\]', temp_base_ingredient)
         if parenthetical_matches:
             for match in parenthetical_matches:
-                # Take the non-empty group
+                # Take the non-empty group (either from () or [])
                 content = match[0] if match[0] else match[1]
-                
-                # Further parse parenthetical content if it contains a common modifier
-                # Ensure patterns.get("parenthetical_examples", {}) is not None before iterating
+                content = content.strip() # Clean content inside parentheses
+
+                # Try to categorize parenthetical content using patterns
+                categorized = False
                 if patterns_data and "parenthetical_examples" in patterns_data:
                     for key, pattern_list in patterns_data["parenthetical_examples"].items():
                         for pattern in pattern_list:
-                            # Use content for regex search
                             if re.search(r'\b' + re.escape(pattern) + r'\b', content, re.IGNORECASE):
                                 parsed_ingredient_info["parenthetical_info"][key] = content
-                                break # Found a match for this content, move to next key/pattern
-                        if key in parsed_ingredient_info["parenthetical_info"]:
-                            break # Move to next match in parenthetical_matches if already categorized
-
-                # If not categorized by "parenthetical_examples", just store it under 'other'
-                if not parsed_ingredient_info["parenthetical_info"]:
-                    parsed_ingredient_info["parenthetical_info"]["other"] = content
+                                categorized = True
+                                break
+                        if categorized:
+                            break
+                
+                # If not categorized by specific examples, store it under 'other'
+                if not categorized and content:
+                    # Append to 'other' if it already exists, or create it
+                    if "other" not in parsed_ingredient_info["parenthetical_info"]:
+                        parsed_ingredient_info["parenthetical_info"]["other"] = []
+                    parsed_ingredient_info["parenthetical_info"]["other"].append(content)
             
-            # Remove parenthetical content from the base string for modifier extraction
-            # Apply to the original phrase, then re-normalize
-            temp_base_ingredient_for_removal = re.sub(r'\s*\(.*?\)\s*|\s*\[.*?\]\s*', ' ', ingredient_phrase).strip()
-            parsed_ingredient_info["base_ingredient"] = normalize_string(temp_base_ingredient_for_removal)
+            # Remove ALL parenthetical content from the base string for primary parsing
+            temp_base_ingredient = re.sub(r'\s*\(.*?\)\s*|\s*\[.*?\]\s*', ' ', temp_base_ingredient).strip()
+            
+        # 2. Aggressively clean the base_ingredient for lookup
+        # Convert to lowercase for consistent processing
+        cleaned_base = temp_base_ingredient.lower()
 
+        # Remove percentages (e.g., "0.1% ", "5%")
+        cleaned_base = re.sub(r'\d+(\.\d+)?%\s*', '', cleaned_base)
+        
+        # Remove "as a X", "for Y" phrases from the base for lookup
+        # e.g., "citric acid as a preservative" -> "citric acid"
+        cleaned_base = re.sub(r'\s*(as a|for)\s+\w+\b', '', cleaned_base)
+        cleaned_base = re.sub(r'\s*used as\s+\w+\b', '', cleaned_base) # Catch "used as"
 
-        # --- Continue with other parsing logic here for 'ingredient_phrase' and 'parsed_ingredient_info' ---
-        # For example, if you have logic for 'descriptive_modifiers':
+        # Remove "contains X" (e.g., "contains one or more of the following")
+        cleaned_base = re.sub(r'contains\s+[\w\s,]+', '', cleaned_base)
+
+        # Remove other common trailing descriptors for base ingredient clarity
+        # These are usually flavor or color descriptors
+        cleaned_base = re.sub(r'\b(natural|artificial)\s*flavor(ing)?s?\b', '', cleaned_base)
+        cleaned_base = re.sub(r'\b(and\s*)?artificial\s*flavor(ing)?s?\b', '', cleaned_base)
+        cleaned_base = re.sub(r'\b(color|colors|colour|colours)\b', '', cleaned_base) # Remove generic color/colour
+
+        # Remove "modified", "enriched", "bleached" as they are modifiers, not core ingredients
+        cleaned_base = re.sub(r'\b(modified|enriched|bleached|fortified)\s*', '', cleaned_base)
+        
+        # Remove "organic"
+        cleaned_base = re.sub(r'\borganic\s*', '', cleaned_base)
+
+        # Final cleaning: remove any remaining non-alphanumeric characters (keep spaces)
+        # and reduce multiple spaces
+        cleaned_base = re.sub(r'[^a-z\s]', '', cleaned_base).strip()
+        cleaned_base = re.sub(r'\s+', ' ', cleaned_base).strip()
+        
+        # If after aggressive cleaning, the base_ingredient became empty or too short,
+        # revert to a less aggressive clean for the base to ensure we don't lose the main ingredient.
+        # This uses a slightly less aggressive regex for alphanumeric and space.
+        if not cleaned_base or len(cleaned_base) < 2: # Very short strings might be single letters after cleaning
+            cleaned_base = normalize_string(temp_base_ingredient) # Fallback to general normalize_string
+
+        # ⭐️ NEW: Apply alias lookup AFTER initial aggressive cleaning
+        if ingredient_aliases_map and cleaned_base in ingredient_aliases_map:
+            cleaned_base = ingredient_aliases_map[cleaned_base]
+            # print(f"DEBUG: Applied alias. '{original_string}' -> '{cleaned_base}'") # For debugging
+
+        # Set the final base_ingredient
+        parsed_ingredient_info["base_ingredient"] = cleaned_base
+
+        # 3. Extract and store descriptive modifiers (e.g., "natural", "organic")
+        # These are found from the *original* ingredient phrase before aggressive cleaning
         if patterns_data and "descriptive_modifiers" in patterns_data:
             for modifier_key, modifier_patterns in patterns_data["descriptive_modifiers"].items():
                 for pattern in modifier_patterns:
-                    if re.search(r'\b' + re.escape(pattern) + r'\b', parsed_ingredient_info["base_ingredient"], re.IGNORECASE):
-                        parsed_ingredient_info["modifiers"].append(modifier_key)
-                        # Optionally remove modifier from base_ingredient if it's no longer needed
-                        # parsed_ingredient_info["base_ingredient"] = re.sub(r'\b' + re.escape(pattern) + r'\b', '', parsed_ingredient_info["base_ingredient"]).strip()
+                    # Search in the original phrase or a less cleaned version if needed
+                    if re.search(r'\b' + re.escape(pattern) + r'\b', ingredient_phrase.lower()):
+                        # Only add if not already in modifiers to avoid duplicates
+                        if modifier_key not in parsed_ingredient_info["modifiers"]:
+                            parsed_ingredient_info["modifiers"].append(modifier_key)
+                        break # Found a pattern for this modifier key, move to next key
 
+        # 4. Check for unusual punctuation (excluding those handled by parentheticals)
+        # Use the original ingredient phrase, but strip parenthetical content from it first
+        cleaned_phrase_for_punc_check = re.sub(r'\s*\(.*?\)\s*|\s*\[.*?\]\s*', ' ', ingredient_phrase)
+        if re.search(r'[\[\]{}<>/\\~!@#$%^&*`"\'_+=|]', cleaned_phrase_for_punc_check):
+            # Only add "other" if not already present
+            if "other" not in parsed_ingredient_info["unusual_punctuation_found"]:
+                parsed_ingredient_info["unusual_punctuation_found"].append("other")
+        
         # Add the fully parsed individual ingredient to our list
         parsed_ingredients_list.append(parsed_ingredient_info)
 
-    return parsed_ingredients_list # Return the list of all parsed ingredients
-
-
-    # Extract modifiers
-    processed_base_ingredient = parsed_info["base_ingredient"]
-    found_modifiers = []
-    
-    # Sort modifiers by length in descending order to match longer phrases first
-    sorted_modifiers = sorted(patterns.get("descriptive_modifiers", []), key=len, reverse=True)
-    
-    for modifier in sorted_modifiers:
-        # Create a regex pattern to match the whole word modifier, handling punctuation and word boundaries
-        # Use \b for word boundaries, but also allow for non-word characters around it for flexibility
-        pattern = r'(?<!\w)' + re.escape(modifier) + r'(?!\w)'
-        
-        # Check if the modifier is present and not part of a larger word
-        if re.search(pattern, processed_base_ingredient, re.IGNORECASE):
-            found_modifiers.append(modifier)
-            # Remove the modifier from the processed string to get closer to the base ingredient
-            processed_base_ingredient = re.sub(pattern, ' ', processed_base_ingredient, flags=re.IGNORECASE)
-            processed_base_ingredient = processed_base_ingredient.strip()
-
-    parsed_info["modifiers"] = sorted(list(set(found_modifiers))) # Ensure unique and sorted modifiers
-
-    # Re-normalize the base ingredient after modifier removal
-    parsed_info["base_ingredient"] = normalize_string(processed_base_ingredient)
-
-    # Identify unusual punctuation
-    unusual_punctuation_patterns = patterns.get("unusual_punctuation", [])
-    for punc_pattern in unusual_punctuation_patterns:
-        if re.search(re.escape(punc_pattern), ingredient_string):
-            parsed_info["unusual_punctuation_found"].append(punc_pattern)
-
-    # If base ingredient becomes empty after parsing, try to use the original string
-    if not parsed_info["base_ingredient"] and original_string:
-        parsed_info["base_ingredient"] = normalize_string(original_string)
-    
-    return parsed_info
+    return parsed_ingredients_list
 
 # MODIFIED FUNCTION: categorize_parsed_ingredients
 def categorize_parsed_ingredients(parsed_ingredients, fda_substances_map, common_ingredients_set, common_fda_additives_set):
@@ -371,6 +420,9 @@ if __name__ == '__main__':
     common_fda_additives_set = load_common_fda_additives()
     # No exit on warning, it's fine if this file isn't critical for initial tests
 
+    # NEW: Load ingredient aliases
+    ingredient_aliases_map = load_ingredient_aliases()
+
     test_ingredients = [
         "ORGANIC CANE SUGAR",
         "WATER",
@@ -382,13 +434,15 @@ if __name__ == '__main__':
         "SPICES (INCLUDING PAPRIKA)",
         "HIGH FRUCTOSE CORN SYRUP",
         "CITRIC ACID",
-        "XANTHAN GUM (THICKENER)"
+        "XANTHAN GUM (THICKENER)",
+        "CORN SYRUP SOLIDS" # Added for alias testing
     ]
 
     print("\n--- Parsing and Categorization Test ---")
     parsed_test_ingredients = []
     for ingredient_string in test_ingredients:
-        parsed_test_ingredients.append(parse_ingredient_string(ingredient_string, patterns))
+        # ⭐ IMPORTANT: Pass ingredient_aliases_map here!
+        parsed_test_ingredients.append(parse_ingredient_string(ingredient_string, patterns, ingredient_aliases_map))
 
     (
         parsed_fda_common,
@@ -404,11 +458,11 @@ if __name__ == '__main__':
     )
 
     print("\n--- Categorized Results ---")
-    print(f"  Common FDA-regulated ({len(parsed_fda_common)}): {[p['base_ingredient'] for p in parsed_fda_common]}")
-    print(f"  Non-Common FDA-regulated ({len(parsed_fda_non_common)}): {[p['base_ingredient'] for p in parsed_fda_non_common]}")
-    print(f"  Common Food Only ({len(parsed_common_only)}): {[p['base_ingredient'] for p in parsed_common_only]}")
-    print(f"  Truly Unidentified ({len(truly_unidentified)}): {[p['base_ingredient'] for p in truly_unidentified]}")
-    print(f"  All FDA Additives for Report ({len(all_fda_parsed_for_report)}): {[p['name'] for p in all_fda_parsed_for_report]}")
+    print(f"   Common FDA-regulated ({len(parsed_fda_common)}): {[p['base_ingredient'] for p in parsed_fda_common]}")
+    print(f"   Non-Common FDA-regulated ({len(parsed_fda_non_common)}): {[p['base_ingredient'] for p in parsed_fda_non_common]}")
+    print(f"   Common Food Only ({len(parsed_common_only)}): {[p['base_ingredient'] for p in parsed_common_only]}")
+    print(f"   Truly Unidentified ({len(truly_unidentified)}): {[p['base_ingredient'] for p in truly_unidentified]}")
+    print(f"   All FDA Additives for Report ({len(all_fda_parsed_for_report)}): {[p['name'] for p in all_fda_parsed_for_report]}")
 
 
     # Test data completeness

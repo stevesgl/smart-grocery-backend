@@ -31,7 +31,8 @@ try:
         categorize_parsed_ingredients,
         calculate_data_completeness,
         calculate_nova_score,
-        get_nova_description
+        get_nova_description,
+        load_ingredient_aliases
     )
     print("✅ Successfully imported ingredient_parser functions.")
 except ImportError as e:
@@ -72,8 +73,9 @@ try:
     fda_substances_map = load_fda_substances() # This uses default 'data/all_fda_substances_full_live.json'
     common_ingredients_set = load_common_ingredients() # This uses default 'data/common_ingredients_live.json'
     common_fda_additives_set = load_common_fda_additives() # This uses default 'data/common_fda_additives.json'
+    ingredient_aliases_map = load_ingredient_aliases()
 
-    if not patterns_data or not fda_substances_map or not common_ingredients_set or not common_fda_additives_set:
+    if not patterns_data or not fda_substances_map or not common_ingredients_set or not common_fda_additives_set or not ingredient_aliases_map:
         print("❌ Critical: Some essential parsing data failed to load. App may not function correctly.")
         sys.exit(1) # Exit if critical data isn't loaded
     else:
@@ -133,7 +135,8 @@ def gtin_lookup():
         # 2. Parse ingredients using the globally loaded data
         parsed_ingredients = parse_ingredient_string(
             ingredients_raw,
-            patterns_data
+            patterns_data,
+            ingredient_aliases_map
         )
         print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}")
 
