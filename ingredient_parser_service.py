@@ -117,25 +117,25 @@ def gtin_lookup():
         if not usda_data:
             return jsonify({"error": f"Product not found for FDC ID {fdc_id_from_map} or USDA API error."}), 404
 
+        # Extract all relevant data from usda_data, with 'N/A' fallbacks for robustness
         fdc_id = usda_data.get('fdcId')
-        brand_name = usda_data.get('brandName')
-        brand_owner = usda_data.get('brandOwner')
-        description = usda_data.get('description')
-        ingredients_raw = usda_data.get('ingredients')
+        brand_name = usda_data.get('brandName', 'N/A') # Use 'brandName' for the specific product brand
+        brand_owner = usda_data.get('brandOwner', 'N/A')
+        description = usda_data.get('description', 'N/A')
+        ingredients_raw = usda_data.get('ingredients', 'N/A')
 
-        if not ingredients_raw:
+        if not ingredients_raw or ingredients_raw == 'N/A':
             return jsonify({"error": "No ingredients found for this product."}), 404
 
         # DEBUG: Print raw ingredients from USDA
         print(f"DEBUG_SERVICE: Raw Ingredients: {ingredients_raw}")
 
         # 2. Parse ingredients using the globally loaded data
-        # Corrected parse_ingredient_string call
         parsed_ingredients = parse_ingredient_string(
             ingredients_raw,
-            patterns_data # Only these two arguments are needed here
+            patterns_data
         )
-        print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}") # ADDED DEBUG PRINT
+        print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}")
 
         # 3. Categorize parsed ingredients using all loaded data
         parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
@@ -143,7 +143,7 @@ def gtin_lookup():
                 parsed_ingredients=parsed_ingredients,
                 fda_substances_map=fda_substances_map,
                 common_ingredients_set=common_ingredients_set,
-                common_fda_additives_set=common_fda_additives_set # Correctly passing this
+                common_fda_additives_set=common_fda_additives_set
             )
 
         # 4. Calculate data completeness
@@ -154,22 +154,22 @@ def gtin_lookup():
         nova_description = get_nova_description(nova_score)
 
         # 6. Generate Trust Report HTML
-        # Ensured all parameters derived from ingredient_parser.py's test logic are passed
+        # All parameters are now consistently derived from earlier in the function
         trust_report_html = generate_trust_report_html(
-            product_name=description, # Or brand_name + description
+            product_name=description,
+            brand_name=brand_name, # Correctly uses 'brandName' from USDA data
             ingredients_raw=ingredients_raw,
             parsed_ingredients=parsed_ingredients,
             parsed_fda_common=parsed_fda_common,
             parsed_fda_non_common=parsed_fda_non_common,
             parsed_common_only=parsed_common_only,
             truly_unidentified=truly_unidentified,
-            data_completeness_score=data_score,
-            data_completeness_level=completeness,
-            nova_score=nova_score,
-            nova_description=nova_description,
+            data_completeness_score=data_score, # Corrected variable name
+            data_completeness_level=completeness, # Corrected variable name
+            nova_score=nova_score, # Corrected variable name
+            nova_description=nova_description, # Corrected variable name
             all_fda_parsed_for_report=all_fda_parsed_for_report
         )
-
         # 7. Return response
         print(f"✅ Successfully processed GTIN {gtin}. Returning response.")
         return jsonify({
