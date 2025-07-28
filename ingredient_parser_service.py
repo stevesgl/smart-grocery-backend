@@ -62,15 +62,16 @@ except json.JSONDecodeError as e:
     print(f"[Startup Error] Failed to decode gtin_map.json: {e}. Initializing empty map.")
     gtin_to_fdc = {}
 
-
 # --- Global data loading for ingredient_parser functions ---
 # These variables must be defined here, outside the route functions,
 # so they are loaded once when the app starts.
 try:
-    patterns_data = load_patterns(os.path.join(DATA_DIR, "ingredient_naming_patterns.json"))
-    fda_substances_map = load_fda_substances(os.path.join(DATA_DIR, "all_fda_substances_full_live.json"))
-    common_ingredients_set = load_common_ingredients(os.path.join(DATA_DIR, "common_ingredients_live.json"))
-    common_fda_additives_set = load_common_fda_additives(os.path.join(DATA_DIR, "common_fda_additives.json")) # <--- ADDED/CONFIRMED THIS LINE!
+    # Call the load functions WITHOUT manually constructing absolute paths
+    # as they handle relative paths internally to ingredient_parser.py
+    patterns_data = load_patterns() # This uses default 'data/ingredient_naming_patterns.json' defined in ingredient_parser.py
+    fda_substances_map = load_fda_substances() # This uses default 'data/all_fda_substances_full_live.json'
+    common_ingredients_set = load_common_ingredients() # This uses default 'data/common_ingredients_live.json'
+    common_fda_addives_set = load_common_fda_additives() # This uses default 'data/common_fda_additives.json'
 
     if not patterns_data or not fda_substances_map or not common_ingredients_set or not common_fda_additives_set:
         print("❌ Critical: Some essential parsing data failed to load. App may not function correctly.")
@@ -80,7 +81,6 @@ try:
 except Exception as e:
     print(f"❌ Error loading ingredient parser data: {e}")
     sys.exit(1)
-
 
 @app.route('/')
 def home():
