@@ -16,6 +16,14 @@ CATEGORY_SORT_PRIORITY = {
     'common_only': 3,           # Whole Ingredients (GREEN)
     'truly_unidentified': 4     # Unidentified (GREY)
 }
+
+# NOVA Score Colors mapping
+NOVA_COLOR_CLASSES = {
+    1: 'bg-green-300',
+    2: 'bg-cyan-300',
+    3: 'bg-amber-300',
+    4: 'bg-red-500'
+}
 # --- END Step 1 ---
 
 
@@ -33,260 +41,285 @@ def _generate_fda_additives_html_block(fda_additives):
     :return: HTML string
     """
     if not fda_additives:
-        return "<p class='text-sm text-gray-500'>No FDA-recognized additives found in this product.</p>"
+        return ""
 
-    output = [
-        "<div class='space-y-4'>",
-        "<h2 class='text-xl font-semibold'>FDA Additives</h2>"
-    ]
+    additives_html = []
+    for idx, additive in enumerate(fda_additives):
+        used_for_html = ''
+        if additive.get('used_for'):
+            used_for_html = f"<div><strong>Used For:</strong> {', '.join(html.escape(u) for u in additive['used_for'])}</div>"
 
-    for additive in fda_additives:
-        name = html.escape(additive.get("name", "Unknown Additive"))
-        used_for = additive.get("used_for", [])
-        other_names = additive.get("other_names", [])
-        
-        # --- Step 4: Add class based on category for FDA additives ---
-        category_key = additive.get('trust_report_category', 'fda_non_common') # Default to fda_non_common
-        css_class = f"category-{category_key.replace('_', '-')}"
-        # --- END Step 4 ---
+        other_names_html = ''
+        if additive.get('other_names'):
+            other_names_html = f"<div><strong>Other Names:</strong> {', '.join(html.escape(o) for o in additive['other_names'])}</div>"
 
-        # Collapsible container
-        output.append(f"""
-        <div class='border rounded-xl p-4 shadow-sm bg-white {css_class}'>
-            <div class='flex items-center justify-between cursor-pointer' onclick='toggleCollapse(this)'>
-                <span class='font-medium text-base'>{name}</span>
-                <span class='text-xl font-bold'>+</span>
-            </div>
-            <div class='mt-2 hidden text-sm text-gray-700 space-y-2'>
-                {"<p><strong>Used For:</strong> " + html.escape(', '.join(used_for)) + "</p>" if used_for else ""}
-                {"<p><strong>Other Names:</strong> " + html.escape(', '.join(other_names)) + "</p>" if other_names else ""}
-            </div>
-        </div>
+        additives_html.append(f"""
+                <li class="p-3 rounded-md bg-red-100 text-red-900">
+                    <div class="flex justify-between items-center cursor-pointer" onclick="toggleItem('fda-additive-item-{idx}', 'fda-additive-icon-{idx}')">
+                        <span class="font-medium text-base">{html.escape(additive['name'])}</span>
+                        <span id="fda-additive-icon-{idx}" class="text-xl font-bold">+</span>
+                    </div>
+                    <div id="fda-additive-item-{idx}" class="mt-2 text-sm text-gray-700 space-y-1" style="display: none;">
+                        <div><strong>Category:</strong> Additive</div>
+                        {used_for_html}
+                        {other_names_html}
+                    </div>
+                </li>
         """)
-    output.append("</div>")
-    return "\n".join(output)
+    return f"""
+    <div class="bg-white p-6 rounded-md shadow-sm mb-6">
+        <div class="flex justify-between items-center cursor-pointer mb-4" onclick="toggleSection('fda-additives-section', 'toggle-icon-fda-additives')">
+            <h2 class="text-xl font-bold">FDA Additives Details</h2>
+            <span id="toggle-icon-fda-additives" class="text-2xl font-bold">+</span>
+        </div>
+        <ul id="fda-additives-section" class="space-y-3" style="display: none;">
+            {''.join(additives_html)}
+        </ul>
+    </div>
+    """
 
+COLLAPSIBLE_JS = """
+<script>
+  function toggleSection(id, iconId) {
+    const section = document.getElementById(id);
+    const icon = document.getElementById(iconId);
+    if (section.style.display === "none") {
+      section.style.display = "block";
+      icon.textContent = "-"; // Change + to -
+    } else {
+      section.style.display = "none";
+      icon.textContent = "+"; // Change - to +
+    }
+  }
+
+  function toggleItem(id, iconId) {
+    const content = document.getElementById(id);
+    const icon = document.getElementById(iconId);
+    if (content.style.display === "none") {
+      content.style.display = "block";
+      icon.textContent = "-"; // Change + to -
+    } else {
+      content.style.display = "none";
+      icon.textContent = "+"; // Change - to +
+    }
+  }
+</script>
+"""
 
 def generate_trust_report_html(
-    product_name,
-    brand_name, # <--- ENSURE THIS IS PRESENT
-    brand_owner, # <--- ENSURE THIS IS PRESENT
-    ingredients_raw,
-    parsed_ingredients, # Full list of parsed ingredient dicts
-    parsed_fda_common,
-    parsed_fda_non_common,
-    parsed_common_only,
-    truly_unidentified,
-    data_completeness_score,
-    data_completeness_level,
-    nova_score,
-    nova_description,
-    all_fda_parsed_for_report # <--- ENSURE THIS IS PRESENT
-):
+    product_name: str,
+    brand_name: str,
+    brand_owner: str,
+    ingredients_raw: str,
+    parsed_ingredients: list, # List of parsed ingredient dicts
+    parsed_fda_common: list, # Used for summary count
+    parsed_fda_non_common: list, # Used for summary count
+    parsed_common_only: list, # Used for summary count
+    truly_unidentified: list, # Used for summary count
+    data_completeness_score: float,
+    data_completeness_level: str,
+    nova_score: int, # The integer NOVA score (1-4)
+    nova_description: str,
+    all_fda_parsed_for_report: list # This parameter is no longer used for a separate section, but kept for compatibility
+) -> str:
     """
-    Generates a comprehensive HTML trust report for a product.
+    Generates a comprehensive Trust Report in HTML format.
 
     :param product_name: Name of the product.
-    :param ingredients_raw: Raw ingredient string from the product.
-    :param parsed_ingredients: List of all parsed ingredient dicts.
-    :param parsed_fda_common: List of common FDA regulated ingredients.
-    :param parsed_fda_non_common: List of non-common FDA regulated additives.
-    :param parsed_common_only: List of common-only (whole) ingredients.
-    :param truly_unidentified: List of ingredients that could not be identified.
-    :param data_completeness_score: Numerical score for data completeness.
-    :param data_completeness_level: Textual level for data completeness.
-    :param nova_score: NOVA score for the product.
-    :param nova_description: Description for the NOVA score.
-    :param all_fda_parsed_for_report: List of FDA additive dicts (simplified for report).
-    :return: Full HTML string for the trust report.
+    :param brand_name: Brand name of the product.
+    :param brand_owner: Owner of the brand.
+    :param ingredients_raw: The raw, unparsed ingredient string.
+    :param parsed_ingredients: A list of dictionaries, each representing a parsed ingredient
+                                with 'original_string', 'base_ingredient', 'modifiers',
+                                'parenthetical_info', and 'attributes' (including 'trust_report_category').
+    :param parsed_fda_common: List of ingredients categorized as 'common_fda_regulated'.
+    :param parsed_fda_non_common: List of ingredients categorized as 'fda_non_common'.
+    :param parsed_common_only: List of ingredients categorized as 'common_only'.
+    :param truly_unidentified: List of ingredients categorized as 'truly_unidentified'.
+    :param data_completeness_score: The percentage score for data completeness.
+    :param data_completeness_level: The qualitative level for data completeness (e.g., "High").
+    :param nova_score: The NOVA score (integer 1-4).
+    :param nova_description: The description for the NOVA score (e.g., "Ultra-Processed Food").
+    :param all_fda_parsed_for_report: This parameter is no longer used for a separate section, but kept for compatibility.
+    :return: A string containing the full HTML of the trust report.
     """
-    # Initialize the list to store HTML parts
-    html_content = [] # <--- FIX for "html_content" not defined (or html_output as you had)
 
-    html_content.append(f"""
+    html_content = []
+
+    # Head and basic body structure
+    html_content.append("""
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Report for {html.escape(product_name)}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .category-fda-non-common {{
-            background-color: #fee2e2; /* Red-100 */
-            border-color: #ef4444; /* Red-500 */
-        }}
-        .category-common-fda-regulated {{
-            background-color: #fffbeb; /* Yellow-100 */
-            border-color: #f59e0b; /* Yellow-500 */
-        }}
-        .category-common-only {{
-            background-color: #ecfdf5; /* Green-100 */
-            border-color: #10b981; /* Green-500 */
-        }}
-        .category-truly-unidentified {{
-            background-color: #f3f4f6; /* Gray-100 */
-            border-color: #6b7280; /* Gray-500 */
-        }}
-        .collapsible-content {{
-            display: none;
-        }}
-    </style>
+    <title>Smart Grocery Lens - Trust Report Mockup</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    """ + COLLAPSIBLE_JS + """
 </head>
-<body class="bg-gray-50 p-6 font-sans">
+<body class="bg-gray-50 text-gray-900">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg mt-10">
+    """)
 
-    <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-xl space-y-8">
-
-        <header class="text-center pb-4 border-b border-gray-200">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Trust Report</h1>
-            <p class="text-xl text-blue-600">for {html.escape(product_name)}</p>
-            <p class="text-lg text-gray-600">
-                Brand: {html.escape(brand_name) if brand_name else 'Unknown Brand'} 
-                ({html.escape(brand_owner) if brand_owner else 'Unknown Owner'})
-            </p>
-        </header>
-
-        <section class="space-y-4">
-            <h2 class="text-2xl font-semibold text-gray-700">Product Details</h2>
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <p><strong>Raw Ingredients:</strong></p>
-                <p class="text-gray-600 text-sm italic">{html.escape(ingredients_raw)}</p>
-            </div>
-        </section>
-
-        <section class="space-y-4">
-            <h2 class="text-2xl font-semibold text-gray-700">Key Insights</h2>
-            
-            <div class="bg-white p-4 rounded-lg shadow-sm">
-                <h3 class="text-xl font-semibold text-gray-700">Data Completeness</h3>
-                <p class="text-gray-600 text-sm mb-2">Confidence in the analysis based on ingredient recognition:</p>
-                <div class="flex items-center space-x-2">
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: {data_completeness_score * 100:.0f}%"></div>
-                    </div>
-                    <span class="text-sm font-medium text-gray-700">{data_completeness_level} ({data_completeness_score * 100:.0f}%)</span>
-                </div>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow-sm">
-                <h3 class="text-xl font-semibold text-gray-700">NOVA Score</h3>
-                <p class="text-gray-600 text-sm mb-2">A classification of food processing levels:</p>
-                <div class="flex items-baseline space-x-2">
-                    <span class="text-2xl font-bold text-green-600">{nova_score}</span>
-                    <span class="text-base text-gray-700">{html.escape(nova_description)}</span>
-                </div>
-            </div>
-
-            {_generate_fda_additives_html_block(all_fda_parsed_for_report)}
-        </section>
-""")
-
-    # --- Step 2: Detailed Ingredient Breakdown - Category Counts ---
-    # This entire HTML block for the Ingredient Breakdown header and summary counts
-    # should be ONE single f-string literal.
+    # 1. Product Header
     html_content.append(f"""
-    <div class='bg-white p-4 rounded-lg shadow-sm'>
-        <h2 class='text-xl font-semibold text-gray-700'>Ingredient Breakdown</h2>
-        <p class='text-gray-600 text-sm mb-4'>Categorized based on FDA additive database and common ingredient lists.</p>
-        <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <div class='p-3 border rounded-lg category-fda-non-common'>
-                <strong>{CATEGORY_DISPLAY_NAMES['fda_non_common']}:</strong> {len(parsed_fda_non_common)}
+        <div class="text-center">
+            <h1 class="text-3xl font-bold mb-2">{html.escape(product_name)}</h1>
+            <p class="text-lg text-gray-600 mb-6">Brand: {html.escape(brand_name)} ({(html.escape(brand_owner))})</p>
+        </div>
+    """)
+
+    # 2. NOVA Score Section (Updated to dynamically color circles)
+    nova_circles_html = []
+    for i in range(nova_score):
+        # Default to red-500 if nova_score is out of expected range or mapping is missing
+        color_class = NOVA_COLOR_CLASSES.get(i + 1, 'bg-red-500')
+        nova_circles_html.append(f'<div class="w-6 h-6 rounded-full {color_class} {"mr-1.5" if i < nova_score - 1 else ""}"></div>')
+
+    html_content.append(f"""
+        <div class="bg-purple-50 p-6 rounded-md border border-purple-200 mb-6 text-center">
+            <h2 class="text-xl font-semibold text-purple-800 mb-3">NOVA Score</h2>
+            <div class="flex justify-center items-center mb-3">
+                {''.join(nova_circles_html)}
             </div>
-            <div class='p-3 border rounded-lg category-common-only'>
-                <strong>{CATEGORY_DISPLAY_NAMES['common_only']}:</strong> {len(parsed_common_only)}
-            </div>
-            <div class='p-3 border rounded-lg category-fda-common'>
-                <strong>{CATEGORY_DISPLAY_NAMES['common_fda_regulated']}:</strong> {len(parsed_fda_common)}
-            </div>
-            <div class='p-3 border rounded-lg category-truly-unidentified'>
-                <strong>{CATEGORY_DISPLAY_NAMES['truly_unidentified']}:</strong> {len(truly_unidentified)}
+            <div class="text-[2.5rem] font-bold text-purple-700">{nova_score}</div>
+            <p class="text-md text-gray-700">{html.escape(nova_description)}</p>
+        </div>
+    """)
+
+    # 3. Ingredient Breakdown Summary
+    html_content.append(f"""
+        <div class="bg-white p-6 rounded-md shadow-sm mb-6">
+            <h2 class="text-xl font-bold mb-4">Ingredient Breakdown Summary</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 rounded-md border border-yellow-300 bg-yellow-100 text-yellow-900">
+                    <div class="text-lg font-semibold">Common Substances</div>
+                    <div class="text-2xl font-bold text-gray-900">{len(parsed_fda_common)}</div>
+                </div>
+                <div class="p-4 rounded-md border border-red-300 bg-red-100 text-red-900">
+                    <div class="text-lg font-semibold">Additives</div>
+                    <div class="text-2xl font-bold text-gray-900">{len(parsed_fda_non_common)}</div>
+                </div>
+                <div class="p-4 rounded-md border border-green-300 bg-green-100 text-green-900">
+                    <div class="text-lg font-semibold">Whole Ingredients</div>
+                    <div class="text-2xl font-bold text-gray-900">{len(parsed_common_only)}</div>
+                </div>
+                <div class="p-4 rounded-md border border-blue-300 bg-blue-100 text-blue-900">
+                    <div class="text-lg font-semibold">Unidentified</div>
+                    <div class="text-2xl font-bold text-gray-900">{len(truly_unidentified)}</div>
+                </div>
             </div>
         </div>
-        <ul class='mt-4 space-y-2'>
-""")
-    # --- END Step 2 ---
+    """)
 
-    # --- Step 3: Detailed Ingredient Breakdown - Individual Ingredients (Sorted and Colored) ---
-    # Sort parsed_ingredients based on defined priority
+    # Sort parsed_ingredients for display based on CATEGORY_SORT_PRIORITY
     sorted_parsed_ingredients = sorted(
         parsed_ingredients,
-        key=lambda x: CATEGORY_SORT_PRIORITY.get(x.get('trust_report_category', 'truly_unidentified'), 99)
+        key=lambda x: CATEGORY_SORT_PRIORITY.get(x['attributes'].get('trust_report_category'), 99)
     )
 
-    parsed_ingredients_html = ""
-    for item in sorted_parsed_ingredients: # <--- Loop now uses the sorted list
-        original_str = html.escape(item.get('original_string', 'N/A'))
-        base_ing = html.escape(item.get('base_ingredient', 'N/A'))
-        category_key = item.get('trust_report_category', 'truly_unidentified')
+    # Full Ingredient Breakdown
+    parsed_ingredients_html_list = []
+    for idx, p in enumerate(sorted_parsed_ingredients):
+        category = p['attributes'].get('trust_report_category', 'truly_unidentified')
+        display_category_name = CATEGORY_DISPLAY_NAMES.get(category, 'Unknown')
 
-        # Get the CSS class name (e.g., 'category-fda-non-common')
-        css_class = f"category-{category_key.replace('_', '-')}"
-        
-        # Get the user-friendly display name for the category
-        display_category_name = CATEGORY_DISPLAY_NAMES.get(category_key, category_key.replace('_', ' ').title())
+        # Determine color classes based on category for individual items
+        bg_color = 'bg-gray-100' # Default for unknown
+        text_color = 'text-gray-900'
+        border_color = 'border-gray-300'
 
-        # Build modifiers string
-        modifiers_html = ""
-        modifiers = item.get('modifiers')
-        if modifiers:
-            modifiers_html = f"<div><strong>Modifiers:</strong> {html.escape(', '.join(modifiers))}</div>"
+        if category == 'common_fda_regulated':
+            bg_color = 'bg-yellow-100'
+            text_color = 'text-yellow-900'
+            border_color = 'border-yellow-300'
+        elif category == 'fda_non_common':
+            bg_color = 'bg-red-100'
+            text_color = 'text-red-900'
+            border_color = 'border-red-300'
+        elif category == 'common_only':
+            bg_color = 'bg-green-100'
+            text_color = 'text-green-900'
+            border_color = 'border-green-900' # Use 900 for common_only border to make it distinct
+        elif category == 'truly_unidentified':
+            bg_color = 'bg-blue-100'
+            text_color = 'text-blue-900'
+            border_color = 'border-blue-300'
 
-        # Build parenthetical info string
-        parenthetical_html = ""
-        parenthetical_info = item.get('parenthetical_info')
-        if parenthetical_info:
-            for key, value in parenthetical_info.items():
-                if value:
-                    parenthetical_html += f"<div><strong>{html.escape(key.replace('_', ' ').title())}:</strong> {html.escape(value)}</div>"
+        modifiers_html = ''
+        if p.get('modifiers'):
+            modifiers_html = f"<div><strong>Modifiers:</strong> {', '.join(html.escape(m) for m in p['modifiers'])}</div>"
 
-        # Build unusual punctuation string
-        punctuation_html = ""
-        punctuation = item.get('unusual_punctuation_found')
-        if punctuation:
-            punctuation_html = f"<div><strong>Unusual Punctuation:</strong> {html.escape(', '.join(punctuation))}</div>"
+        parenthetical_html = ''
+        if p.get('parenthetical_info') and p['parenthetical_info'].get('content'):
+            parenthetical_html = f"<div><strong>Parenthetical Info:</strong> {html.escape(p['parenthetical_info'].get('content', ''))}</div>"
 
-        parsed_ingredients_html += f"""
-                <li class='border rounded-lg p-3 shadow-sm bg-white {css_class}'>
-                    <div class='flex items-center justify-between cursor-pointer' onclick='toggleCollapse(this)'>
-                        <span class='font-medium text-base'>
-                            {original_str}
+        punctuation_html = ''
+        if p.get('punctuation'):
+            punctuation_html = f"<div><strong>Punctuation:</strong> {html.escape(p['punctuation'])}</div>"
+
+
+        parsed_ingredients_html_list.append(f"""
+                <li class="p-3 rounded-md {bg_color} {text_color} border {border_color}">
+                    <div class="flex justify-between items-center cursor-pointer" onclick="toggleItem('parsed-item-{idx}', 'parsed-icon-{idx}')">
+                        <span class="font-medium text-base">
+                            {html.escape(p['original_string'])}
                         </span>
-                        <span class='text-xl font-bold'>+</span>
+                        <span id="parsed-icon-{idx}" class="text-xl font-bold">+</span>
                     </div>
-                    <div class='mt-2 hidden text-sm text-gray-700 space-y-1'>
+                    <div id="parsed-item-{idx}" class="mt-2 text-sm text-gray-700 space-y-1" style="display: none;">
                         <div><strong>Category:</strong> {display_category_name}</div>
-                        <div><strong>Base Ingredient:</strong> {base_ing}</div>
+                        <div><strong>Base Ingredient:</strong> {html.escape(p['base_ingredient'])}</div>
                         {modifiers_html}
                         {parenthetical_html}
                         {punctuation_html}
                     </div>
                 </li>
-        """
-    html_content.append(parsed_ingredients_html)
-    # --- END Step 3 ---
+        """)
 
-    # Closing tags for the main ingredient breakdown section
     html_content.append(f"""
-        </ul>
-    </div>
+        <div class="bg-white p-6 rounded-md shadow-sm mb-6">
+            <div class="flex justify-between items-center cursor-pointer mb-4" onclick="toggleSection('parsed-ingredients-section', 'toggle-icon-1')">
+                <h2 class="text-xl font-bold">Full Ingredient Breakdown</h2>
+                <span id="toggle-icon-1" class="text-2xl font-bold">+</span>
+            </div>
+            <ul id="parsed-ingredients-section" class="space-y-3" style="display: none;">
+                {''.join(parsed_ingredients_html_list)}
+            </ul>
+        </div>
     """)
 
+    # Simple List of Raw Ingredients
+    raw_ingredients_list_html = "".join([f"<li>{html.escape(item.strip())}</li>" for item in ingredients_raw.split(',') if item.strip()])
     html_content.append(f"""
-    </div> <script>
-        function toggleCollapse(element) {{
-            const content = element.nextElementSibling;
-            if (content.classList.contains('hidden')) {{
-                content.classList.remove('hidden');
-                element.querySelector('span:last-child').textContent = '-';
-            }} else {{
-                content.classList.add('hidden');
-                element.querySelector('span:last-child').textContent = '+';
-            }}
-        }}
-    </script>
+        <div class="bg-white p-6 rounded-md shadow-sm mb-6">
+            <div class="flex justify-between items-center cursor-pointer mb-4" onclick="toggleSection('raw-ingredients-section', 'toggle-icon-2')">
+                <h2 class="text-xl font-bold">Simple List of Raw Ingredients</h2>
+                <span id="toggle-icon-2" class="text-2xl font-bold">+</span>
+            </div>
+            <ul id="raw-ingredients-section" class="list-disc pl-5 space-y-1 text-gray-700" style="display: none;">
+                {raw_ingredients_list_html}
+            </ul>
+        </div>
+    """)
 
+
+    # Data Completeness Section
+    html_content.append(f"""
+        <div class="bg-blue-50 p-6 rounded-md border border-blue-200 mb-6">
+            <h2 class="text-xl font-semibold text-blue-800 mb-3">Data Completeness</h2>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                <div class="bg-blue-600 h-4 rounded-full" style="width: {data_completeness_score}%;"></div>
+            </div>
+            <p class="text-lg font-medium text-blue-700">{data_completeness_score}% Complete</p>
+            <p class="text-sm text-gray-600">{html.escape(data_completeness_level)}</p>
+        </div>
+    """)
+
+    # Closing tags
+    html_content.append("""
+    </div>
 </body>
 </html>
-""")
+    """)
 
     return "".join(html_content)
