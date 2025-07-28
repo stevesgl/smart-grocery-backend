@@ -78,33 +78,7 @@ def _generate_fda_additives_html_block(fda_additives):
     </div>
     """
 
-COLLAPSIBLE_JS = """
-<script>
-  function toggleSection(id, iconId) {
-    const section = document.getElementById(id);
-    const icon = document.getElementById(iconId);
-    if (section.style.display === "none") {
-      section.style.display = "block";
-      icon.textContent = "-"; // Change + to -
-    } else {
-      section.style.display = "none";
-      icon.textContent = "+"; // Change - to +
-    }
-  }
-
-  function toggleItem(id, iconId) {
-    const content = document.getElementById(id);
-    const icon = document.getElementById(iconId);
-    if (content.style.display === "none") {
-      content.style.display = "block";
-      icon.textContent = "-"; // Change + to -
-    } else {
-      content.style.display = "none";
-      icon.textContent = "+"; // Change - to +
-    }
-  }
-</script>
-"""
+# REMOVED: COLLAPSIBLE_JS constant is no longer defined here.
 
 def generate_trust_report_html(
     product_name: str,
@@ -147,6 +121,7 @@ def generate_trust_report_html(
     html_content = []
 
     # Head and basic body structure
+    # REMOVED: COLLAPSIBLE_JS from here
     html_content.append("""
 <!DOCTYPE html>
 <html lang="en">
@@ -154,7 +129,6 @@ def generate_trust_report_html(
     <meta charset="UTF-8">
     <title>Smart Grocery Lens - Trust Report Mockup</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    """ + COLLAPSIBLE_JS + """
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg mt-10">
@@ -168,10 +142,9 @@ def generate_trust_report_html(
         </div>
     """)
 
-    # 2. NOVA Score Section (Updated to dynamically color circles)
+    # 2. NOVA Score Section
     nova_circles_html = []
     for i in range(nova_score):
-        # Default to red-500 if nova_score is out of expected range or mapping is missing
         color_class = NOVA_COLOR_CLASSES.get(i + 1, 'bg-red-500')
         nova_circles_html.append(f'<div class="w-6 h-6 rounded-full {color_class} {"mr-1.5" if i < nova_score - 1 else ""}"></div>')
 
@@ -239,7 +212,7 @@ def generate_trust_report_html(
         elif category == 'common_only':
             bg_color = 'bg-green-100'
             text_color = 'text-green-900'
-            border_color = 'border-green-900' # Use 900 for common_only border to make it distinct
+            border_color = 'border-green-900'
         elif category == 'truly_unidentified':
             bg_color = 'bg-blue-100'
             text_color = 'text-blue-900'
