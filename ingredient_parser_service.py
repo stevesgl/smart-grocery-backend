@@ -161,6 +161,7 @@ def gtin_lookup():
         trust_report_html = generate_trust_report_html(
             product_name=description,
             brand_name=brand_name, # Correctly uses 'brandName' from USDA data
+            brand_owner=brand_owner,
             ingredients_raw=ingredients_raw,
             parsed_ingredients=parsed_ingredients,
             parsed_fda_common=parsed_fda_common,
