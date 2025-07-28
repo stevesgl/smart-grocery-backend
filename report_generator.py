@@ -69,8 +69,10 @@ def _generate_fda_additives_html_block(fda_additives):
 
 def generate_trust_report_html(
     product_name,
+    brand_name, # <--- ENSURE THIS IS PRESENT
+    brand_owner, # <--- ENSURE THIS IS PRESENT
     ingredients_raw,
-    parsed_ingredients,
+    parsed_ingredients, # Full list of parsed ingredient dicts
     parsed_fda_common,
     parsed_fda_non_common,
     parsed_common_only,
@@ -79,7 +81,7 @@ def generate_trust_report_html(
     data_completeness_level,
     nova_score,
     nova_description,
-    all_fda_parsed_for_report # This now contains simplified FDA dicts with category
+    all_fda_parsed_for_report # <--- ENSURE THIS IS PRESENT
 ):
     """
     Generates a comprehensive HTML trust report for a product.
@@ -99,7 +101,7 @@ def generate_trust_report_html(
     :return: Full HTML string for the trust report.
     """
     # Initialize the list to store HTML parts
-    html_content = [] # <--- FIX for "html_content" not defined
+    html_content = [] # <--- FIX for "html_content" not defined (or html_output as you had)
 
     html_content.append(f"""
 <!DOCTYPE html>
@@ -138,6 +140,10 @@ def generate_trust_report_html(
         <header class="text-center pb-4 border-b border-gray-200">
             <h1 class="text-3xl font-bold text-gray-800 mb-2">Trust Report</h1>
             <p class="text-xl text-blue-600">for {html.escape(product_name)}</p>
+            <p class="text-lg text-gray-600">
+                Brand: {html.escape(brand_name) if brand_name else 'Unknown Brand'} 
+                ({html.escape(brand_owner) if brand_owner else 'Unknown Owner'})
+            </p>
         </header>
 
         <section class="space-y-4">
