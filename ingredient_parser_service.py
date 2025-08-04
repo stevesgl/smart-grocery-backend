@@ -109,30 +109,43 @@ def gtin_lookup():
         if not gtin:
             return jsonify({"error": "GTIN is required"}), 400
 
-        # 1. Fetch data from USDA
-        fdc_id_from_map = gtin_to_fdc.get(gtin)
-        if not fdc_id_from_map:
-            return jsonify({"error": "GTIN not found in local map."}), 404
+        from off_lookup import fetch_product_from_off, OFFProductNotFound
 
-        usda_data = fetch_product_from_usda(fdc_id_from_map)
+        try:
+            # 🌎 First try Open Food Facts
+            off_data = fetch_product_from_off(gtin)
+            description = off_data.get("description", "N/A")
+            brand_name = off_data.get("brand_name", "N/A")
+            brand_owner = "N/A"  # OFF doesn’t provide this consistently
+            ingredients_raw = off_data.get("ingredients_string", "N/A")
+            nova_score = off_data.get("nova_score", None)
+            fdc_id = None  # Not relevant for OFF
+            print(f"✅ GTIN {gtin} found via Open Food Facts.")
 
-        if not usda_data:
-            return jsonify({"error": f"Product not found for FDC ID {fdc_id_from_map} or USDA API error."}), 404
+        except OFFProductNotFound:
+            print(f"ℹ️ GTIN {gtin} not found in OFF. Falling back to USDA...")
 
-        # Extract all relevant data from usda_data, with 'N/A' fallbacks for robustness
-        fdc_id = usda_data.get('fdcId')
-        brand_name = usda_data.get('brandName', 'N/A') # Use 'brandName' for the specific product brand
-        brand_owner = usda_data.get('brandOwner', 'N/A')
-        description = usda_data.get('description', 'N/A')
-        ingredients_raw = usda_data.get('ingredients', 'N/A')
+            fdc_id_from_map = gtin_to_fdc.get(gtin)
+            if not fdc_id_from_map:
+                return jsonify({"error": "GTIN not found in local map or OFF API."}), 404
 
+            usda_data = fetch_product_from_usda(fdc_id_from_map)
+            if not usda_data:
+                return jsonify({"error": f"Product not found for FDC ID {fdc_id_from_map} or USDA API error."}), 404
+
+            description = usda_data.get('description', 'N/A')
+            brand_name = usda_data.get('brandName', 'N/A')
+            brand_owner = usda_data.get('brandOwner', 'N/A')
+            ingredients_raw = usda_data.get('ingredients', 'N/A')
+            nova_score = None  # USDA doesn't support NOVA
+            fdc_id = usda_data.get('fdcId')
+
+        # ✅ Continue with normal parsing pipeline
         if not ingredients_raw or ingredients_raw == 'N/A':
             return jsonify({"error": "No ingredients found for this product."}), 404
 
-        # DEBUG: Print raw ingredients from USDA
         print(f"DEBUG_SERVICE: Raw Ingredients: {ingredients_raw}")
 
-        # 2. Parse ingredients using the globally loaded data
         parsed_ingredients = parse_ingredient_string(
             ingredients_raw,
             patterns_data,
@@ -140,7 +153,6 @@ def gtin_lookup():
         )
         print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}")
 
-        # 3. Categorize parsed ingredients using all loaded data
         parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
             categorize_parsed_ingredients(
                 parsed_ingredients=parsed_ingredients,
@@ -149,18 +161,14 @@ def gtin_lookup():
                 common_fda_additives_set=common_fda_additives_set
             )
 
-        # 4. Calculate data completeness
         data_score, completeness = calculate_data_completeness(parsed_ingredients, truly_unidentified)
 
-        # 5. Calculate NOVA score
         nova_score = calculate_nova_score(parsed_ingredients)
         nova_description = get_nova_description(nova_score)
 
-        # 6. Generate Trust Report HTML
-        # All parameters are now consistently derived from earlier in the function
         trust_report_html = generate_trust_report_html(
             product_name=description,
-            brand_name=brand_name, # Correctly uses 'brandName' from USDA data
+            brand_name=brand_name,
             brand_owner=brand_owner,
             ingredients_raw=ingredients_raw,
             parsed_ingredients=parsed_ingredients,
@@ -168,13 +176,13 @@ def gtin_lookup():
             parsed_fda_non_common=parsed_fda_non_common,
             parsed_common_only=parsed_common_only,
             truly_unidentified=truly_unidentified,
-            data_completeness_score=data_score, # Corrected variable name
-            data_completeness_level=completeness, # Corrected variable name
-            nova_score=nova_score, # Corrected variable name
-            nova_description=nova_description, # Corrected variable name
+            data_completeness_score=data_score,
+            data_completeness_level=completeness,
+            nova_score=nova_score,
+            nova_description=nova_description,
             all_fda_parsed_for_report=all_fda_parsed_for_report
         )
-        # 7. Return response
+
         print(f"✅ Successfully processed GTIN {gtin}. Returning response.")
         return jsonify({
             "gtin": gtin,
@@ -198,10 +206,11 @@ def gtin_lookup():
     except Exception as e:
         print(f"❌ Error in /gtin-lookup for GTIN {gtin}: {str(e)}")
         import traceback
-        traceback.print_exc() # Print full traceback for debugging
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # This block ensures the app runs when executed directly
 if __name__ == '__main__':
-    print("Running Flask app locally...")
-    app.run(debug=True, host='0.0.0.0', port=os.environ.get('PORT', 5000)) # Use PORT env var or default 5000
+    port = 5050
+    print(f"🚀 Starting Flask app on http://127.0.0.1:{port}")
+    app.run(debug=True, host='127.0.0.1', port=port)
