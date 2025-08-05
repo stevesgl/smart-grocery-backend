@@ -1,0 +1,743 @@
+{
+  "ANNATTO EXTRACT": {
+    "aliases": [
+      "Annatto extract"
+    ]
+  },
+  "ANTARCTIC KRILL MEAL": {
+    "aliases": [
+      "Antarctic krill meal"
+    ]
+  },
+  "ASTAXANTHIN": {
+    "aliases": [
+      "Astaxanthin"
+    ]
+  },
+  "BETA-APO-8-CAROTENAL": {
+    "aliases": [
+      "β-Apo-8′-carotenal",
+      "Beta-Apo-8-carotenal"
+    ]
+  },
+  "BETA-CAROTENE": {
+    "aliases": [
+      "β-Carotene",
+      "BETA-CAROTENE",
+      "BETA CAROTENE"
+    ]
+  },
+  "CARAMEL": {
+    "aliases": [
+      "Caramel",
+      "Caramel coloring"
+    ]
+  },
+  "COCHINEAL EXTRACT": {
+    "aliases": [
+      "Cochineal extract"
+    ]
+  },
+  "CARMINE": {
+    "aliases": [
+      "carmine"
+    ]
+  },
+  "DRIED ALGAE MEAL": {
+    "aliases": [
+      "Dried algae meal"
+    ]
+  },
+  "SODIUM COPPER CHLOROPHYLLIN": {
+    "aliases": [
+      "Sodium copper chlorophyllin"
+    ]
+  },
+  "DEHYDRATED BEETS": {
+    "aliases": [
+      "Dehydrated beets",
+      "beet powder",
+      "Beet juice"
+    ]
+  },
+  "FD&C BLUE NO. 1": {
+    "aliases": [
+      "FD&C Blue No. 1"
+    ]
+  },
+  "FD&C BLUE NO. 2": {
+    "aliases": [
+      "FD&C Blue No. 2"
+    ]
+  },
+  "FD&C GREEN NO. 3": {
+    "aliases": [
+      "FD&C Green No. 3"
+    ]
+  },
+  "ORANGE B": {
+    "aliases": [
+      "Orange B"
+    ]
+  },
+  "CITRUS RED NO. 2": {
+    "aliases": [
+      "Citrus Red No. 2"
+    ]
+  },
+  "FD&C RED NO. 3": {
+    "aliases": [
+      "FD&C Red No. 3"
+    ]
+  },
+  "FD&C RED NO. 40": {
+    "aliases": [
+      "FD&C Red No. 40"
+    ]
+  },
+  "FD&C YELLOW NO. 5": {
+    "aliases": [
+      "FD&C Yellow No. 5"
+    ]
+  },
+  "FD&C YELLOW NO. 6": {
+    "aliases": [
+      "FD&C Yellow No. 6"
+    ]
+  },
+  "ACETONE": {
+    "aliases": [
+      "Acetone"
+    ]
+  },
+  "ACETYLATED MONOGLYCERIDES": {
+    "aliases": [
+      "Acetylated monoglycerides"
+    ]
+  },
+  "ACRYLATE-ACRYLAMIDE RESINS": {
+    "aliases": [
+      "Acrylate-acrylamide resins"
+    ]
+  },
+  "ACRYLAMIDE-ACRYLIC ACID RESIN": {
+    "aliases": [
+      "Acrylamide-acrylic acid resin"
+    ]
+  },
+  "ACRYLIC ACID": {
+    "aliases": [
+      "Acrylic acid"
+    ]
+  },
+  "1,3-BUTYLENE GLYCOL": {
+    "aliases": [
+      "1,3-Butylene glycol"
+    ]
+  },
+  "ACIDULATED": {
+    "aliases": [
+      "Acidulated"
+    ]
+  },
+  "ANOXOMER": {
+    "aliases": [
+      "Anoxomer"
+    ]
+  },
+  "ASCORBIC ACID": {
+    "aliases": [
+      "Ascorbic acid"
+    ]
+  },
+  "ASCORBYL PALMITATE": {
+    "aliases": [
+      "Ascorbyl palmitate"
+    ]
+  },
+  "BETA-APO-8-CAROTENAL_2": {
+    "aliases": [
+      "Beta-apo-8'-carotenal"
+    ]
+  },
+  "BETA-APO-8-CAROTENOIC ACID, ETHYL ESTER": {
+    "aliases": [
+      "Beta-apo-8'-carotenoic acid, ethyl ester"
+    ]
+  },
+  "BENZOYL PEROXIDE": {
+    "aliases": [
+      "Benzoyl peroxide"
+    ]
+  },
+  "BHA": {
+    "aliases": [
+      "BHA"
+    ]
+  },
+  "BHT": {
+    "aliases": [
+      "BHT"
+    ]
+  },
+  "BLEACHED FLOUR": {
+    "aliases": [
+      "Bleached flour"
+    ]
+  },
+  "BOILER WATER ADDITIVES": {
+    "aliases": [
+      "Boiler water additives"
+    ]
+  },
+  "CAFFEINE": {
+    "aliases": [
+      "Caffeine"
+    ]
+  },
+  "CALCIUM CARBONATE": {
+    "aliases": [
+      "Calcium carbonate"
+    ]
+  },
+  "CALCIUM DISODIUM EDTA": {
+    "aliases": [
+      "Calcium disodium EDTA"
+    ]
+  },
+  "CALCIUM LACTATE": {
+    "aliases": [
+      "Calcium lactate"
+    ]
+  },
+  "CALCIUM SILICATE": {
+    "aliases": [
+      "Calcium silicate"
+    ]
+  },
+  "CALCIUM SULFATE": {
+    "aliases": [
+      "Calcium sulfate"
+    ]
+  },
+  "CHLOROMETHYL METHYL ETHER": {
+    "aliases": [
+      "Chloromethyl methyl ether"
+    ]
+  },
+  "DEFOAMING AGENTS": {
+    "aliases": [
+      "Defoaming agents"
+    ]
+  },
+  "DEHYDROACETIC ACID": {
+    "aliases": [
+      "Dehydroacetic acid"
+    ]
+  },
+  "DIACETYL TARTARIC ACID ESTERS OF MONO- AND DIGLYCERIDES": {
+    "aliases": [
+      "Diacetyl tartaric acid esters of mono- and diglycerides"
+    ]
+  },
+  "DIATOMACEOUS EARTH": {
+    "aliases": [
+      "Diatomaceous earth"
+    ]
+  },
+  "DICALCIUM PHOSPHATE": {
+    "aliases": [
+      "Dicalcium phosphate"
+    ]
+  },
+  "DICHLORODIFLUOROMETHANE": {
+    "aliases": [
+      "Dichlorodifluoromethane"
+    ]
+  },
+  "DIETHYLENETRIAMINE": {
+    "aliases": [
+      "Diethylenetriamine"
+    ]
+  },
+  "DIMETHYLAMINE": {
+    "aliases": [
+      "Dimethylamine"
+    ]
+  },
+  "DIMETHYLAMINE-EPICHLOROHYDRIN COPOLYMER": {
+    "aliases": [
+      "Dimethylamine-epichlorohydrin copolymer"
+    ]
+  },
+  "DIMETHYL DICARBONATE": {
+    "aliases": [
+      "Dimethyl dicarbonate"
+    ]
+  },
+  "DIMETHYLETHANOLAMINE": {
+    "aliases": [
+      "Dimethylethanolamine"
+    ]
+  },
+  "DISODIUM EDTA": {
+    "aliases": [
+      "Disodium EDTA"
+    ]
+  },
+  "DISODIUM GUANYLATE": {
+    "aliases": [
+      "Disodium guanylate"
+    ]
+  },
+  "DISODIUM INOSINATE": {
+    "aliases": [
+      "Disodium inosinate"
+    ]
+  },
+  "DISODIUM PHOSPHATE": {
+    "aliases": [
+      "Disodium phosphate"
+    ]
+  },
+  "DIPOTASSIUM PHOSPHATE": {
+    "aliases": [
+      "Dipotassium phosphate"
+    ]
+  },
+  "DIVINYLBENZENE": {
+    "aliases": [
+      "Divinylbenzene"
+    ]
+  },
+  "DIVINYLBENZENE COPOLYMER": {
+    "aliases": [
+      "Divinylbenzene copolymer"
+    ]
+  },
+  "ETHOXYQUIN": {
+    "aliases": [
+      "Ethoxyquin"
+    ]
+  },
+  "ETHYL ACETATE": {
+    "aliases": [
+      "Ethyl acetate"
+    ]
+  },
+  "ETHYL ALCOHOL": {
+    "aliases": [
+      "Ethyl alcohol"
+    ]
+  },
+  "ETHYL CELLULOSE": {
+    "aliases": [
+      "Ethyl cellulose"
+    ]
+  },
+  "FERROUS GLUCONATE": {
+    "aliases": [
+      "Ferrous gluconate"
+    ]
+  },
+  "FERROUS LACTATE": {
+    "aliases": [
+      "Ferrous lactate"
+    ]
+  },
+  "FUMARIC ACID": {
+    "aliases": [
+      "Fumaric acid"
+    ]
+  },
+  "GLUCONO DELTA-LACTONE": {
+    "aliases": [
+      "Glucono delta-lactone"
+    ]
+  },
+  "GLYCEROL": {
+    "aliases": [
+      "Glycerol"
+    ]
+  },
+  "GLYCEROL ESTER OF PARTIALLY HYDROGENATED WOOD ROSIN": {
+    "aliases": [
+      "Glycerol ester of partially hydrogenated wood rosin"
+    ]
+  },
+  "GLYCEROL ESTER OF ROSIN": {
+    "aliases": [
+      "Glycerol ester of rosin"
+    ]
+  },
+  "GLYCERIN": {
+    "aliases": [
+      "Glycerin"
+    ]
+  },
+  "HEPTYLPARABEN": {
+    "aliases": [
+      "Heptylparaben"
+    ]
+  },
+  "HEXYLENE GLYCOL": {
+    "aliases": [
+      "Hexylene glycol"
+    ]
+  },
+  "HYDROCHLORIC ACID": {
+    "aliases": [
+      "Hydrochloric acid"
+    ]
+  },
+  "HYDROGEN PEROXIDE": {
+    "aliases": [
+      "Hydrogen peroxide"
+    ]
+  },
+  "HYDROLYZED LECITHIN": {
+    "aliases": [
+      "Hydrolyzed lecithin"
+    ]
+  },
+  "HYDROLYZED VEGETABLE PROTEIN": {
+    "aliases": [
+      "Hydrolyzed vegetable protein"
+    ]
+  },
+  "4-HYDROXYMETHYL-2,6-DI-TERT-BUTYLPHENOL": {
+    "aliases": [
+      "4-Hydroxymethyl-2,6-di-tert-butylphenol"
+    ]
+  },
+  "ION-EXCHANGE MEMBRANES": {
+    "aliases": [
+      "Ion-exchange membranes"
+    ]
+  },
+  "ION-EXCHANGE RESINS": {
+    "aliases": [
+      "Ion-exchange resins"
+    ]
+  },
+  "ISOPROPYL ALCOHOL": {
+    "aliases": [
+      "Isopropyl alcohol"
+    ]
+  },
+  "L-HISTIDINE": {
+    "aliases": [
+      "L-Histidine"
+    ]
+  },
+  "LACTIC ACID": {
+    "aliases": [
+      "Lactic acid"
+    ]
+  },
+  "METHYL ALCOHOL": {
+    "aliases": [
+      "Methyl alcohol"
+    ]
+  },
+  "METHYLENE CHLORIDE": {
+    "aliases": [
+      "Methylene chloride"
+    ]
+  },
+  "MODIFIED FOOD STARCH": {
+    "aliases": [
+      "Modified food starch"
+    ]
+  },
+  "MODIFIED POLYACRYLAMIDE RESIN": {
+    "aliases": [
+      "Modified polyacrylamide resin"
+    ]
+  },
+  "MOLECULAR SIEVE RESINS": {
+    "aliases": [
+      "Molecular sieve resins"
+    ]
+  },
+  "MONOAMMONIUM GLUTAMATE": {
+    "aliases": [
+      "Monoammonium glutamate"
+    ]
+  },
+  "MONOCALCIUM PHOSPHATE": {
+    "aliases": [
+      "Monocalcium phosphate"
+    ]
+  },
+  "MONOPOTASSIUM GLUTAMATE": {
+    "aliases": [
+      "Monopotassium glutamate"
+    ]
+  },
+  "MONOSODIUM PHOSPHATE": {
+    "aliases": [
+      "Monosodium phosphate"
+    ]
+  },
+  "NATAMYCIN": {
+    "aliases": [
+      "Natamycin (pimaricin)"
+    ]
+  },
+  "OCTAFLUOROCYCLOBUTANE": {
+    "aliases": [
+      "Octafluorocyclobutane"
+    ]
+  },
+  "OLEORESIN OF PAPRIKA": {
+    "aliases": [
+      "Oleoresin of paprika"
+    ]
+  },
+  "PECTIN": {
+    "aliases": [
+      "Pectin"
+    ]
+  },
+  "PERFLUORINATED ION EXCHANGE MEMBRANES": {
+    "aliases": [
+      "Perfluorinated ion exchange membranes"
+    ]
+  },
+  "PHOSPHORIC ACID": {
+    "aliases": [
+      "Phosphoric acid"
+    ]
+  },
+  "POLYETHYLENE GLYCOL": {
+    "aliases": [
+      "Polyethylene glycol"
+    ]
+  },
+  "POLYMALEIC ACID": {
+    "aliases": [
+      "Polymaleic acid"
+    ]
+  },
+  "POLYMALEIC ACID SODIUM SALT": {
+    "aliases": [
+      "Polymaleic acid sodium salt"
+    ]
+  },
+  "POLYVINYLPOLYPYRROLIDONE": {
+    "aliases": [
+      "Polyvinylpolypyrrolidone"
+    ]
+  },
+  "POLYVINYLPYRROLIDONE": {
+    "aliases": [
+      "Polyvinylpyrrolidone"
+    ]
+  },
+  "POTASSIUM ACID TARTRATE": {
+    "aliases": [
+      "Potassium acid tartrate"
+    ]
+  },
+  "POTASSIUM BICARBONATE": {
+    "aliases": [
+      "Potassium bicarbonate"
+    ]
+  },
+  "POTASSIUM CARBONATE": {
+    "aliases": [
+      "Potassium carbonate"
+    ]
+  },
+  "POTASSIUM HYDROXIDE": {
+    "aliases": [
+      "Potassium hydroxide"
+    ]
+  },
+  "POTASSIUM IODIDE": {
+    "aliases": [
+      "Potassium iodide"
+    ]
+  },
+  "POTASSIUM NITRATE": {
+    "aliases": [
+      "Potassium nitrate"
+    ]
+  },
+  "PROPYLENE GLYCOL": {
+    "aliases": [
+      "Propylene glycol"
+    ]
+  },
+  "PROPYLENE GLYCOL ALGINATE": {
+    "aliases": [
+      "Propylene glycol alginate"
+    ]
+  },
+  "QUATERNARY AMMONIUM CHLORIDE COMBINATION": {
+    "aliases": [
+      "Quaternary ammonium chloride combination"
+    ]
+  },
+  "QUININE": {
+    "aliases": [
+      "Quinine"
+    ]
+  },
+  "SILVER NITRATE AND HYDROGEN PEROXIDE SOLUTION": {
+    "aliases": [
+      "Silver nitrate and Hydrogen peroxide solution"
+    ]
+  },
+  "SODIUM ACID PYROPHOSPHATE": {
+    "aliases": [
+      "Sodium acid pyrophosphate"
+    ]
+  },
+  "SODIUM ALUMINUM PHOSPHATE, ACID": {
+    "aliases": [
+      "Sodium aluminum phosphate, acid"
+    ]
+  },
+  "SODIUM ASCORBATE": {
+    "aliases": [
+      "Sodium ascorbate"
+    ]
+  },
+  "SODIUM BENZOATE": {
+    "aliases": [
+      "Sodium benzoate"
+    ]
+  },
+  "SODIUM BICARBONATE": {
+    "aliases": [
+      "Sodium bicarbonate"
+    ]
+  },
+  "SODIUM CARBONATE": {
+    "aliases": [
+      "Sodium carbonate"
+    ]
+  },
+  "SODIUM DODECYLBENZENESULFONATE": {
+    "aliases": [
+      "Sodium dodecylbenzenesulfonate"
+    ]
+  },
+  "SODIUM HYDROXIDE": {
+    "aliases": [
+      "Sodium hydroxide"
+    ]
+  },
+  "SODIUM METABISULFITE": {
+    "aliases": [
+      "Sodium metabisulfite"
+    ]
+  },
+  "SODIUM MONO- AND DIMETHYL NAPHTHALENE SULFONATES": {
+    "aliases": [
+      "Sodium mono- and dimethyl naphthalene sulfonates"
+    ]
+  },
+  "SODIUM NITRATE": {
+    "aliases": [
+      "Sodium nitrate"
+    ]
+  },
+  "SODIUM NITRITE": {
+    "aliases": [
+      "Sodium nitrite"
+    ]
+  },
+  "SODIUM PHOSPHATE, DIBASIC": {
+    "aliases": [
+      "Sodium phosphate, dibasic"
+    ]
+  },
+  "SODIUM PHOSPHATE, MONOBASIC": {
+    "aliases": [
+      "Sodium phosphate, monobasic"
+    ]
+  },
+  "SODIUM POLYACRYLATE-ACRYLAMIDE RESIN": {
+    "aliases": [
+      "Sodium polyacrylate-acrylamide resin"
+    ]
+  },
+  "SODIUM STEARYL FUMARATE": {
+    "aliases": [
+      "Sodium stearyl fumarate"
+    ]
+  },
+  "SODIUM TRIPOLYPHOSPHATE": {
+    "aliases": [
+      "Sodium tripolyphosphate"
+    ]
+  },
+  "SOLVENTS FOR EDIBLE FATS AND OILS": {
+    "aliases": [
+      "Solvents for edible fats and oils"
+    ]
+  },
+  "STANNOUS CHLORIDE": {
+    "aliases": [
+      "Stannous chloride"
+    ]
+  },
+  "STYRENE": {
+    "aliases": [
+      "Styrene"
+    ]
+  },
+  "SUCCINYLATED MONOGLYCERIDES": {
+    "aliases": [
+      "Succinylated monoglycerides"
+    ]
+  },
+  "SULFURIC ACID": {
+    "aliases": [
+      "Sulfuric acid"
+    ]
+  },
+  "THBP": {
+    "aliases": [
+      "THBP"
+    ]
+  },
+  "TOLUENE": {
+    "aliases": [
+      "Toluene"
+    ]
+  },
+  "TRICHLOROETHYLENE": {
+    "aliases": [
+      "Trichloroethylene"
+    ]
+  },
+  "1,1,1-TRICHLOROETHANE": {
+    "aliases": [
+      "1,1,1-Trichloroethane"
+    ]
+  },
+  "TRIMETHYLAMINE": {
+    "aliases": [
+      "Trimethylamine"
+    ]
+  },
+  "VINYLPYRROLIDONE": {
+    "aliases": [
+      "Vinylpyrrolidone"
+    ]
+  },
+  "XANTHAN GUM": {
+    "aliases": [
+      "Xanthan gum"
+    ]
+  },
+  "ZINC METHIONINE SULFATE": {
+    "aliases": [
+      "Zinc methionine sulfate"
+    ]
+  }
+}

@@ -6,6 +6,66 @@ import os
 import pandas as pd
 import sys
 
+
+def load_fda_substance_dict():
+    """
+    Loads a simplified FDA substance dictionary containing:
+    - Substance name
+    - List of other known aliases
+
+    Path: backend/data/fda_substance_dict.json
+    """
+    try:
+        data_path = os.path.join(os.path.dirname(__file__), "data", "fda_substance_dict.json")
+        with open(data_path, "r") as f:
+            fda_substance_dict = json.load(f)
+        return fda_substance_dict
+    except Exception as e:
+        print(f"❌ Failed to load fda_substance_dict.json: {e}")
+        return {}
+
+def load_fda_additive_dict():
+    """
+    Loads the FDA additive dictionary from JSON.
+    Expected format: { "SUBSTANCE_NAME": { ... }, ... }
+    """
+    try:
+        data_path = os.path.join(os.path.dirname(__file__), "data", "fda_additive_dict.json")
+        with open(data_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ Failed to load fda_additive_dict.json: {e}")
+        return {}
+
+
+def load_common_ingredient_dict():
+    """
+    Loads the common ingredients dictionary from JSON.
+    Expected format: { "ingredient_name": { ... }, ... }
+    """
+    try:
+        data_path = os.path.join(os.path.dirname(__file__), "data", "common_ingredients_live.json")
+        with open(data_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ Failed to load common_ingredients_live.json: {e}")
+        return {}
+
+
+def load_alias_dict():
+    """
+    Loads the ingredient alias mapping from JSON.
+    Expected format: { "alias_token": "canonical_token", ... }
+    """
+    try:
+        data_path = os.path.join(os.path.dirname(__file__), "data", "ingredient_aliases.json")
+        with open(data_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ Failed to load ingredient_aliases.json: {e}")
+        return {}
+
+
 def load_patterns(file_path="data/ingredient_naming_patterns.json"):
     """
     Loads descriptive modifiers, parenthetical examples, and punctuation patterns from JSON.
@@ -93,6 +153,23 @@ def load_common_ingredients(file_path="data/common_ingredients_live.json"):
         print(f"Error: Could not decode JSON from {abs_file_path}. Please check file format.")
     return set()
 
+def load_unified_ingredient_alias_map(file_path="data/unified_ingredient_alias_map.json"):
+    """
+    Loads unified ingredient alias map from file.
+    Returns a dictionary mapping canonical names → {aliases: [..]}.
+    """
+    try:
+        abs_file_path = os.path.join(os.path.dirname(__file__), file_path)
+        with open(abs_file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        print(f"Loaded unified ingredient alias map from: {abs_file_path} (Canonical entries: {len(data)})")
+        return data
+    except FileNotFoundError:
+        print(f"Error: Unified alias map file not found at {abs_file_path}. Please ensure it exists.")
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {abs_file_path}. Please check file format.")
+    return {}
+
 # NEW FUNCTION: Load common FDA additives from a separate file
 def load_common_fda_additives(file_path="data/common_fda_additives.json"):
     """
@@ -112,6 +189,27 @@ def load_common_fda_additives(file_path="data/common_fda_additives.json"):
     except json.JSONDecodeError:
         print(f"Error: Could not decode JSON from {abs_file_path}. Please check file format.")
     return set()
+
+def resolve_unified_alias(token, unified_alias_map):
+    """
+    Resolves a token to a canonical ingredient name using the unified alias map.
+    Supports both formats:
+    - canonical → [aliases]
+    - canonical → {"aliases": [aliases]}
+    """
+    token_norm = token.lower().strip()
+    for canonical_name, data in unified_alias_map.items():
+        aliases = []
+        if isinstance(data, dict):
+            aliases = data.get("aliases", [])
+        elif isinstance(data, list):
+            aliases = data
+        else:
+            continue  # Unsupported format
+
+        if token_norm in [alias.lower() for alias in aliases]:
+            return canonical_name
+    return None
 
 def normalize_string(s):
     """Normalizes a string by converting to lowercase and removing extra spaces and common punctuation."""
@@ -135,7 +233,7 @@ def normalize_string(s):
 #         return re.sub(r'[^a-z0-9\s]', '', s.lower()).strip()
 #     return ""
 
-def parse_ingredient_string(ingredients_raw, patterns_data, ingredient_aliases_map=None):
+def parse_ingredient_string(ingredients_raw, patterns_data, ingredient_aliases_map=None, unified_alias_map=None):
     """
     Parses a raw string of ingredients (e.g., from a food label) into a list of structured
     ingredient dictionaries. Each dictionary represents an individual parsed ingredient.
@@ -240,6 +338,14 @@ def parse_ingredient_string(ingredients_raw, patterns_data, ingredient_aliases_m
         if ingredient_aliases_map and cleaned_base in ingredient_aliases_map:
             cleaned_base = ingredient_aliases_map[cleaned_base]
             # print(f"DEBUG: Applied alias. '{original_string}' -> '{cleaned_base}'") # For debugging
+
+        # ⭐️ CHECK unified_ingredient_alias_map (e.g., 'gala apple' → 'apple')
+        # NOTE: Only do this if ingredient_aliases_map didn't already resolve it
+        if unified_alias_map:
+            unified_alias_match = resolve_unified_alias(cleaned_base, unified_alias_map)
+            if unified_alias_match:
+                cleaned_base = unified_alias_match  # Overwrite with canonical name
+                # print(f"DEBUG: Unified alias applied: '{ingredient_phrase}' → '{cleaned_base}'")
 
         # Set the final base_ingredient
         parsed_ingredient_info["base_ingredient"] = cleaned_base
@@ -423,26 +529,30 @@ if __name__ == '__main__':
     # NEW: Load ingredient aliases
     ingredient_aliases_map = load_ingredient_aliases()
 
+    # NEW: Load unified ingredient alias map
+    unified_alias_map = load_unified_ingredient_alias_map()
+
     test_ingredients = [
-        "ORGANIC CANE SUGAR",
-        "WATER",
-        "0.1% SODIUM BENZOATE AS A PRESERVATIVE",
-        "SALT (FOR FLAVOR)",
-        "CHILI PEPPERS",
-        "VINEGAR",
-        "NATURAL FLAVORS (SPICE EXTRACTS)",
-        "SPICES (INCLUDING PAPRIKA)",
-        "HIGH FRUCTOSE CORN SYRUP",
-        "CITRIC ACID",
-        "XANTHAN GUM (THICKENER)",
-        "CORN SYRUP SOLIDS" # Added for alias testing
+        "Enriched Bleached Wheat Flour (Wheat Flour, Niacin, Reduced Iron, Thiamine Mononitrate, Riboflavin, Folic Acid)",
+        "Red 40 Lake",
+        "high-fructose corn syrup",
+        "natural vanilla flavoring",
+        "spice blend (paprika, cumin, garlic powder)",
+        "yellow no. 5",
+        "xanthan gum",
+        "carrageenan",
+        "sugar",
+        "sea salt",
+        "acacia",
+        "artificial color",
+        "butylated hydroxytoluene" # Added for alias testing
     ]
 
     print("\n--- Parsing and Categorization Test ---")
     parsed_test_ingredients = []
     for ingredient_string in test_ingredients:
         # ⭐ IMPORTANT: Pass ingredient_aliases_map here!
-        parsed_test_ingredients.append(parse_ingredient_string(ingredient_string, patterns, ingredient_aliases_map))
+        parsed_test_ingredients.extend(parse_ingredient_string(ingredient_string, patterns, ingredient_aliases_map, unified_alias_map))
 
     (
         parsed_fda_common,
@@ -479,6 +589,8 @@ if __name__ == '__main__':
         from report_generator import generate_trust_report_html
         html_report = generate_trust_report_html(
             product_name="Test Product",
+            brand_name="SGL Test Brand",
+            brand_owner="SGL QA",
             ingredients_raw=", ".join(test_ingredients),
             parsed_ingredients=parsed_test_ingredients, # Pass the full parsed list for NOVA calc
             parsed_fda_common=parsed_fda_common,
@@ -498,3 +610,27 @@ if __name__ == '__main__':
         print("\nSkipping HTML generation: report_generator.py not found or has errors.")
     except Exception as e:
         print(f"\nError generating HTML report: {e}")
+
+def classify_ingredients(tokens, fda_additive_dict, fda_substance_dict, common_ingredient_dict, alias_dict):
+    results = []
+
+    for token in tokens:
+        original = token.strip().lower()
+        resolved = alias_dict.get(original, original)
+
+        if resolved in fda_additive_dict:
+            classification = "fda_additive"
+        elif resolved in fda_substance_dict:
+            classification = "fda_substance"
+        elif resolved in common_ingredient_dict:
+            classification = "common_ingredient"
+        else:
+            classification = "unidentified"
+
+        results.append({
+            "token": token,
+            "resolved": resolved,
+            "classification": classification
+        })
+
+    return results

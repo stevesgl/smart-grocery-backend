@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import datetime
+from off_lookup import fetch_product_from_off, OFFProductNotFound
 
 # ✅ Setup Flask app and CORS
 app = Flask(__name__)
@@ -32,7 +33,11 @@ try:
         calculate_data_completeness,
         calculate_nova_score,
         get_nova_description,
-        load_ingredient_aliases
+        load_ingredient_aliases,
+        load_fda_additive_dict,
+        load_fda_substance_dict,
+        load_common_ingredient_dict,
+        load_alias_dict
     )
     print("✅ Successfully imported ingredient_parser functions.")
 except ImportError as e:
@@ -62,6 +67,7 @@ except FileNotFoundError:
 except json.JSONDecodeError as e:
     print(f"[Startup Error] Failed to decode gtin_map.json: {e}. Initializing empty map.")
     gtin_to_fdc = {}
+print(f"🔍 Loaded GTIN map keys: {list(gtin_to_fdc.keys())[:5]}")
 
 # --- Global data loading for ingredient_parser functions ---
 # These variables must be defined here, outside the route functions,
@@ -83,6 +89,13 @@ try:
 except Exception as e:
     print(f"❌ Error loading ingredient parser data: {e}")
     sys.exit(1)
+
+# ✅ Load dictionaries required for classify_ingredients()
+fda_additive_dict = load_fda_additive_dict()
+fda_substance_dict = load_fda_substance_dict()
+common_ingredient_dict = load_common_ingredient_dict()
+alias_dict = load_alias_dict()
+
 
 @app.route('/')
 def home():
@@ -119,6 +132,8 @@ def gtin_lookup():
             brand_owner = "N/A"  # OFF doesn’t provide this consistently
             ingredients_raw = off_data.get("ingredients_string", "N/A")
             nova_score = off_data.get("nova_score", None)
+            ingredients_parsed = off_data.get("ingredients_parsed", [])
+            source = "OFF"
             fdc_id = None  # Not relevant for OFF
             print(f"✅ GTIN {gtin} found via Open Food Facts.")
 
@@ -129,6 +144,8 @@ def gtin_lookup():
             if not fdc_id_from_map:
                 return jsonify({"error": "GTIN not found in local map or OFF API."}), 404
 
+            print(f"🔁 Fetching USDA product for FDC ID: {fdc_id_from_map}")
+
             usda_data = fetch_product_from_usda(fdc_id_from_map)
             if not usda_data:
                 return jsonify({"error": f"Product not found for FDC ID {fdc_id_from_map} or USDA API error."}), 404
@@ -138,52 +155,64 @@ def gtin_lookup():
             brand_owner = usda_data.get('brandOwner', 'N/A')
             ingredients_raw = usda_data.get('ingredients', 'N/A')
             nova_score = None  # USDA doesn't support NOVA
+            ingredients_parsed = None  # No parsed output from USDA
+            source = "USDA"
             fdc_id = usda_data.get('fdcId')
 
         # ✅ Continue with normal parsing pipeline
         if not ingredients_raw or ingredients_raw == 'N/A':
             return jsonify({"error": "No ingredients found for this product."}), 404
 
-        print(f"DEBUG_SERVICE: Raw Ingredients: {ingredients_raw}")
+                # 🧪 Determine how to tokenize ingredients
+        if source == "OFF" and ingredients_parsed:
+            tokens_to_classify = [item["text"] for item in ingredients_parsed]
+        else:
+            tokens_to_classify = parse_ingredient_string(ingredients_raw, patterns_data)
 
-        parsed_ingredients = parse_ingredient_string(
-            ingredients_raw,
-            patterns_data,
-            ingredient_aliases_map
+        # 🧠 Classify each token
+        classification_results = classify_ingredients(
+            tokens_to_classify,
+            fda_additive_dict,
+            fda_substance_dict,
+            common_ingredient_dict,
+            alias_dict
         )
-        print(f"DEBUG_SERVICE: Parsed Ingredients (from service): {parsed_ingredients}")
 
-        parsed_fda_common, parsed_fda_non_common, parsed_common_only, truly_unidentified, all_fda_parsed_for_report = \
-            categorize_parsed_ingredients(
-                parsed_ingredients=parsed_ingredients,
-                fda_substances_map=fda_substances_map,
-                common_ingredients_set=common_ingredients_set,
-                common_fda_additives_set=common_fda_additives_set
-            )
+        # 📦 Group tokens by classification for Trust Report
+        parsed_fda_additives = []
+        parsed_common_ingredients = []
+        parsed_unidentified = []
 
-        data_score, completeness = calculate_data_completeness(parsed_ingredients, truly_unidentified)
+        for item in classification_results:
+            classification = item.get("classification")
+            if classification == "fda_additive":
+                parsed_fda_additives.append(item)
+            elif classification == "common_ingredient":
+                parsed_common_ingredients.append(item)
+            elif classification == "unidentified":
+                parsed_unidentified.append(item)
 
-        nova_score = calculate_nova_score(parsed_ingredients)
-        nova_description = get_nova_description(nova_score)
 
+        # 🧾 Generate final HTML Trust Report
         trust_report_html = generate_trust_report_html(
             product_name=description,
             brand_name=brand_name,
             brand_owner=brand_owner,
             ingredients_raw=ingredients_raw,
-            parsed_ingredients=parsed_ingredients,
-            parsed_fda_common=parsed_fda_common,
-            parsed_fda_non_common=parsed_fda_non_common,
-            parsed_common_only=parsed_common_only,
-            truly_unidentified=truly_unidentified,
-            data_completeness_score=data_score,
-            data_completeness_level=completeness,
-            nova_score=nova_score,
-            nova_description=nova_description,
-            all_fda_parsed_for_report=all_fda_parsed_for_report
+            parsed_ingredients=classification_results,  # actual results
+            parsed_fda_common=parsed_fda_additives,      # additive section
+            parsed_fda_non_common=[], 
+            parsed_common_only=parsed_common_ingredients,
+            truly_unidentified=parsed_unidentified,
+            data_completeness_score=0.0,                 # Coming Soon
+            data_completeness_level="Coming Soon",
+            nova_score=nova_score or 0,
+            nova_description=get_nova_description(nova_score or 0),
+            all_fda_parsed_for_report=parsed_fda_additives  # For compatibility
         )
 
-        print(f"✅ Successfully processed GTIN {gtin}. Returning response.")
+
+        # ✅ Return both HTML and classification JSON (for debugging if needed)
         return jsonify({
             "gtin": gtin,
             "fdc_id": fdc_id,
@@ -191,23 +220,45 @@ def gtin_lookup():
             "brand_owner": brand_owner,
             "description": description,
             "ingredients_raw": ingredients_raw,
-            "parsed_ingredients": parsed_ingredients,
-            "parsed_fda_common": parsed_fda_common,
-            "parsed_fda_non_common": parsed_fda_non_common,
-            "parsed_common_only": parsed_common_only,
-            "truly_unidentified_ingredients": truly_unidentified,
-            "data_score": data_score,
-            "data_completeness_level": completeness,
+            "classification_results": classification_results,
             "nova_score": nova_score,
-            "nova_description": nova_description,
             "trust_report_html": trust_report_html
-        })
+        }), 200
 
     except Exception as e:
         print(f"❌ Error in /gtin-lookup for GTIN {gtin}: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+def classify_ingredients(tokens, fda_additive_dict, fda_substance_dict, common_ingredient_dict, alias_dict):
+    results = []
+
+    for token in tokens:
+        if isinstance(token, dict) and "text" in token:
+            original = token["text"].strip().lower()
+        else:
+            original = str(token).strip().lower()
+            
+        resolved = alias_dict.get(original, original)
+
+        # Check all known dictionaries
+        if resolved.upper() in fda_additive_dict:
+            classification = "fda_additive"
+        elif resolved.upper() in fda_substance_dict:
+            classification = "fda_substance"
+        elif resolved.lower() in common_ingredient_dict:
+            classification = "common_ingredient"
+        else:
+            classification = "unidentified"
+
+        results.append({
+            "token": token,
+            "resolved": resolved,
+            "classification": classification
+        })
+
+    return results
 
 # This block ensures the app runs when executed directly
 if __name__ == '__main__':

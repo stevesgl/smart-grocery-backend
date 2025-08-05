@@ -3,9 +3,10 @@
 import requests
 import os
 
-API_KEY = os.getenv("USDA_API_KEY") or "your-api-key-here"
+API_KEY = os.getenv("USDA_API_KEY") or "INRDD92zQbcmfWGmAKsRXdR1dovDfeXnawBwBz8l"
 
 def fetch_product_from_usda(fdc_id: str) -> dict:
+    print(f"📡 [USDA Fetch] Trying FDC ID: {fdc_id}")
     """
     Fetch product data from the USDA FoodData Central API using the given FDC ID.
     Returns a dictionary with cleaned and relevant product data.

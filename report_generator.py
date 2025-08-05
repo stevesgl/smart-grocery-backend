@@ -104,8 +104,8 @@ def generate_trust_report_html(
     :param brand_owner: Owner of the brand.
     :param ingredients_raw: The raw, unparsed ingredient string.
     :param parsed_ingredients: A list of dictionaries, each representing a parsed ingredient
-                                with 'original_string', 'base_ingredient', 'modifiers',
-                                'parenthetical_info', and 'attributes' (including 'trust_report_category').
+                                with 'token', 'resolved', 'classification',
+                                and optionally 'attributes' (including 'trust_report_category').
     :param parsed_fda_common: List of ingredients categorized as 'common_fda_regulated'.
     :param parsed_fda_non_common: List of ingredients categorized as 'fda_non_common'.
     :param parsed_common_only: List of ingredients categorized as 'common_only'.
@@ -187,13 +187,13 @@ def generate_trust_report_html(
     # Sort parsed_ingredients for display based on CATEGORY_SORT_PRIORITY
     sorted_parsed_ingredients = sorted(
         parsed_ingredients,
-        key=lambda x: CATEGORY_SORT_PRIORITY.get(x['attributes'].get('trust_report_category'), 99)
+        key=lambda x: CATEGORY_SORT_PRIORITY.get(x.get('classification', 'unidentified'), 99)
     )
 
     # Full Ingredient Breakdown
     parsed_ingredients_html_list = []
     for idx, p in enumerate(sorted_parsed_ingredients):
-        category = p['attributes'].get('trust_report_category', 'truly_unidentified')
+        category = p.get('classification', 'unidentified')
         display_category_name = CATEGORY_DISPLAY_NAMES.get(category, 'Unknown')
 
         # Determine color classes based on category for individual items
@@ -218,36 +218,34 @@ def generate_trust_report_html(
             text_color = 'text-blue-900'
             border_color = 'border-blue-300'
 
-        modifiers_html = ''
-        if p.get('modifiers'):
-            modifiers_html = f"<div><strong>Modifiers:</strong> {', '.join(html.escape(m) for m in p['modifiers'])}</div>"
+        # Prepare optional HTML sections
+        modifiers_html = f"<div><strong>Modifiers:</strong> {html.escape(', '.join(p.get('modifiers', [])))}</div>" if p.get('modifiers') else ""
+        parenthetical_html = f"<div><strong>Parenthetical Info:</strong> {html.escape(p.get('parenthetical_info', {}).get('content', ''))}</div>" if p.get('parenthetical_info') and isinstance(p.get('parenthetical_info'), dict) else ""
+        punctuation_html = f"<div><strong>Punctuation:</strong> {html.escape(p.get('punctuation', ''))}</div>" if p.get('punctuation') else ""
 
-        parenthetical_html = ''
-        if p.get('parenthetical_info') and p['parenthetical_info'].get('content'):
-            parenthetical_html = f"<div><strong>Parenthetical Info:</strong> {html.escape(p['parenthetical_info'].get('content', ''))}</div>"
+        # Convert base_ingredient safely
+        base_ingredient = p.get('base_ingredient', '')
+        base_ingredient_str = str(base_ingredient) if not isinstance(base_ingredient, str) else base_ingredient
 
-        punctuation_html = ''
-        if p.get('punctuation'):
-            punctuation_html = f"<div><strong>Punctuation:</strong> {html.escape(p['punctuation'])}</div>"
-
-
+        # Final HTML block for this ingredient
         parsed_ingredients_html_list.append(f"""
-                <li class="p-3 rounded-md {bg_color} {text_color} border {border_color}">
-                    <div class="flex justify-between items-center cursor-pointer" onclick="toggleItem('parsed-item-{idx}', 'parsed-icon-{idx}')">
-                        <span class="font-medium text-base">
-                            {html.escape(p['original_string'])}
-                        </span>
-                        <span id="parsed-icon-{idx}" class="text-xl font-bold">+</span>
-                    </div>
-                    <div id="parsed-item-{idx}" class="mt-2 text-sm text-gray-700 space-y-1" style="display: none;">
-                        <div><strong>Category:</strong> {display_category_name}</div>
-                        <div><strong>Base Ingredient:</strong> {html.escape(p['base_ingredient'])}</div>
-                        {modifiers_html}
-                        {parenthetical_html}
-                        {punctuation_html}
-                    </div>
-                </li>
+            <li class="p-3 rounded-md {bg_color} {text_color} border {border_color}">
+                <div class="flex justify-between items-center cursor-pointer" onclick="toggleItem('parsed-item-{idx}', 'parsed-icon-{idx}')">
+                    <span class="font-medium text-base">
+                        {html.escape(str(p.get('token', '')))}
+                    </span>
+                    <span id="parsed-icon-{idx}" class="text-xl font-bold">+</span>
+                </div>
+                <div id="parsed-item-{idx}" class="mt-2 text-sm text-gray-700 space-y-1" style="display: none;">
+                    <div><strong>Category:</strong> {html.escape(display_category_name)}</div>
+                    <div><strong>Base Ingredient:</strong> {html.escape(base_ingredient_str)}</div>
+                    {modifiers_html}
+                    {parenthetical_html}
+                    {punctuation_html}
+                </div>
+            </li>
         """)
+
 
     html_content.append(f"""
         <div class="bg-white p-6 rounded-md shadow-sm mb-6">
