@@ -32,6 +32,7 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os, re
 
 # data fetchers
 from off_product_lookup_v3 import fetch_product_from_off, OFFProductNotFound
@@ -61,7 +62,9 @@ CORS(app, resources={r"/*": {
         "http://127.0.0.1",
         "http://localhost:5173",
         "capacitor://localhost",
-        "https://smart-grocery-backend-jxku.onrender.com"  # optional: allow self/or future previews
+        "https://smart-grocery-backend-jxku.onrender.com",   # backend self
+        "https://sgl-frontend-gamma.vercel.app",                        # Vercel production
+        "https://sgl-frontend-2h7a3tpr4-steves-projects-96024ab9.vercel.app"  # Vercel preview
     ],    
     "methods": ["GET", "POST", "OPTIONS"],
     "allow_headers": ["Content-Type"]
