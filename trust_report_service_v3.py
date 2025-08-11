@@ -52,23 +52,30 @@ from ingredient_classifier_v3 import (
 from report_renderer_v3 import generate_trust_report_html
 
 
-
-
 app = Flask(__name__)
-CORS(app, resources={r"/*": {
-    
-    "origins": [
-        "http://localhost",
-        "http://127.0.0.1",
-        "http://localhost:5173",
-        "capacitor://localhost",
-        "https://smart-grocery-backend-jxku.onrender.com",   # backend self
-        "https://sgl-frontend-gamma.vercel.app",                        # Vercel production
-        "https://sgl-frontend-2h7a3tpr4-steves-projects-96024ab9.vercel.app"  # Vercel preview
-    ],    
-    "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type"]
-}})
+CORS(
+    app,
+    resources={r"/*": {
+        "origins": [
+            "http://localhost",
+            "https://localhost",
+            "http://127.0.0.1",
+            "http://localhost:5173",
+            "capacitor://localhost",
+            "https://sgl-frontend-gamma.vercel.app",
+            "https://sgl-frontend-2h7a3tpr4-steves-projects-96024ab9.vercel.app",
+        ]
+    }},
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "Accept",
+        "X-Requested-With",
+        "Authorization",
+        "Origin",
+    ],
+    max_age=86400
+)
 
 # ✅ Load dictionaries once at startup
 fda_additive_dict = load_fda_additive_dict()                 # data/fda_additive_dict.json
