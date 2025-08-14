@@ -42,6 +42,7 @@ from usda_product_lookup_v3 import fetch_product_from_usda, USDAProductNotFound
 from ingredient_classifier_v3 import (
     parse_ingredient_string,         # tokenizer
     classify_ingredients,            # 3-bucket classifier
+    build_classification_payload,
     load_fda_additive_dict,
     load_classified_ingredient_dict,
     load_alias_dict,
@@ -51,6 +52,62 @@ from ingredient_classifier_v3 import (
 # renderer
 from report_renderer_v3 import generate_trust_report_html
 
+# --- NEW: extract NOVA (OFF usually provides group 1..4) ---
+def _extract_off_nova(off_product: dict):
+    candidates = [
+        off_product.get("nova_group"),
+        off_product.get("nova_groups"),
+        (off_product.get("nova_group_tags") or [None])[0]
+            if isinstance(off_product.get("nova_group_tags"), list) else None,
+    ]
+    for c in candidates:
+        if c is None:
+            continue
+        s = str(c)
+        digits = "".join(ch for ch in s if ch.isdigit())
+        if digits:
+            val = int(digits)
+            if 1 <= val <= 4:
+                return val
+    return None
+
+# --- helper to normalize OFF ingredients into a flat list of strings ---
+def _off_list_to_strings(prod: dict):
+    # 1) Normalized shape from your fetcher: list of dicts with .text
+    lst = prod.get("ingredients_list")
+    if isinstance(lst, list) and lst:
+        out = []
+        for it in lst:
+            if isinstance(it, dict):
+                name = it.get("text") or it.get("id") or it.get("ingredient") or ""
+            else:
+                name = str(it)
+            if isinstance(name, str):
+                name = name.replace("en:", "").strip()
+            if name:
+                out.append(name)
+        if out:
+            return out
+
+    # 2) Normalized or raw tags: ["en:water","en:salt",...]
+    tags = prod.get("ingredients_tags") or prod.get("ingredients_tags_en")
+    if isinstance(tags, list) and tags:
+        return [str(t).replace("en:", "").strip() for t in tags if str(t).strip()]
+
+    # 3) Raw OFF shape: 'ingredients' list of dicts
+    ingr = prod.get("ingredients")
+    if isinstance(ingr, list) and ingr and isinstance(ingr[0], dict):
+        out = []
+        for it in ingr:
+            name = it.get("text") or it.get("id") or it.get("ingredient") or ""
+            if isinstance(name, str):
+                name = name.replace("en:", "").strip()
+            if name:
+                out.append(name)
+        if out:
+            return out
+
+    return None
 
 app = Flask(__name__)
 CORS(
@@ -123,21 +180,47 @@ def gtin_lookup():
             except USDAProductNotFound:
                 return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
 
-    # Expect MVP fields from fetchers:
-    ingredients_text = product.get("ingredients_text") or ""
 
-    # --- Tokenize (OFF list-first, else text fallback) ---
-    ingredients_list = product.get("ingredients_list") or []
-    if source == "OFF" and isinstance(ingredients_list, list) and any(
-        isinstance(i, dict) and i.get("text") for i in ingredients_list
-    ):
-        tokenized_ingredients = [i["text"] for i in ingredients_list if i.get("text")]
+    # Raw fields used by the classifier payload/builders
+    raw = {
+        "off_ingredients_list": None,
+        "ingredients_text": None,
+        # "nova_group" will be set for OFF only
+    }
+
+    if source == "OFF":
+        raw["off_ingredients_list"] = _off_list_to_strings(product)
+        raw["ingredients_text"] = (
+            product.get("ingredients_text_en")
+            or product.get("ingredients_text")
+            or ""
+        )
+        raw["nova_group"] = _extract_off_nova(product)
+
+        # Fallback: if extractor missed but normalized nova_score exists, set it
+        if raw.get("nova_group") is None:
+            try:
+                ns = int(str(product.get("nova_score")))
+                if 1 <= ns <= 4:
+                    raw["nova_group"] = ns
+            except (TypeError, ValueError):
+                pass
+
     else:
-        if not ingredients_text.strip():
-            return jsonify({"error": "No ingredients found for this product."}), 404
-        tokenized_ingredients = parse_ingredient_string(ingredients_text)
+        # USDA fallback: we typically only have a flat text string
+        raw["ingredients_text"] = product.get("ingredients_text") or ""
 
-    # --- Classify into 3 buckets (runs for both paths) ---
+    # If we truly have no ingredients, fail fast
+    if not raw["off_ingredients_list"] and not (raw["ingredients_text"] or "").strip():
+        return jsonify({"error": "No ingredients found for this product."}), 404
+
+    # Tokenize for per-token classification (safe even if we have a list)
+    if raw["off_ingredients_list"]:
+        tokenized_ingredients = list(raw["off_ingredients_list"])
+    else:
+        tokenized_ingredients = parse_ingredient_string(raw["ingredients_text"])
+
+    # --- Classify into 3 buckets (existing function) ---
     parsed_ingredients = classify_ingredients(
         ingredients_tokens=tokenized_ingredients,
         fda_additive_dict=fda_additive_dict,
@@ -146,40 +229,39 @@ def gtin_lookup():
         unified_alias_map=unified_alias_map
     )
 
-    fda_additive_items = [p for p in parsed_ingredients if p.get("classification") == "fda_additive"]
-    classified_items    = [p for p in parsed_ingredients if p.get("classification") == "classified_ingredient"]
-    unclassified_items  = [p for p in parsed_ingredients if p.get("classification") == "unclassified"]
+    # --- Build renderer-ready payload (counts, data_score, segments, nova) ---
+    classification = build_classification_payload(parsed_ingredients, raw)
 
-    # --- Build product meta for renderer ---
+    # --- Build product meta for header (unchanged fields you already return) ---
     product_meta = {
         "gtin": gtin,
         "product_name": product.get("product_name") or product.get("description"),
         "brand_name": product.get("brand_name"),
         "brand_owner": product.get("brand_owner"),
         "source": source,
+        # Keep nova_score if you already expose it; NOVA group is in `classification`
         "nova_score": product.get("nova_score"),
     }
 
-    # --- Render Trust Report HTML (3 sections + placeholder) ---
+    # --- Render Trust Report HTML (now driven by `classification`) ---
     trust_report_html = generate_trust_report_html(
-        parsed_fda_additives=fda_additive_items,
-        parsed_classified_ingredients=classified_items,
-        unclassified=unclassified_items,
-        product_meta=product_meta
+        product_name=product_meta["product_name"],
+        classification=classification
     )
 
+    # --- Response: keep your existing fields + include classification for testing ---
     return jsonify({
         "gtin": gtin,
         "source": source,
         "product_name": product_meta["product_name"],
         "brand_name": product_meta["brand_name"],
         "brand_owner": product_meta["brand_owner"],
-        "nova_score": product_meta["nova_score"],
-        "ingredients_text": ingredients_text,
-        "parsed_ingredients": parsed_ingredients,
+        "nova_score": product_meta["nova_score"],   # OFF NOVA group is in classification.nova_group
+        "ingredients_text": raw["ingredients_text"],
+        "parsed_ingredients": parsed_ingredients,   # per-token list (unchanged)
+        "classification": classification,           # NEW: counts/score/segments/nova_group
         "trust_report_html": trust_report_html
     }), 200
-
 
 @app.get("/health")
 def health():

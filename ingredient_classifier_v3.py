@@ -25,7 +25,7 @@ to ensure exact-match classification and trust-first data handling.
 import json
 import os
 import re
-
+from html import escape as _html_escape
 
 
 # ======================
@@ -98,6 +98,43 @@ def _coerce_to_display_and_key(val):
         s = str(val)
     return s, (s.strip().lower() if s else "")
 
+
+def _compute_counts(fda_additives, classified_ingredients, unclassified):
+    return {
+        "fda_additive": len(fda_additives),
+        "classified_ingredient": len(classified_ingredients),
+        "unclassified": len(unclassified),
+    }
+
+def _compute_data_score(fda_additives, classified_ingredients, unclassified):
+    matched = len(fda_additives) + len(classified_ingredients)
+    total = matched + len(unclassified)
+    percent = round(100 * matched / max(total, 1))
+    return {"matched": matched, "total": total, "percent": percent}
+
+def _build_segments_from_list(ingredients_list, fda_set, classified_set):
+    """
+    Preferred path when OFF provides a list of ingredients in order.
+    Exact-match only; preserve original casing.
+    """
+    segs = []
+    for idx, item in enumerate(ingredients_list or []):
+        token_lc = item.strip().lower()
+        cls = "unclassified"
+        if token_lc in fda_set:
+            cls = "fda_additive"
+        elif token_lc in classified_set:
+            cls = "classified_ingredient"
+        segs.append({"text": item, "class": cls})
+        if idx < len(ingredients_list) - 1:
+            segs.append({"text": ", ", "class": "none"})
+    return segs
+
+def _build_segments_from_text(ingredients_text, fda_set, classified_set, splitter=","):
+    if not ingredients_text:
+        return []
+    parts = parse_ingredient_string(ingredients_text)  # robust tokenizer
+    return _build_segments_from_list(parts, fda_set, classified_set)
 
 # ======================
 #  Tokenizer
@@ -185,3 +222,68 @@ def classify_ingredients(
         })
 
     return results
+
+# --- NEW: Build renderer-ready classification payload ---
+def build_classification_payload(
+    results: list[dict],
+    raw: dict
+) -> dict:
+    """
+    Turn per-token classification results into the renderer payload.
+    Expects each item in `results` to have: token (original), resolved (display), classification.
+    `raw` should contain:
+      - "off_ingredients_list": list[str] or None
+      - "ingredients_text": str or None
+      - optional "nova_group": int 1..4
+    """
+    # Split buckets keeping original display casing
+    fda_additives = []
+    classified_ingredients = []
+    unclassified = []
+
+    for r in results or []:
+        cls = r.get("classification")
+        display = r.get("resolved") or r.get("token") or ""
+        token_lc = (r.get("resolved") or r.get("token") or "").strip().lower()
+        item = {"token": token_lc, "display": display}
+
+        if cls == "fda_additive":
+            fda_additives.append(item)
+        elif cls == "classified_ingredient":
+            classified_ingredients.append(item)
+        else:
+            unclassified.append(item)
+
+    # Counts + Data Score
+    counts = _compute_counts(fda_additives, classified_ingredients, unclassified)
+    data_score = _compute_data_score(fda_additives, classified_ingredients, unclassified)
+
+    # Exact-match sets for highlighting
+    fda_set = {i["token"] for i in fda_additives}
+    classified_set = {i["token"] for i in classified_ingredients}
+
+    off_ingredients_list = raw.get("off_ingredients_list")
+    ingredients_text = raw.get("ingredients_text")
+
+    if off_ingredients_list:
+        segments = _build_segments_from_list(off_ingredients_list, fda_set, classified_set)
+        source = "list"
+    else:
+        segments = _build_segments_from_text(ingredients_text or "", fda_set, classified_set)
+        source = "text"
+
+    classification = {
+        "fda_additives": fda_additives,
+        "classified_ingredients": classified_ingredients,
+        "unclassified": unclassified,
+        "counts": counts,
+        "data_score": data_score,
+        # NOVA only when present
+        **({"nova_group": raw.get("nova_group")} if raw.get("nova_group") is not None else {}),
+        "original_ingredients": {
+            "source": source,
+            "segments": segments,
+        },
+    }
+    return classification
+# --- /NEW ---
