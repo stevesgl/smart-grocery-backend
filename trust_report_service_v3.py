@@ -110,29 +110,38 @@ def _off_list_to_strings(prod: dict):
     return None
 
 app = Flask(__name__)
-CORS(
-    app,
-    resources={r"/*": {
-        "origins": [
-            "http://localhost",
-            "https://localhost",
-            "http://127.0.0.1",
-            "http://localhost:5173",
-            "capacitor://localhost",
-            "https://sgl-frontend-gamma.vercel.app",
-            "https://sgl-frontend-2h7a3tpr4-steves-projects-96024ab9.vercel.app",
-        ]
-    }},
-    methods=["GET", "POST", "OPTIONS"],
-    allow_headers=[
-        "Content-Type",
-        "Accept",
-        "X-Requested-With",
-        "Authorization",
-        "Origin",
-    ],
-    max_age=86400
-)
+
+ALLOWED_ORIGINS = {
+    "http://localhost:5173",
+    "http://localhost",
+    "http://127.0.0.1",
+    "capacitor://localhost",
+    "https://sgl-frontend-gamma.vercel.app",
+    "https://sgl-frontend-2h7a3tpr4-steves-projects-96024ab9.vercel.app",
+}
+
+# Scope CORS to just the API route
+CORS(app, resources={r"/gtin-lookup": {"origins": list(ALLOWED_ORIGINS)}})
+
+# Explicit preflight handler
+@app.route("/gtin-lookup", methods=["OPTIONS"])
+def gtin_lookup_preflight():
+    return ("", 204)
+
+# Add headers for both preflight and actual responses
+@app.after_request
+def apply_cors_headers(resp):
+    origin = request.headers.get("Origin")
+    if origin in ALLOWED_ORIGINS:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Vary"] = "Origin"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = (
+            "Content-Type, Accept, X-Requested-With, Authorization, Origin"
+        )
+        resp.headers["Access-Control-Max-Age"] = "86400"
+    return resp
+
 
 # ✅ Load dictionaries once at startup
 fda_additive_dict = load_fda_additive_dict()                 # data/fda_additive_dict.json
