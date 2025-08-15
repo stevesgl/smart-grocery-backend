@@ -246,7 +246,9 @@ def gtin_lookup():
     # --- Render Trust Report HTML (now driven by `classification`) ---
     trust_report_html = generate_trust_report_html(
         product_name=product_meta["product_name"],
-        classification=classification
+        classification=classification,
+        brand=(product_meta.get("brand_name") or product_meta.get("brand_owner")),
+        gtin=gtin
     )
 
     # --- Response: keep your existing fields + include classification for testing ---

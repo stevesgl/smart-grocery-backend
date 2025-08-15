@@ -34,113 +34,151 @@ def _render_segments(segments):
         txt = _html_escape(seg.get("text", ""))
         cls = seg.get("class", "none")
         if cls == "fda_additive":
-            out.append(f'<span data-class="fda_additive" class="px-1 rounded bg-amber-100">{txt}</span>')
+            out.append(f'<span data-class="fda_additive" class="px-1.5 py-0.5 rounded bg-amber-100">{txt}</span>')
         elif cls == "classified_ingredient":
-            out.append(f'<span data-class="classified_ingredient" class="px-1 rounded bg-green-100">{txt}</span>')
+            out.append(f'<span data-class="classified_ingredient" class="px-1.5 py-0.5 rounded bg-green-100">{txt}</span>')
         elif cls == "unclassified":
-            out.append(f'<span data-class="unclassified" class="px-1 rounded bg-blue-100">{txt}</span>')
+            out.append(f'<span data-class="unclassified" class="px-1.5 py-0.5 rounded bg-blue-100">{txt}</span>')
         else:
             out.append(txt)
     return "".join(out)
 
-def _render_list(items, data_class):
-    """Generic list renderer for FDA / Classified / Unclassified buckets."""
-    lis = []
-    for it in items or []:
-        name = _html_escape(it["display"] if isinstance(it, dict) else str(it))
-        if data_class == "fda_additive":
-            details = (
-                '<div class="mt-2 text-sm text-gray-600 hidden" data-panel="details">'
-                '<div><span class="font-semibold">Used For:</span> (Coming Soon)</div>'
-                '<div><span class="font-semibold">Other Names:</span> (Coming Soon)</div>'
-                '<div class="italic text-gray-500">Risk Factors: (Coming Soon)</div>'
-                "</div>"
-            )
-            toggle = (
-                '<button class="sgl-toggle text-sm underline" data-expand="details" aria-expanded="false">Details</button>'
-            )
-            row = (
-                f'<li class="py-3" data-class="{data_class}">'
-                f'<div class="flex items-start justify-between">'
-                f'<span class="font-medium">{name}</span>'
-                f'{toggle}'
-                f'</div>{details}</li>'
-            )
-        else:
-            row = f'<li class="py-3" data-class="{data_class}"><span class="font-medium">{name}</span></li>'
-        lis.append(row)
-    return "\n".join(lis)
-
-def generate_trust_report_html(product_name, classification):
-    """
-    NEW signature:
-      product_name: str
-      classification: dict with keys:
-        - fda_additives, classified_ingredients, unclassified (lists of {"display","token"})
-        - counts {fda_additive, classified_ingredient, unclassified}
-        - data_score {matched,total,percent}
-        - original_ingredients {segments:[{text,class}], source:"list|text"}
-        - nova_group (optional, OFF only)
-    """
-    counts = classification.get("counts", {})
+def generate_trust_report_html(product_name, classification, brand=None, gtin=None):
+    counts = classification.get("counts", {}) or {}
     nova = classification.get("nova_group")
-    fda = classification.get("fda_additives", [])
-    cls = classification.get("classified_ingredients", [])
-    unc = classification.get("unclassified", [])
-    segs = (classification.get("original_ingredients") or {}).get("segments", [])
-    data_score = classification.get("data_score")
+    fda = classification.get("fda_additives", []) or []
+    cls = classification.get("classified_ingredients", []) or []
+    unc = classification.get("unclassified", []) or []
+    segs = (classification.get("original_ingredients") or {}).get("segments", []) or []
+    data_score = classification.get("data_score") or {"matched":0,"total":0,"percent":0}
+    brand_display = _html_escape(brand) if brand else "—"
+    gtin_display  = _html_escape(gtin) if gtin else "—"
 
+
+    # NOVA dots (fill up to nova 1..4)
+    def _nova_badge(n):
+        if not n:
+            return ""
+        dots = []
+        for i in range(1, 5):
+            filled = i <= n
+            dots.append(
+                f'<span class="inline-block w-2.5 h-2.5 rounded-full mx-0.5 {("bg-amber-400" if filled else "bg-gray-300")}"></span>'
+            )
+
+        # Standard NOVA category labels
+        nova_labels = {
+            1: "Unprocessed or minimally processed foods",
+            2: "Processed culinary ingredients",
+            3: "Processed foods",
+            4: "Ultra-processed foods"
+        }
+
+        return (
+            '<div class="text-right">'
+            '<div class="text-sm font-semibold">NOVA Score</div>'
+            f'<div class="mt-1">{"".join(dots)}</div>'
+            f'<div class="text-xs text-gray-500 mt-1">{n} • {nova_labels.get(n, "Unknown")}</div>'
+            "</div>"
+        )
+
+    # List card rows for the three buckets
+    def _render_list(items, data_class):
+        lis = []
+        for it in items:
+            name = _html_escape((it.get("display") if isinstance(it, dict) else str(it)) or "")
+            if data_class == "fda_additive":
+                lis.append(
+                    "<li class='py-3 px-4 bg-white rounded-xl border border-amber-200 flex items-center justify-between'>"
+                    f"<span class='font-medium'>{name}</span>"
+                    "<button class='sgl-expand text-lg leading-none select-none' aria-expanded='false'>+</button>"
+                    "</li>"
+                )
+            else:
+                border_cls = "border-green-200" if data_class == "classified_ingredient" else "border-blue-200"
+                lis.append(
+                    f"<li class='py-3 px-4 bg-white rounded-xl border {border_cls}'><span class='font-medium'>{name}</span></li>"
+                )
+
+        return "\n".join(lis)
+
+
+    # Tabs header (counts)
     tabs = f"""
-    <div class="flex gap-2 mb-4" role="tablist" aria-label="Ingredient buckets">
-      <button class="sgl-tab px-3 py-1 rounded-full bg-amber-50" data-tab="fda"><span>FDA Additives</span><span class="ml-2 rounded-full bg-amber-100 px-2 text-xs">{counts.get('fda_additive',0)}</span></button>
-      <button class="sgl-tab px-3 py-1 rounded-full bg-green-50" data-tab="classified"><span>Ingredients</span><span class="ml-2 rounded-full bg-green-100 px-2 text-xs">{counts.get('classified_ingredient',0)}</span></button>
-      <button class="sgl-tab px-3 py-1 rounded-full bg-blue-50" data-tab="unclassified"><span>Unclassified</span><span class="ml-2 rounded-full bg-blue-100 px-2 text-xs">{counts.get('unclassified',0)}</span></button>
+    <div class="flex gap-3 mb-4" role="tablist" aria-label="Ingredient buckets">
+      <button class="sgl-tab active flex items-center gap-2 px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50" data-tab="fda">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <span>FDA Additives</span>
+        <span class="ml-1 rounded-full bg-amber-100 px-1.5 text-xs">{counts.get('fda_additive',0)}</span>
+      </button>
+      <button class="sgl-tab flex items-center gap-2 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50" data-tab="classified">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>
+        <span>Ingredients (Classified)</span>
+        <span class="ml-1 rounded-full bg-green-100 px-1.5 text-xs">{counts.get('classified_ingredient',0)}</span>
+      </button>
+      <button class="sgl-tab flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50" data-tab="unclassified">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+        <span>Unclassified</span>
+        <span class="ml-1 rounded-full bg-blue-100 px-1.5 text-xs">{counts.get('unclassified',0)}</span>
+      </button>
     </div>
     """
 
-    nova_badge = (
-        f'<span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs">NOVA {nova}</span>'
-        if nova else ""
-    )
+    header_rows = f"""
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div><span class="text-gray-500">Product</span><div class="font-medium">{_html_escape(product_name or "Unknown")}</div></div>
+        <div><span class="text-gray-500">Brand</span><div class="font-medium">{brand_display}</div></div>
+        <div><span class="text-gray-500">GTIN</span><div class="font-medium">{gtin_display}</div></div>
+        <div class="hidden md:block">{_nova_badge(nova)}</div>
+      </div>
+    """
+
 
     html = f"""
-<section id="sgl-report" class="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:p-8">
-  <header class="mb-6">
-    <h1 class="text-2xl font-bold">Trust Report</h1>
-    <div class="mt-1 text-sm text-gray-600">Product: <span class="font-medium">{_html_escape(product_name or 'Unknown')}</span>{nova_badge}</div>
+<section id="sgl-report" class="max-w-5xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:p-8">
+  <header class="mb-5">
+    <h1 class="text-3xl font-bold">Trust Report</h1>
+    <div class="text-sm text-gray-600 mt-1">Built from sources like FDA and USDA. No fear. Just facts.</div>
+    <div class="mt-4">{header_rows}</div>
   </header>
 
   <section id="sgl-original" class="mb-6">
-    <h2 class="text-lg font-semibold mb-2">Original Ingredients (from label)</h2>
-    <p class="text-sm leading-7 bg-gray-50 p-3 rounded-lg border border-gray-100">{_render_segments(segs)}</p>
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-semibold">Original Ingredients (from label)</h2>
+      <button type="button" class="text-sm text-gray-600 underline sgl-copy" data-copy-target="#sgl-original-text">Copy</button>
+    </div>
+    <p id="sgl-original-text" class="text-[15px] leading-7 bg-gray-50 p-4 rounded-xl border border-gray-200 uppercase tracking-wide">
+      {_render_segments(segs)}
+    </p>
   </section>
 
   {tabs}
 
-  <section id="sgl-fda-additives" data-panel="tab-fda" class="mb-8">
-    <h2 class="text-lg font-semibold mb-3">FDA Additives</h2>
-    <ul class="divide-y divide-gray-100">{_render_list(fda, "fda_additive")}</ul>
+  <!-- Panels -->
+  <section id="panel-fda" class="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+    <h3 class="text-lg font-semibold mb-2">FDA Additives</h3>
+    <p class="text-sm text-amber-900 mb-4">Click an item for more details. Names link to sources.</p>
+    <ul class="space-y-3">{_render_list(fda, "fda_additive")}</ul>
   </section>
 
-  <section id="sgl-classified" data-panel="tab-classified" class="mb-8 hidden">
-    <h2 class="text-lg font-semibold mb-3">Ingredients (Classified)</h2>
-    <ul class="divide-y divide-gray-100">{_render_list(cls, "classified_ingredient")}</ul>
+  <section id="panel-classified" class="mb-8 rounded-2xl border border-green-200 bg-green-50 p-5 hidden">
+    <h3 class="text-lg font-semibold mb-2">Ingredients (Classified)</h3>
+    <p class="text-sm text-green-900 mb-4">These ingredients are classified and verified against trusted food databases.</p>
+    <ul class="grid md:grid-cols-2 gap-3">{_render_list(cls, "classified_ingredient")}</ul>
   </section>
 
-  <section id="sgl-unclassified" data-panel="tab-unclassified" class="mb-8 hidden">
+  <section id="panel-unclassified" class="mb-2 rounded-2xl border border-blue-200 bg-blue-50 p-5 hidden">
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold mb-3">Ingredients (Unclassified)</h2>
-      {f"<div class='text-sm text-gray-500'>Matched {data_score.get('matched',0)}/{data_score.get('total',0)} ({data_score.get('percent',0)}%)</div>" if data_score else ""}
+      <h3 class="text-lg font-semibold">Unclassified</h3>
+      <div class="text-sm text-gray-600">Data Score<br><span class="font-medium">{data_score.get('percent',0)}%</span> matched</div>
     </div>
-    <ul class="divide-y divide-gray-100">{_render_list(unc, "unclassified")}</ul>
+    <p class="text-sm text-blue-900 mb-4">We don’t use AI to guess like others. Exact matches only. Thanks to your scan these items are on our radar for review.</p>
+    <ul class="grid md:grid-cols-2 gap-3">{_render_list(unc, "unclassified")}</ul>
   </section>
 
-  <section id="sgl-flags-coming-soon" class="opacity-70">
-    <h2 class="text-lg font-semibold">Your Flags — Coming Soon</h2>
-  </section>
-
-  <footer class="mt-8 text-sm text-gray-500">{_html_escape(FOOTER_COPY)}</footer>
+  <footer class="mt-6 bg-slate-900 text-slate-100 text-center text-sm rounded-xl px-4 py-3">
+    {_html_escape(FOOTER_COPY)}
+  </footer>
 </section>
 """
     return html
-# --- /NEW RENDERER ---
