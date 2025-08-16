@@ -267,14 +267,29 @@ def gtin_lookup():
     else:
         tokenized_ingredients = parse_ingredient_string(raw["ingredients_text"])
 
-    # --- Classify into 3 buckets (existing function) ---
-    parsed_ingredients = classify_ingredients(
-        ingredients_tokens=tokenized_ingredients,
-        fda_additive_dict=fda_additive_dict,
-        classified_ingredient_dict=classified_ingredient_dict,
-        alias_dict=alias_dict,
-        unified_alias_map=unified_alias_map
-    )
+    # --- Classify into 3 buckets ---
+    if source == "OFF":
+        # Trust-OFF MVP:
+        # - treat every OFF token as "classified_ingredient"
+        # - except if it exactly matches an FDA additive (keep those as fda_additive)
+        parsed_ingredients = []
+        fda_keys = set(fda_additive_dict.keys())
+        for tok in tokenized_ingredients:
+            key = (tok or "").strip().lower()
+            parsed_ingredients.append({
+                "token": tok,
+                "resolved": tok,  # display as-is
+                "classification": "fda_additive" if key in fda_keys else "classified_ingredient",
+            })
+    else:
+        # USDA (or any other source): use your dictionary-driven classifier
+        parsed_ingredients = classify_ingredients(
+            ingredients_tokens=tokenized_ingredients,
+            fda_additive_dict=fda_additive_dict,
+            classified_ingredient_dict=classified_ingredient_dict,
+            alias_dict=alias_dict,
+            unified_alias_map=unified_alias_map
+        )
 
     # --- Build renderer-ready payload (counts, data_score, segments, nova) ---
     classification = build_classification_payload(parsed_ingredients, raw)
