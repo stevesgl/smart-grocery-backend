@@ -64,6 +64,45 @@ def load_unified_alias_map():
     # whole/common ingredient aliases
     return _lower_keys(_load_json("unified_ingredient_alias_map.json"))
 
+# --- ADD near top-level helpers ---
+def _flatten_off_ingredients(nodes):
+    """
+    Deterministically flatten OFF `ingredients` tree.
+    Returns a list of ingredient texts (original casing), de-duplicated
+    case-insensitively while preserving first-seen casing.
+    """
+    if not nodes:
+        return []
+
+    out = []
+    seen = set()  # store lowercase keys for de-dupe
+
+    def dfs(node_list):
+        for n in node_list or []:
+            # OFF nodes can be dicts with .text and possibly .ingredients
+            if isinstance(n, dict):
+                txt = (n.get("text") or "").strip()
+                if txt:
+                    key = txt.lower()
+                    if key not in seen:
+                        seen.add(key)
+                        out.append(txt)
+                # recurse into children
+                if isinstance(n.get("ingredients"), list):
+                    dfs(n["ingredients"])
+            # Some feeds may contain stray strings; include them safely
+            elif isinstance(n, str):
+                t = n.strip()
+                if t:
+                    key = t.lower()
+                    if key not in seen:
+                        seen.add(key)
+                        out.append(t)
+
+    dfs(nodes)
+    return out
+
+
 
 # ======================
 #  Helper Functions

@@ -73,37 +73,75 @@ def _extract_off_nova(off_product: dict):
 
 # --- helper to normalize OFF ingredients into a flat list of strings ---
 def _off_list_to_strings(prod: dict):
-    # 1) Normalized shape from your fetcher: list of dicts with .text
+    """
+    Flatten OFF ingredient structures (normalized `ingredients_list` or raw `ingredients`)
+    into a simple list[str] of ingredient names, deduped case-insensitively while
+    preserving first-seen casing and order.
+
+    Order of preference:
+      1) normalized `ingredients_list` (list[dict|string], possibly nested)
+      2) raw OFF `ingredients` tree (list[dict], nested)
+      3) `ingredients_tags` / `ingredients_tags_en` (lossy fallback)
+
+    Returns: list[str] or None
+    """
+    def _dfs_collect(nodes):
+        out = []
+        seen = set()
+
+        def _add(name):
+            if not isinstance(name, str):
+                return
+            n = name.replace("en:", "").strip()
+            if not n:
+                return
+            key = n.lower()
+            if key not in seen:
+                seen.add(key)
+                out.append(n)
+
+        def _dfs(lst):
+            for node in lst or []:
+                if isinstance(node, dict):
+                    # prefer `.text`, then `.id`, then `.ingredient`
+                    name = node.get("text") or node.get("id") or node.get("ingredient") or ""
+                    _add(name)
+                    # traverse children if present
+                    if isinstance(node.get("ingredients"), list):
+                        _dfs(node["ingredients"])
+                else:
+                    # strings or other simple values
+                    _add(str(node))
+
+        _dfs(nodes)
+        return out
+
+    # 1) Normalized shape from fetcher: `ingredients_list`
     lst = prod.get("ingredients_list")
     if isinstance(lst, list) and lst:
-        out = []
-        for it in lst:
-            if isinstance(it, dict):
-                name = it.get("text") or it.get("id") or it.get("ingredient") or ""
-            else:
-                name = str(it)
-            if isinstance(name, str):
-                name = name.replace("en:", "").strip()
-            if name:
-                out.append(name)
-        if out:
-            return out
+        flattened = _dfs_collect(lst)
+        if flattened:
+            return flattened
 
-    # 2) Normalized or raw tags: ["en:water","en:salt",...]
+    # 2) Raw OFF shape: `ingredients` list of dicts
+    ingr = prod.get("ingredients")
+    if isinstance(ingr, list) and ingr:
+        flattened = _dfs_collect(ingr)
+        if flattened:
+            return flattened
+
+    # 3) Tags fallback (lossy)
     tags = prod.get("ingredients_tags") or prod.get("ingredients_tags_en")
     if isinstance(tags, list) and tags:
-        return [str(t).replace("en:", "").strip() for t in tags if str(t).strip()]
-
-    # 3) Raw OFF shape: 'ingredients' list of dicts
-    ingr = prod.get("ingredients")
-    if isinstance(ingr, list) and ingr and isinstance(ingr[0], dict):
         out = []
-        for it in ingr:
-            name = it.get("text") or it.get("id") or it.get("ingredient") or ""
-            if isinstance(name, str):
-                name = name.replace("en:", "").strip()
-            if name:
-                out.append(name)
+        seen = set()
+        for t in tags:
+            n = str(t).replace("en:", "").strip()
+            if n:
+                key = n.lower()
+                if key not in seen:
+                    seen.add(key)
+                    out.append(n)
         if out:
             return out
 
