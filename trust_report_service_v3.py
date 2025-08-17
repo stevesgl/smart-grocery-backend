@@ -33,6 +33,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, re
+import requests
 
 # data fetchers
 from off_product_lookup_v3 import fetch_product_from_off, OFFProductNotFound
@@ -51,6 +52,33 @@ from ingredient_classifier_v3 import (
 
 # renderer
 from report_renderer_v3 import generate_trust_report_html
+
+def _cache_off_ingredients(gtin: str, raw: dict):
+    """Fire-and-forget upsert of OFF ingredients cache to Supabase."""
+    try:
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        if not url or not key:
+            return  # silently skip if not configured
+
+        endpoint = f"{url.rstrip('/')}/rest/v1/off_ingredients_cache?on_conflict=gtin,source"
+        body = {
+            "gtin": gtin,
+            "source": "OFF",
+            "off_ingredients_list": raw.get("off_ingredients_list") or [],
+            "ingredients_text": raw.get("ingredients_text") or "",
+        }
+        headers = {
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal,resolution=merge-duplicates",
+        }
+        requests.post(endpoint, json=body, headers=headers, timeout=2.0)  # non-blocking
+    except Exception:
+        # fail quietly; caching must never break the main flow
+        pass
+
 
 # --- NEW: extract NOVA (OFF usually provides group 1..4) ---
 def _extract_off_nova(off_product: dict):
@@ -253,6 +281,8 @@ def gtin_lookup():
             except (TypeError, ValueError):
                 pass
 
+        # ✅ fire-and-forget cache write
+        _cache_off_ingredients(gtin, raw)
     else:
         # USDA fallback: we typically only have a flat text string
         raw["ingredients_text"] = product.get("ingredients_text") or ""
