@@ -36,7 +36,7 @@ import os, re
 import requests
 
 # data fetchers
-from off_product_lookup_v3 import fetch_product_from_off, OFFProductNotFound
+from off_product_lookup_v3 import fetch_product_from_off, OFFProductNotFound, off_flat_list_and_anomalies
 from usda_product_lookup_v3 import fetch_product_from_usda, USDAProductNotFound
 
 # parsing + classification
@@ -67,6 +67,9 @@ def _cache_off_ingredients(gtin: str, raw: dict):
             "source": "OFF",
             "off_ingredients_list": raw.get("off_ingredients_list") or [],
             "ingredients_text": raw.get("ingredients_text") or "",
+            # analytics-only fields (trust-first: not used for rendering)
+            "ingredients_flat": raw.get("ingredients_flat") or [],
+            "anomalies": raw.get("anomalies") or [],
         }
         headers = {
             "apikey": key,
@@ -280,6 +283,17 @@ def gtin_lookup():
                     raw["nova_group"] = ns
             except (TypeError, ValueError):
                 pass
+
+        # --- NEW: analytics-only flatten + anomaly guesses (trust-first) ---
+        # Do NOT use these to filter rendering or scoring.
+        try:
+            flat_items, off_anomalies = off_flat_list_and_anomalies(
+                product.get("ingredients_list") or []
+            )
+        except Exception:
+            flat_items, off_anomalies = [], []
+        raw["ingredients_flat"] = flat_items
+        raw["anomalies"] = off_anomalies
 
         # ✅ fire-and-forget cache write
         _cache_off_ingredients(gtin, raw)

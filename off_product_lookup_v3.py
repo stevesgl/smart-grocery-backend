@@ -15,6 +15,7 @@
 # FILE: backend/off_product_lookup.py
 
 import requests
+import re
 
 class OFFProductNotFound(Exception):
     """Raised when a product is not found in Open Food Facts."""
@@ -71,3 +72,38 @@ def fetch_product_from_off(barcode: str) -> dict:
         "nova_score": nova_score,
         "fdc_id": fdc_id
     }
+# ----------------------------------------------------------------------
+# Helper for analytics ONLY (logging to Supabase). Not used for rendering.
+# Preserves OFF order, does NOT filter anything for the Trust Report.
+# ----------------------------------------------------------------------
+_RE_ONLY_NUM   = re.compile(r'^\d+(?:\.\d+)?\s*(?:%|mg|g|kg|mcg|µg|oz|lb)?$')
+_RE_PUNCT_ONLY = re.compile(r'^[\s\.,;:\/\-\(\)\[\]]+$')
+_LIKELY_TRUNC  = {'organ','preserv','color','flavo','mono','diglyc'}
+
+def off_flat_list_and_anomalies(ingredients_list):
+    """
+    Return (flat_strings, anomalies) derived from OFF structured list.
+    - flat_strings: ordered list of strings from OFF (for analytics only)
+    - anomalies: guessed junk markers for Supabase logging ONLY
+    IMPORTANT: Do NOT use this to filter the Trust Report. We are trust-first.
+    """
+    items = []
+    anomalies = []
+    for idx, it in enumerate(ingredients_list or []):
+        raw = (it or {}).get("text")
+        s = (str(raw).strip() if raw is not None else "")
+        items.append(s)  # always include for analytics; trust-first
+        # lightweight anomaly guesses (for logging ONLY)
+        if not s:
+            anomalies.append({"type":"missing_text","token":s,"position":idx,"rule":"off.missing_text"})
+            continue
+        if _RE_ONLY_NUM.match(s):
+            anomalies.append({"type":"numeric","token":s,"position":idx,"rule":"off.only_num"})
+            continue
+        if _RE_PUNCT_ONLY.match(s):
+            anomalies.append({"type":"punct","token":s,"position":idx,"rule":"off.punct_only"})
+            continue
+        if s.lower() in _LIKELY_TRUNC:
+            anomalies.append({"type":"truncation","token":s,"position":idx,"rule":"off.trunc_seed"})
+            continue
+    return items, anomalies
