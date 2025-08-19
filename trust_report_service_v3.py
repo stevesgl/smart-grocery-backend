@@ -338,19 +338,9 @@ def gtin_lookup():
             unified_alias_map=unified_alias_map
         )
 
-    # --- Filter anomalies before building payload ---
-    anomaly_tokens = {
-        (a.get("token") or "").strip().lower()
-        for a in (raw.get("anomalies") or [])
-    }
-    filtered_ingredients = [
-        r for r in parsed_ingredients
-        if (r.get("token") or "").strip().lower() not in anomaly_tokens
-    ]
-
     # --- Build renderer-ready payload (counts, data_score, segments, nova) ---
-    classification = build_classification_payload(filtered_ingredients, raw)
-
+    # Trust-first MVP: do NOT filter anomalies here. They’re logged only.
+    classification = build_classification_payload(parsed_ingredients, raw)
 
     # --- Build product meta for header (unchanged fields you already return) ---
     product_meta = {
