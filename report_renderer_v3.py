@@ -142,7 +142,40 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
     <div class="mt-4">{header_rows}</div>
   </header>
 
+  <!-- Trust Report Intro Banner -->
+  <section id="sgl-intro" class="rounded-2xl border bg-white shadow-sm p-4 mb-4">
+    <!-- LOCKED COPY — DO NOT EDIT -->
+    <button
+      id="sgl-intro-toggle"
+      type="button"
+      class="w-full inline-flex items-start justify-between gap-3 text-left"
+      aria-expanded="false"
+      aria-controls="sgl-intro-panel"
+    >
+      <span class="font-semibold">The open secret:</span>
+      <span id="sgl-intro-caret" class="shrink-0 select-none" aria-hidden="true">▶</span>
+    </button>
+
+    <!-- Collapsed one-liner (shown when aria-expanded=false) -->
+    <p id="sgl-intro-collapsed" class="mt-2 text-sm">
+      The open secret: Every food transparency app runs on crowdsourcing or AI guesses. That’s not good enough for your family.
+    </p>
+
+    <!-- Expanded panel (hidden by default) -->
+    <div id="sgl-intro-panel" class="mt-3 hidden whitespace-pre-line text-sm">
+      <!-- LOCKED COPY — DO NOT EDIT -->
+      The open secret: Every food transparency app runs on crowdsourced data or AI guesses. Risky errors and bad data aren’t good enough for your family.
+
+      <span class="font-semibold block mt-3">We started the same. But found a better way.</span>
+
+      <span class="font-semibold block mt-3">Our promise:</span> FDA/USDA-verified pipeline. Slower, harder, but the only path to truth.
+
+      <span class="font-semibold block mt-3">Want to help?</span> Just scan. No typing. No guessing. Every scan tells us what matters most.
+    </div>
+  </section>
+
   <section id="sgl-original" class="mb-6">
+
     <div class="flex items-center justify-between">
       <h2 class="text-base font-semibold">Original Ingredients (from label)</h2>
       <button type="button" class="text-sm text-gray-600 underline sgl-copy" data-copy-target="#sgl-original-text">Copy</button>
