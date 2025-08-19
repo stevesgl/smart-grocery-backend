@@ -35,6 +35,7 @@ from flask_cors import CORS
 import os, re
 import requests
 
+
 # data fetchers
 from off_product_lookup_v3 import fetch_product_from_off, OFFProductNotFound, off_flat_list_and_anomalies
 from usda_product_lookup_v3 import fetch_product_from_usda, USDAProductNotFound
@@ -258,7 +259,6 @@ def gtin_lookup():
             except USDAProductNotFound:
                 return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
 
-
     # Raw fields used by the classifier payload/builders
     raw = {
         "off_ingredients_list": None,
@@ -267,6 +267,7 @@ def gtin_lookup():
     }
 
     if source == "OFF":
+        # --- OFF: set raw fields from product ---
         raw["off_ingredients_list"] = _off_list_to_strings(product)
         raw["ingredients_text"] = (
             product.get("ingredients_text_en")
@@ -284,19 +285,20 @@ def gtin_lookup():
             except (TypeError, ValueError):
                 pass
 
-        # --- NEW: analytics-only flatten + anomaly guesses (trust-first) ---
-        # Do NOT use these to filter rendering or scoring.
+        # (optional lightweight analytics from structured list; logging only)
         try:
             flat_items, off_anomalies = off_flat_list_and_anomalies(
                 product.get("ingredients_list") or []
             )
+            raw["ingredients_flat"] = flat_items or []
+            raw["anomalies"] = off_anomalies or []
         except Exception:
-            flat_items, off_anomalies = [], []
-        raw["ingredients_flat"] = flat_items
-        raw["anomalies"] = off_anomalies
+            raw["ingredients_flat"] = []
+            raw["anomalies"] = []
 
-        # ✅ fire-and-forget cache write
+        # ✅ fire-and-forget cache write (does not affect rendering)
         _cache_off_ingredients(gtin, raw)
+
     else:
         # USDA fallback: we typically only have a flat text string
         raw["ingredients_text"] = product.get("ingredients_text") or ""
@@ -305,24 +307,25 @@ def gtin_lookup():
     if not raw["off_ingredients_list"] and not (raw["ingredients_text"] or "").strip():
         return jsonify({"error": "No ingredients found for this product."}), 404
 
-    # Tokenize for per-token classification (safe even if we have a list)
-    if raw["off_ingredients_list"]:
-        tokenized_ingredients = list(raw["off_ingredients_list"])
+    # Tokenize for per-token classification
+    if source == "OFF":
+        # Prefer the structured OFF list; fall back to parsing the text
+        tokenized_ingredients = list(raw["off_ingredients_list"] or [])
+        if not tokenized_ingredients:
+            tokenized_ingredients = parse_ingredient_string(raw["ingredients_text"])
     else:
         tokenized_ingredients = parse_ingredient_string(raw["ingredients_text"])
 
     # --- Classify into 3 buckets ---
     if source == "OFF":
         # Trust-OFF MVP:
-        # - treat every OFF token as "classified_ingredient"
-        # - except if it exactly matches an FDA additive (keep those as fda_additive)
         parsed_ingredients = []
         fda_keys = set(fda_additive_dict.keys())
         for tok in tokenized_ingredients:
             key = (tok or "").strip().lower()
             parsed_ingredients.append({
                 "token": tok,
-                "resolved": tok,  # display as-is
+                "resolved": tok,
                 "classification": "fda_additive" if key in fda_keys else "classified_ingredient",
             })
     else:
@@ -335,8 +338,19 @@ def gtin_lookup():
             unified_alias_map=unified_alias_map
         )
 
+    # --- Filter anomalies before building payload ---
+    anomaly_tokens = {
+        (a.get("token") or "").strip().lower()
+        for a in (raw.get("anomalies") or [])
+    }
+    filtered_ingredients = [
+        r for r in parsed_ingredients
+        if (r.get("token") or "").strip().lower() not in anomaly_tokens
+    ]
+
     # --- Build renderer-ready payload (counts, data_score, segments, nova) ---
-    classification = build_classification_payload(parsed_ingredients, raw)
+    classification = build_classification_payload(filtered_ingredients, raw)
+
 
     # --- Build product meta for header (unchanged fields you already return) ---
     product_meta = {
