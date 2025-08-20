@@ -34,7 +34,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, re
 import requests
-
+from flask import make_response
 
 # data fetchers
 from off_product_lookup_v3 import fetch_product_from_off, OFFProductNotFound, off_flat_list_and_anomalies
@@ -183,9 +183,9 @@ app = Flask(__name__)
 
 ALLOWED_ORIGINS = {
     "http://localhost:5173",
+    "capacitor://localhost",
     "http://localhost",
     "http://127.0.0.1",
-    "capacitor://localhost",
     "https://sgl-frontend-gamma.vercel.app",
     "https://sgl-frontend-2h7a3tpr4-steves-projects-96024ab9.vercel.app",
 }
@@ -193,10 +193,17 @@ ALLOWED_ORIGINS = {
 # Scope CORS to just the API route
 CORS(app, resources={r"/gtin-lookup": {"origins": list(ALLOWED_ORIGINS)}})
 
-# Explicit preflight handler
 @app.route("/gtin-lookup", methods=["OPTIONS"])
 def gtin_lookup_preflight():
-    return ("", 204)
+    origin = request.headers.get("Origin", "")
+    resp = make_response(("", 204))
+    if origin in ALLOWED_ORIGINS:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Vary"] = "Origin"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept, X-Requested-With, Authorization, Origin"
+        resp.headers["Access-Control-Max-Age"] = "86400"
+    return resp
 
 # Add headers for both preflight and actual responses
 @app.after_request
