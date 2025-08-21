@@ -241,6 +241,13 @@ classified_ingredient_dict = load_classified_ingredient_dict()  # data/classifie
 alias_dict = load_alias_dict()                               # data/ingredient_aliases.json
 unified_alias_map = load_unified_alias_map()                 # data/unified_ingredient_alias_map.json
 
+# NEW: build a lowercase lookup set for OFF path (canonical names + aliases)
+_fda_additive_lookup = set()
+for _name, _data in fda_additive_dict.items():
+    _fda_additive_lookup.add((_name or "").strip().lower())
+    for _alias in (_data.get("aliases", []) or []):
+        if isinstance(_alias, str) and _alias.strip():
+            _fda_additive_lookup.add(_alias.strip().lower())
 
 @app.route("/gtin-lookup", methods=["POST"])
 def gtin_lookup():
@@ -342,13 +349,13 @@ def gtin_lookup():
     if source == "OFF":
         # Trust-OFF MVP:
         parsed_ingredients = []
-        fda_keys = set(fda_additive_dict.keys())
         for tok in tokenized_ingredients:
             key = (tok or "").strip().lower()
+            is_additive = key in _fda_additive_lookup
             parsed_ingredients.append({
                 "token": tok,
-                "resolved": tok,
-                "classification": "fda_additive" if key in fda_keys else "classified_ingredient",
+                "resolved": tok,  # we keep resolved = original in OFF fast-path (as before)
+                "classification": "fda_additive" if is_additive else "classified_ingredient",
             })
     else:
         # USDA (or any other source): use your dictionary-driven classifier
