@@ -105,18 +105,18 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
 
     # Tabs header (counts)
     tabs = f"""
-    <div class="flex gap-3 mb-4" role="tablist" aria-label="Ingredient buckets">
-      <button class="sgl-tab active flex items-center gap-2 px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50" data-tab="fda">
+    <div class="w-full grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-4" role="tablist" aria-label="Ingredient buckets">
+      <button class="sgl-tab active inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 w-full min-h-[44px] text-sm whitespace-nowrap" data-tab="fda">
         <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500"></span>
         <span>FDA Additives</span>
         <span class="ml-1 rounded-full bg-amber-100 px-1.5 text-xs">{counts.get('fda_additive',0)}</span>
       </button>
-      <button class="sgl-tab flex items-center gap-2 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50" data-tab="classified">
+      <button class="sgl-tab inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50 w-full min-h-[44px] text-sm whitespace-nowrap" data-tab="classified">
         <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>
         <span>Ingredients (Classified)</span>
         <span class="ml-1 rounded-full bg-green-100 px-1.5 text-xs">{counts.get('classified_ingredient',0)}</span>
       </button>
-      <button class="sgl-tab flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50" data-tab="unclassified">
+      <button class="sgl-tab inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 w-full min-h-[44px] text-sm whitespace-nowrap" data-tab="unclassified">
         <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500"></span>
         <span>Unclassified</span>
         <span class="ml-1 rounded-full bg-blue-100 px-1.5 text-xs">{counts.get('unclassified',0)}</span>
