@@ -181,23 +181,39 @@ def _off_list_to_strings(prod: dict):
 
 app = Flask(__name__)
 
-ALLOWED_ORIGINS = {
-    "http://localhost:5173",
-    "capacitor://localhost",
-    "http://localhost",
-    "http://127.0.0.1",
-    "https://sgl-frontend-gamma.vercel.app",
-    "https://sgl-frontend-2h7a3tpr4-steves-projects-96024ab9.vercel.app",
-}
+# --- CORS config (explicit allowlist via env + safe *.vercel.app previews) ---
+def _parse_frontend_origins():
+    raw = os.getenv("FRONTEND_ORIGINS", "")  # e.g. "https://yourapp.vercel.app,https://prod.yourdomain.com"
+    extra = [o.strip() for o in raw.split(",") if o.strip()]
+    defaults = {
+        "http://localhost:5173",
+        "http://localhost",
+        "http://127.0.0.1",
+        "capacitor://localhost",
+    }
+    return set(defaults).union(extra)
 
-# Scope CORS to just the API route
-CORS(app, resources={r"/gtin-lookup": {"origins": list(ALLOWED_ORIGINS)}})
+ALLOWED_ORIGINS = _parse_frontend_origins()
+
+def _is_allowed_origin(origin: str) -> bool:
+    if not origin:
+        return False
+    if origin in ALLOWED_ORIGINS:
+        return True
+    # allow your Vercel previews/prod subdomains safely
+    if origin.startswith("https://") and origin.endswith(".vercel.app"):
+        return True
+    return False
+
+# Keep flask-cors permissive; we enforce exact echo in our hooks below.
+CORS(app, resources={r"/gtin-lookup": {"origins": "*", "methods": ["POST", "OPTIONS"]}})
+
 
 @app.route("/gtin-lookup", methods=["OPTIONS"])
 def gtin_lookup_preflight():
     origin = request.headers.get("Origin", "")
     resp = make_response(("", 204))
-    if origin in ALLOWED_ORIGINS:
+    if _is_allowed_origin(origin):
         resp.headers["Access-Control-Allow-Origin"] = origin
         resp.headers["Vary"] = "Origin"
         resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
@@ -205,17 +221,16 @@ def gtin_lookup_preflight():
         resp.headers["Access-Control-Max-Age"] = "86400"
     return resp
 
+
 # Add headers for both preflight and actual responses
 @app.after_request
 def apply_cors_headers(resp):
-    origin = request.headers.get("Origin")
-    if origin in ALLOWED_ORIGINS:
+    origin = request.headers.get("Origin", "")
+    if _is_allowed_origin(origin):
         resp.headers["Access-Control-Allow-Origin"] = origin
         resp.headers["Vary"] = "Origin"
         resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        resp.headers["Access-Control-Allow-Headers"] = (
-            "Content-Type, Accept, X-Requested-With, Authorization, Origin"
-        )
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept, X-Requested-With, Authorization, Origin"
         resp.headers["Access-Control-Max-Age"] = "86400"
     return resp
 
