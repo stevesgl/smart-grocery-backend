@@ -1,38 +1,38 @@
-# `trust_report_service.py` – **Main Orchestrator**
-# FILE: backend/trust_report_service.py
+# `trust_report_service_v3.py` – **Main Orchestrator**
+# FILE: backend/trust_report_service_v3.py
 # **Purpose:** Acts as the central entry point for the backend. Handles incoming GTIN requests from the frontend, coordinates with data source lookups (OFF first, USDA as fallback), ingredient classification, and report rendering.
 # **Key Functions:**
 # - Receives `/gtin-lookup` POST requests containing a GTIN (barcode number).
-# - Attempts product retrieval from **Open Food Facts** via `off_product_lookup.py`.
-# - If not found, falls back to **USDA** via `usda_product_lookup.py`.
-# - Passes raw ingredient data to `ingredient_classifier.py` for parsing and classification.
+# - Attempts product retrieval from **Open Food Facts** via `off_product_lookup_v3.py`.
+# - If not found, falls back to **USDA** via `usda_product_lookup_v3.py'
+# - Passes raw ingredient data to `ingredient_classifier_v3.py` for parsing and classification.
 # - Calls `report_renderer.py` to generate the HTML Trust Report.
 # **Workflow Role:** **Conductor** – decides the flow, ensures data is fetched, parsed, classified, and formatted for the frontend.
 #
 #
 # ## 🔄 End-to-End Workflow (From GTIN to Trust Report)
 # 1. **Frontend:** User enters/scans a barcode → sends POST request to `/gtin-lookup`.
-# 2. **`trust_report_service.py`:**
-#    - Tries `off_product_lookup.py` first.
-#    - If product not found, uses `usda_product_lookup.py`.
-# 3. **Ingredient Parsing:** Passes raw ingredient text to `ingredient_classifier.py`.
+# 2. **`trust_report_service_v3.py`:**
+#    - Tries `off_product_lookup_v3.py` first.
+#    - If product not found, uses `usda_product_lookup_v3.py`.
+# 3. **Ingredient Parsing:** Passes raw ingredient text to `ingredient_classifier_v3.py`.
 # 4. **Classification:** Ingredients are matched against dictionaries and categorized.
-# 5. **Report Rendering:** `report_renderer.py` builds HTML Trust Report.
+# 5. **Report Rendering:** `report_renderer_v3.py` builds HTML Trust Report.
 # 6. **Frontend Display:** Trust Report is sent back to the frontend for the user to view.
 # 
 # 
 # **Summary:**  
-# - `trust_report_service.py` = **Conductor**  
-# - `off_product_lookup.py` = **Primary Fetcher**  
-# - `usda_product_lookup.py` = **Fallback Fetcher**  
-# - `ingredient_classifier.py` = **Data Interpreter**  
-# - `report_renderer.py` = **Presentation Layer** 
+# - `trust_report_service_v3.py` = **Conductor**  
+# - `off_product_lookup_v3.py` = **Primary Fetcher**  
+# - `usda_product_lookup_v3.py` = **Fallback Fetcher**  
+# - `ingredient_classifier_v3.py` = **Data Interpreter**  
+# - `report_renderer_v3.py` = **Presentation Layer** 
 
 
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os, re
+import os
 import requests
 from flask import make_response
 
@@ -179,6 +179,87 @@ def _off_list_to_strings(prod: dict):
 
     return None
 
+def _normalize_gtin_candidates(raw: str):
+    """
+    Build an ordered, de-duplicated list of candidate barcodes to try.
+
+    Strategy (trust-first, non-guessy):
+      1) original as-is
+      2) right-pad with a single '0' if numeric and len < 11 (covers cases like 1410007946 -> 14100079460)
+      3) left-pad to 12 (UPC-A) for both base forms (raw and right-padded) if shorter than 12
+      4) left-pad to 14 (GTIN-14) for both base forms if shorter than 14
+
+    We do NOT compute check digits here (reserved for a later iteration).
+    """
+    s = (raw or "").strip()
+    bases = []
+    if s:
+        bases.append(s)
+
+    # Only consider numeric forms for padding
+    right_padded = None
+    if s and s.isdigit():
+        # Add a conservative right-pad to hit datasets that store 11-digit variants
+        if len(s) < 11:
+            right_padded = s + "0"
+            bases.append(right_padded)
+
+    cands = []
+    for base in bases:
+        cands.append(base)
+        if base.isdigit():
+            if len(base) < 12:
+                cands.append(base.zfill(12))
+            if len(base) < 14:
+                cands.append(base.zfill(14))
+
+    # de-dup while preserving order
+    seen = set()
+    ordered = []
+    for x in cands:
+        if x not in seen:
+            seen.add(x)
+            ordered.append(x)
+    return ordered
+
+def _try_candidates_with(fetcher, candidates, source_name, not_found_exc):
+    """
+    Attempt product fetch across multiple candidate barcodes.
+    Returns:
+      - (single_product, canonical_gtin, source_name) if exactly one unique product found
+      - ("multiple", None, source_name) if multiple unique products found
+      - (None, None, source_name) if no products found
+    """
+    successes = []
+    for cand in candidates:
+        print(f"[SGL] LOOKUP: {source_name} try={cand}")
+        try:
+            prod = fetcher(cand)
+            successes.append((prod, cand))
+        except not_found_exc:
+            continue
+
+    if not successes:
+        return None, None, source_name
+
+    # Check if all successes describe the same product
+    # (for now: product_name + brand_name/brand_owner tuple)
+    unique_keys = set()
+    for prod, _cand in successes:
+        key = (
+            (prod.get("product_name") or prod.get("description") or "").strip().lower(),
+            (prod.get("brand_name") or prod.get("brand_owner") or "").strip().lower()
+        )
+        unique_keys.add(key)
+
+    if len(unique_keys) == 1:
+        prod, cand = successes[0]
+        return prod, cand, source_name
+    else:
+        return "multiple", None, source_name
+
+
+
 app = Flask(__name__)
 
 # --- CORS config (explicit allowlist via env + safe *.vercel.app previews) ---
@@ -263,30 +344,57 @@ def gtin_lookup():
     if not gtin:
         return jsonify({"error": "GTIN is required"}), 400
 
-    product = None
-    source = None
+
+    
+    # Prepare barcode candidates (original, zfill(12), zfill(14))
+    candidates = _normalize_gtin_candidates(gtin)
 
     if force_usda:
-        # ---- USDA forced path (skip OFF entirely) ----
-        try:
-            print("[SGL] LOOKUP: USDA (forced)")
-            product = fetch_product_from_usda(gtin)
-            source = "USDA"
-        except USDAProductNotFound:
+        # ---- USDA forced path ----
+        product, used_gtin, source = _try_candidates_with(
+            fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
+        )
+        if product is None:
             return jsonify({"error": "Product not found in USDA for this GTIN (forced)."}), 404
+        if product == "multiple":
+            return jsonify({
+                "error": "conflict",
+                "message": "We found more than one possible product for this barcode. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
+            }), 409
+
     else:
-        # ---- OFF-first, USDA fallback ----
-        try:
-            print("[SGL] LOOKUP: OFF-first")
-            product = fetch_product_from_off(gtin)
-            source = "OFF"
-        except OFFProductNotFound:
-            try:
-                print("[SGL] LOOKUP: USDA (fallback)")
-                product = fetch_product_from_usda(gtin)
-                source = "USDA"
-            except USDAProductNotFound:
+        # ---- OFF-first ----
+        product, used_gtin, source = _try_candidates_with(
+            fetch_product_from_off, candidates, "OFF", OFFProductNotFound
+        )
+
+        if product == "multiple":
+            # Conflict in OFF → try USDA instead
+            product, used_gtin, source = _try_candidates_with(
+                fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
+            )
+            if product is None:
                 return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
+            if product == "multiple":
+                return jsonify({
+                    "error": "conflict",
+                    "message": "We found more than one possible product for this barcode. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
+                }), 409
+        elif product is None:
+            # OFF failed → USDA fallback
+            product, used_gtin, source = _try_candidates_with(
+                fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
+            )
+            if product is None:
+                return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
+            if product == "multiple":
+                return jsonify({
+                    "error": "conflict",
+                    "message": "We found more than one possible product for this barcode. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
+                }), 409
+
+    # Lock the canonical GTIN selected by the successful fetch (OFF or USDA)
+    gtin = used_gtin
 
     # Raw fields used by the classifier payload/builders
     raw = {

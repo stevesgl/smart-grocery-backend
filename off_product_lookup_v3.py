@@ -25,14 +25,26 @@ def fetch_product_from_off(barcode: str) -> dict:
     """
     Fetch product data from Open Food Facts for the given barcode.
     Prioritizes ingredients_text over structured ingredients list.
+
+    Bug Fix (v0.4.x):
+    - Treat HTTP 200 with {"status": 0} as 'not found' and raise OFFProductNotFound.
+    - Treat missing/empty 'product' as 'not found'.
+    - Keep behavior otherwise identical.
     """
     url = f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
-    response = requests.get(url, timeout=10)
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.RequestException as e:
+        # Network/timeout/etc. → treat as OFF miss so orchestrator can try USDA
+        raise OFFProductNotFound(f"OFF request error for {barcode}: {e}")
 
     if response.status_code != 200:
         raise OFFProductNotFound(f"OFF API request failed: {response.status_code}")
 
-    data = response.json()
+    # OFF 'not found' often returns 200 with {"status": 0}
+    data = response.json() if response.content else {}
+    if isinstance(data, dict) and data.get("status") == 0:
+        raise OFFProductNotFound(f"Product not found in OFF (status=0) for barcode {barcode}")
 
     # Ensure product exists in the response
     product = data.get("product")
@@ -52,7 +64,6 @@ def fetch_product_from_off(barcode: str) -> dict:
     # Prioritize ingredients_text over ingredients list
     ingredients_text = product.get("ingredients_text")
     if not ingredients_text:
-        # ✅ Use the already-captured ingredients_list as fallback
         if ingredients_list:
             ingredients_text = ", ".join(
                 (i.get("text") or "").strip() for i in ingredients_list if i.get("text")
@@ -72,6 +83,9 @@ def fetch_product_from_off(barcode: str) -> dict:
         "nova_score": nova_score,
         "fdc_id": fdc_id
     }
+
+
+
 # ----------------------------------------------------------------------
 # Helper for analytics ONLY (logging to Supabase). Not used for rendering.
 # Preserves OFF order, does NOT filter anything for the Trust Report.
