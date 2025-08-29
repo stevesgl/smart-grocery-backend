@@ -181,46 +181,40 @@ def _off_list_to_strings(prod: dict):
 
 def _normalize_gtin_candidates(raw: str):
     """
-    Build an ordered, de-duplicated list of candidate barcodes to try.
+    Ordered, de-duplicated candidate barcodes.
 
-    Strategy (trust-first, non-guessy):
       1) original as-is
-      2) right-pad with a single '0' if numeric and len < 11 (covers cases like 1410007946 -> 14100079460)
-      3) left-pad to 12 (UPC-A) for both base forms (raw and right-padded) if shorter than 12
-      4) left-pad to 14 (GTIN-14) for both base forms if shorter than 14
-
-    We do NOT compute check digits here (reserved for a later iteration).
+      2) if numeric and len<11: right-pad once (… + '0')  [keeps 1410007946 -> 14100079460 working]
+      3) for each base (raw and right-padded):
+         - if len<11: left-pad to 11
+         - if len<12: left-pad to 12 (UPC-A)
+         - if len<14: left-pad to 14 (GTIN-14)
     """
     s = (raw or "").strip()
     bases = []
     if s:
         bases.append(s)
 
-    # Only consider numeric forms for padding
-    right_padded = None
-    if s and s.isdigit():
-        # Add a conservative right-pad to hit datasets that store 11-digit variants
-        if len(s) < 11:
-            right_padded = s + "0"
-            bases.append(right_padded)
+    if s and s.isdigit() and len(s) < 11:
+        bases.append(s + "0")  # conservative 11-digit right-pad variant
 
     cands = []
     for base in bases:
         cands.append(base)
         if base.isdigit():
+            if len(base) < 11:
+                cands.append(base.zfill(11))   # <-- NEW: enables 02840019963
             if len(base) < 12:
-                cands.append(base.zfill(12))
+                cands.append(base.zfill(12))   # 12-digit UPC-A
             if len(base) < 14:
-                cands.append(base.zfill(14))
-
-    # de-dup while preserving order
-    seen = set()
-    ordered = []
+                cands.append(base.zfill(14))   # 14-digit GTIN
+    seen, ordered = set(), []
     for x in cands:
         if x not in seen:
             seen.add(x)
             ordered.append(x)
     return ordered
+
 
 
 def _try_candidates_with(fetcher, candidates, source_name, not_found_exc):
