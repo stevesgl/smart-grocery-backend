@@ -179,6 +179,86 @@ def _off_list_to_strings(prod: dict):
 
     return None
 
+def _normalize_gtin_candidates(raw: str):
+    """
+    Build an ordered, de-duplicated list of candidate barcodes to try.
+
+    Strategy (trust-first, non-guessy):
+      1) original as-is
+      2) right-pad with a single '0' if numeric and len < 11 (covers cases like 1410007946 -> 14100079460)
+      3) left-pad to 12 (UPC-A) for both base forms (raw and right-padded) if shorter than 12
+      4) left-pad to 14 (GTIN-14) for both base forms if shorter than 14
+
+    We do NOT compute check digits here (reserved for a later iteration).
+    """
+    s = (raw or "").strip()
+    bases = []
+    if s:
+        bases.append(s)
+
+    # Only consider numeric forms for padding
+    right_padded = None
+    if s and s.isdigit():
+        # Add a conservative right-pad to hit datasets that store 11-digit variants
+        if len(s) < 11:
+            right_padded = s + "0"
+            bases.append(right_padded)
+
+    cands = []
+    for base in bases:
+        cands.append(base)
+        if base.isdigit():
+            if len(base) < 12:
+                cands.append(base.zfill(12))
+            if len(base) < 14:
+                cands.append(base.zfill(14))
+
+    # de-dup while preserving order
+    seen = set()
+    ordered = []
+    for x in cands:
+        if x not in seen:
+            seen.add(x)
+            ordered.append(x)
+    return ordered
+
+
+def _try_candidates_with(fetcher, candidates, source_name, not_found_exc):
+    """
+    Attempt product fetch across multiple candidate barcodes.
+    Returns:
+      - (single_product, canonical_gtin, source_name) if exactly one unique product found
+      - ("multiple", None, source_name) if multiple unique products found
+      - (None, None, source_name) if no products found
+    """
+    successes = []
+    for cand in candidates:
+        print(f"[SGL] LOOKUP: {source_name} try={cand}")
+        try:
+            prod = fetcher(cand)
+            successes.append((prod, cand))
+        except not_found_exc:
+            continue
+
+    if not successes:
+        return None, None, source_name
+
+    # Check if all successes describe the same product
+    unique_keys = set()
+    for prod, _cand in successes:
+        key = (
+            (prod.get("product_name") or prod.get("description") or "").strip().lower(),
+            (prod.get("brand_name") or prod.get("brand_owner") or "").strip().lower(),
+        )
+        unique_keys.add(key)
+
+    if len(unique_keys) == 1:
+        prod, cand = successes[0]
+        return prod, cand, source_name
+    else:
+        return "multiple", None, source_name
+
+
 app = Flask(__name__)
 
 # --- CORS config (explicit allowlist via env + safe *.vercel.app previews) ---
@@ -254,8 +334,6 @@ def gtin_lookup():
     """Main GTIN lookup endpoint."""
     payload = request.get_json(force=True) or {}
     gtin = (payload.get("gtin") or payload.get("barcode") or "").strip()
-
-    # Robust boolean parsing for force_usda (accepts true/false or "true"/"false")
     val = payload.get("force_usda")
     force_usda = (val is True) or (isinstance(val, str) and val.strip().lower() == "true")
     print(f"[SGL] force_usda={force_usda} gtin={gtin}")
@@ -263,30 +341,59 @@ def gtin_lookup():
     if not gtin:
         return jsonify({"error": "GTIN is required"}), 400
 
+    # Prepare candidate GTINs (raw, right-padded, zfill 12/14)
+    candidates = _normalize_gtin_candidates(gtin)
+
     product = None
     source = None
+    used_gtin = None
 
     if force_usda:
-        # ---- USDA forced path (skip OFF entirely) ----
-        try:
-            print("[SGL] LOOKUP: USDA (forced)")
-            product = fetch_product_from_usda(gtin)
-            source = "USDA"
-        except USDAProductNotFound:
+        product, used_gtin, source = _try_candidates_with(
+            fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
+        )
+        if product is None:
             return jsonify({"error": "Product not found in USDA for this GTIN (forced)."}), 404
+        if product == "multiple":
+            return jsonify({
+                "error": "conflict",
+                "message": "We found more than one possible product for this barcode. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
+            }), 409
     else:
-        # ---- OFF-first, USDA fallback ----
-        try:
-            print("[SGL] LOOKUP: OFF-first")
-            product = fetch_product_from_off(gtin)
-            source = "OFF"
-        except OFFProductNotFound:
-            try:
-                print("[SGL] LOOKUP: USDA (fallback)")
-                product = fetch_product_from_usda(gtin)
-                source = "USDA"
-            except USDAProductNotFound:
+        # OFF-first
+        product, used_gtin, source = _try_candidates_with(
+            fetch_product_from_off, candidates, "OFF", OFFProductNotFound
+        )
+
+        if product == "multiple":
+            # Conflict in OFF → try USDA
+            product, used_gtin, source = _try_candidates_with(
+                fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
+            )
+            if product is None:
                 return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
+            if product == "multiple":
+                return jsonify({
+                    "error": "conflict",
+                    "message": "We found more than one possible product for this barcode. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
+                }), 409
+
+        elif product is None:
+            # OFF miss → USDA fallback
+            product, used_gtin, source = _try_candidates_with(
+                fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
+            )
+            if product is None:
+                return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
+            if product == "multiple":
+                return jsonify({
+                    "error": "conflict",
+                    "message": "We found more than one possible product for this barcode. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
+                }), 409
+
+    # Lock the canonical GTIN selected by the successful fetch
+    gtin = used_gtin
+
 
     # Raw fields used by the classifier payload/builders
     raw = {
