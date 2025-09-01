@@ -112,7 +112,14 @@ def _flatten_off_ingredients(nodes):
 # ======================
 
 def normalize_token(s: str) -> str:
-    return (s or "").strip().lower()
+    # basic normalization: lowercase, collapse spaces, strip leading conjunctions
+    t = (s or "").replace("\u00A0", " ").strip().lower()   # NBSP → space
+    t = re.sub(r"\s+", " ", t)
+    # remove a leading "and " or "& " that commonly precedes last-listed colors
+    t = re.sub(r"^(and|&)\s+", "", t)
+    # normalize fd&c vs fdc
+    t = t.replace("fd & c", "fd&c").replace("fd &c", "fd&c").replace("fd& c", "fd&c")
+    return t
 
 def resolve_alias(token: str, alias_dict: dict) -> str:
     key = normalize_token(token)
@@ -244,7 +251,12 @@ def classify_ingredients(
         # normalize + alias passes
         t0 = normalize_token(original)
         t1 = resolve_alias(t0, alias_dict)
-        resolved = resolve_unified_alias(t1, unified_alias_map)
+        # If alias already yielded an FDA canonical or the sentinel, DO NOT unify back
+        if (isinstance(t1, str) 
+            and (t1.strip().lower() in fda_additive_dict or t1 == SENTINEL_GENERIC_COLOR)):
+            resolved = t1
+        else:
+            resolved = resolve_unified_alias(t1, unified_alias_map)
 
         # coerce for display + matching (handles list/tuple returns)
         resolved_display, resolved_key = _coerce_to_display_and_key(resolved)
