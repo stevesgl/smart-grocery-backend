@@ -27,6 +27,9 @@ import os
 import re
 from html import escape as _html_escape
 
+SENTINEL_GENERIC_COLOR = "__generic_color__"
+DISPLAY_GENERIC_COLOR = "Artificial color (unspecified)"
+
 
 # ======================
 #  Data Loader Functions
@@ -246,13 +249,22 @@ def classify_ingredients(
         # coerce for display + matching (handles list/tuple returns)
         resolved_display, resolved_key = _coerce_to_display_and_key(resolved)
 
-        # exact-match membership checks
-        if resolved_key in fda_additive_dict:
+        # exact-match membership checks with sentinel handling
+        if resolved_key == SENTINEL_GENERIC_COLOR:
+            # Treat as FDA Additive (unspecified) without dict lookup
             cls = "fda_additive"
+            resolved_display = DISPLAY_GENERIC_COLOR
+            match_key = t0  # highlight using what appeared on label
+            # TODO (non-blocking): log anomaly "unspecified_color_additive" with raw string
+        elif resolved_key in fda_additive_dict:
+            cls = "fda_additive"
+            match_key = resolved_key
         elif resolved_key in classified_ingredient_dict:
             cls = "classified_ingredient"
+            match_key = resolved_key
         else:
             cls = "unclassified"
+            match_key = t0  # fallback to original normalized token for highlighting
 
         results.append({
             "token": original,
@@ -283,7 +295,8 @@ def build_classification_payload(
     for r in results or []:
         cls = r.get("classification")
         display = r.get("resolved") or r.get("token") or ""
-        token_lc = (r.get("resolved") or r.get("token") or "").strip().lower()
+        # Use match_key to align highlights with label text (esp. for sentinel)
+        token_lc = (r.get("match_key") or r.get("resolved") or r.get("token") or "").strip().lower()
         item = {"token": token_lc, "display": display}
 
         if cls == "fda_additive":
