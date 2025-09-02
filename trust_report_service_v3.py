@@ -447,26 +447,14 @@ def gtin_lookup():
         tokenized_ingredients = parse_ingredient_string(raw["ingredients_text"])
 
     # --- Classify into 3 buckets ---
-    if source == "OFF":
-        # Trust-OFF MVP:
-        parsed_ingredients = []
-        for tok in tokenized_ingredients:
-            key = (tok or "").strip().lower()
-            is_additive = key in _fda_additive_lookup
-            parsed_ingredients.append({
-                "token": tok,
-                "resolved": tok,  # we keep resolved = original in OFF fast-path (as before)
-                "classification": "fda_additive" if is_additive else "classified_ingredient",
-            })
-    else:
-        # USDA (or any other source): use your dictionary-driven classifier
-        parsed_ingredients = classify_ingredients(
-            ingredients_tokens=tokenized_ingredients,
-            fda_additive_dict=fda_additive_dict,
-            classified_ingredient_dict=classified_ingredient_dict,
-            alias_dict=alias_dict,
-            unified_alias_map=unified_alias_map
-        )
+    # Unified classification (OFF + USDA)
+    parsed_ingredients = classify_ingredients(
+        ingredients_tokens=tokenized_ingredients,
+        fda_additive_dict=fda_additive_dict,
+        classified_ingredient_dict=classified_ingredient_dict,
+        alias_dict=alias_dict,
+        unified_alias_map=unified_alias_map
+    )
 
     # --- Build renderer-ready payload (counts, data_score, segments, nova) ---
     # Trust-first MVP: do NOT filter anomalies here. They’re logged only.
