@@ -169,11 +169,11 @@ def _build_segments_from_list(ingredients_list, fda_set, classified_set):
     """
     segs = []
     for idx, item in enumerate(ingredients_list or []):
-        token_lc = item.strip().lower()
+        norm_key = normalize_token(item)
         cls = "unclassified"
-        if token_lc in fda_set:
+        if norm_key in fda_set:
             cls = "fda_additive"
-        elif token_lc in classified_set:
+        elif norm_key in classified_set:
             cls = "classified_ingredient"
         segs.append({"text": item, "class": cls})
         if idx < len(ingredients_list) - 1:
@@ -225,7 +225,8 @@ def classify_ingredients(
     fda_additive_dict: dict,
     classified_ingredient_dict: dict,
     alias_dict: dict,
-    unified_alias_map: dict
+    unified_alias_map: dict,
+    default_off_non_additives_to_classified: bool = False
 ) -> list[dict]:
     """
     Classify a list of ingredient tokens into:
@@ -276,8 +277,12 @@ def classify_ingredients(
             cls = "classified_ingredient"
             match_key = resolved_key
         else:
-            cls = "unclassified"
-            match_key = t0  # fallback to original normalized token for highlighting
+            if default_off_non_additives_to_classified:
+                cls = "classified_ingredient"
+                match_key = t0
+            else:
+                cls = "unclassified"
+                match_key = t0
 
         results.append({
             "token": original,

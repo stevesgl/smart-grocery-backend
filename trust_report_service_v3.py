@@ -1,32 +1,32 @@
-# `trust_report_service.py` – **Main Orchestrator**
-# FILE: backend/trust_report_service.py
+# `trust_report_service_v3.py` – **Main Orchestrator**
+# FILE: backend/trust_report_service_v3.py
 # **Purpose:** Acts as the central entry point for the backend. Handles incoming GTIN requests from the frontend, coordinates with data source lookups (OFF first, USDA as fallback), ingredient classification, and report rendering.
 # **Key Functions:**
 # - Receives `/gtin-lookup` POST requests containing a GTIN (barcode number).
-# - Attempts product retrieval from **Open Food Facts** via `off_product_lookup.py`.
-# - If not found, falls back to **USDA** via `usda_product_lookup.py`.
-# - Passes raw ingredient data to `ingredient_classifier.py` for parsing and classification.
+# - Attempts product retrieval from **Open Food Facts** via `off_product_lookup_v3.py`.
+# - If not found, falls back to **USDA** via `usda_product_lookup_v3.py`.
+# - Passes raw ingredient data to `ingredient_classifier_v3.py` for parsing and classification.
 # - Calls `report_renderer.py` to generate the HTML Trust Report.
 # **Workflow Role:** **Conductor** – decides the flow, ensures data is fetched, parsed, classified, and formatted for the frontend.
 #
 #
 # ## 🔄 End-to-End Workflow (From GTIN to Trust Report)
 # 1. **Frontend:** User enters/scans a barcode → sends POST request to `/gtin-lookup`.
-# 2. **`trust_report_service.py`:**
-#    - Tries `off_product_lookup.py` first.
-#    - If product not found, uses `usda_product_lookup.py`.
-# 3. **Ingredient Parsing:** Passes raw ingredient text to `ingredient_classifier.py`.
+# 2. **`trust_report_service_v3.py`:**
+#    - Tries `off_product_lookup_v3.py` first.
+#    - If product not found, uses `usda_product_lookup_v3.py`.
+# 3. **Ingredient Parsing:** Passes raw ingredient text to `ingredient_classifier_v3.py`.
 # 4. **Classification:** Ingredients are matched against dictionaries and categorized.
-# 5. **Report Rendering:** `report_renderer.py` builds HTML Trust Report.
+# 5. **Report Rendering:** `report_renderer_v3.py` builds HTML Trust Report.
 # 6. **Frontend Display:** Trust Report is sent back to the frontend for the user to view.
 # 
 # 
 # **Summary:**  
-# - `trust_report_service.py` = **Conductor**  
-# - `off_product_lookup.py` = **Primary Fetcher**  
-# - `usda_product_lookup.py` = **Fallback Fetcher**  
-# - `ingredient_classifier.py` = **Data Interpreter**  
-# - `report_renderer.py` = **Presentation Layer** 
+# - `trust_report_service_v3.py` = **Conductor**  
+# - `off_product_lookup_v3.py` = **Primary Fetcher**  
+# - `usda_product_lookup_v3.py` = **Fallback Fetcher**  
+# - `ingredient_classifier_v3.py` = **Data Interpreter**  
+# - `report_renderer_v3.py` = **Presentation Layer** 
 
 
 
@@ -453,7 +453,8 @@ def gtin_lookup():
         fda_additive_dict=fda_additive_dict,
         classified_ingredient_dict=classified_ingredient_dict,
         alias_dict=alias_dict,
-        unified_alias_map=unified_alias_map
+        unified_alias_map=unified_alias_map,
+        default_off_non_additives_to_classified=(source == "OFF")
     )
 
     # --- Build renderer-ready payload (counts, data_score, segments, nova) ---
