@@ -272,7 +272,8 @@ def classify_ingredients(
             # TODO (non-blocking): log anomaly "unspecified_color_additive" with raw string
         elif resolved_key in fda_additive_dict:
             cls = "fda_additive"
-            match_key = resolved_key
+            # Highlight by label token, not canonical
+            match_key = t0
         elif resolved_key in classified_ingredient_dict:
             cls = "classified_ingredient"
             match_key = resolved_key
