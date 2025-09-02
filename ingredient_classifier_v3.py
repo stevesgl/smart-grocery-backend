@@ -118,6 +118,7 @@ def normalize_token(s: str) -> str:
     # remove a leading "and " or "& " that commonly precedes last-listed colors
     t = re.sub(r"^(and|&)\s+", "", t)
     # normalize fd&c vs fdc
+    t = re.sub(r"\bfdc\b", "fd&c", t)
     t = t.replace("fd & c", "fd&c").replace("fd &c", "fd&c").replace("fd& c", "fd&c")
     return t
 
@@ -281,7 +282,8 @@ def classify_ingredients(
         results.append({
             "token": original,
             "resolved": resolved_display,   # safe, single string for UI
-            "classification": cls
+            "classification": cls,
+            "match_key": match_key
         })
 
     return results

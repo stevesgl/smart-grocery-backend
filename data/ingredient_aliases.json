@@ -322,11 +322,15 @@
   "turmeric extract color": "Turmeric oleoresin",
 
   "artificial color": "__generic_color__",
+  "artificial colors": "__generic_color__",
   "artificial coloring": "__generic_color__",
   "contains artificial color": "__generic_color__",
+  "contains artificial colors": "__generic_color__",
   "contains artificial coloring": "__generic_color__",
   "artificial colour": "__generic_color__",
+  "artificial colours": "__generic_color__",
   "artificial colouring": "__generic_color__",
   "contains artificial colour": "__generic_color__",
+  "contains artificial colours": "__generic_color__",
   "contains artificial colouring": "__generic_color__"
 }
