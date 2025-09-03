@@ -273,7 +273,11 @@ def classify_ingredients(
         elif resolved_key in fda_additive_dict:
             cls = "fda_additive"
             # Highlight by label token, not canonical
-            match_key = t0
+            match_key = t0  # highlight by label token
+            # prefer canonical display string from dictionary if present
+            canon_display = fda_additive_dict.get(resolved_key, {}).get("display")
+            if isinstance(canon_display, str) and canon_display.strip():
+                resolved_display = canon_display
         elif resolved_key in classified_ingredient_dict:
             cls = "classified_ingredient"
             match_key = resolved_key
