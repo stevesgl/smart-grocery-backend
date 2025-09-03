@@ -180,7 +180,7 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
       <h2 class="text-base font-semibold">Original Ingredients (from label)</h2>
       <button type="button" class="text-sm text-gray-600 underline sgl-copy" data-copy-target="#sgl-original-text">Copy</button>
     </div>
-    <p id="sgl-original-text" class="text-[15px] leading-7 bg-gray-50 p-4 rounded-xl border border-gray-200 uppercase tracking-wide">
+    <p id="sgl-original-text" class="text-[15px] leading-7 bg-gray-50 p-4 rounded-xl border border-gray-200">
       {_render_segments(segs)}
     </p>
   </section>

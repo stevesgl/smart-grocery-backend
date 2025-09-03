@@ -318,10 +318,17 @@ def build_classification_payload(
 
     for r in results or []:
         cls = r.get("classification")
-        display = r.get("resolved") or r.get("token") or ""
+        # Label-first display: show exactly what appeared on the label.
+        # Keep canonical for future (+) details, but don't surface it here.
+        display = r.get("token") or r.get("resolved") or ""
         # Use match_key to align highlights with label text (esp. for sentinel)
         token_lc = (r.get("match_key") or r.get("resolved") or r.get("token") or "").strip().lower()
-        item = {"token": token_lc, "display": display}
+        item = {
+            "token": token_lc,
+            "display": display,
+            # keep for future details drawer (not rendered in MVP):
+            "canonical": r.get("resolved")
+        }
 
         if cls == "fda_additive":
             fda_additives.append(item)
