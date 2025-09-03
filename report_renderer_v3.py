@@ -128,7 +128,7 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
         <div><span class="text-gray-500">Product</span><div class="font-medium">{_html_escape(product_name or "Unknown")}</div></div>
         <div><span class="text-gray-500">Brand</span><div class="font-medium">{brand_display}</div></div>
-        <div><span class="text-gray-500">GTIN</span><div class="font-medium">{gtin_display}</div></div>
+        <div><span class="text-gray-500">Barcode Number</span><div class="font-medium">{gtin_display}</div></div>
         <div class="hidden md:block">{_nova_badge(nova)}</div>
       </div>
     """

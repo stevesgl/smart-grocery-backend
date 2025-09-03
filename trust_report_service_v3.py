@@ -333,7 +333,7 @@ def gtin_lookup():
     print(f"[SGL] force_usda={force_usda} gtin={gtin}")
 
     if not gtin:
-        return jsonify({"error": "GTIN is required"}), 400
+        return jsonify({"error": "Barcode number is required"}), 400
 
     # Prepare candidate GTINs (raw, right-padded, zfill 12/14)
     candidates = _normalize_gtin_candidates(gtin)
@@ -347,11 +347,11 @@ def gtin_lookup():
             fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
         )
         if product is None:
-            return jsonify({"error": "Product not found in USDA for this GTIN (forced)."}), 404
+            return jsonify({"error": "This product is not listed with our trusted sources. Try again or another product."}), 404
         if product == "multiple":
             return jsonify({
                 "error": "conflict",
-                "message": "We found more than one possible product for this barcode. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
+                "message": "We found more than one possible match. To protect your trust, we never guess. Please scan again or enter the full barcode (all digits, including the edges)."
             }), 409
     else:
         # OFF-first
@@ -365,7 +365,7 @@ def gtin_lookup():
                 fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
             )
             if product is None:
-                return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
+                return jsonify({"error": "We couldn’t find this product in our trusted sources yet. Try another barcode or type the barcode number."}), 404
             if product == "multiple":
                 return jsonify({
                     "error": "conflict",
@@ -378,7 +378,7 @@ def gtin_lookup():
                 fetch_product_from_usda, candidates, "USDA", USDAProductNotFound
             )
             if product is None:
-                return jsonify({"error": "Product not found in OFF or USDA for this GTIN."}), 404
+                return jsonify({"error": "We couldn’t find this product in our trusted sources. Try another barcode or type the barcode number."}), 404
             if product == "multiple":
                 return jsonify({
                     "error": "conflict",
@@ -435,7 +435,7 @@ def gtin_lookup():
 
     # If we truly have no ingredients, fail fast
     if not raw["off_ingredients_list"] and not (raw["ingredients_text"] or "").strip():
-        return jsonify({"error": "No ingredients found for this product."}), 404
+        return jsonify({"error": "This product is not listed with our trusted sources. Try again or another product. Thanks for your scan. We've already logged to investigate."}), 404
 
     # Tokenize for per-token classification
     if source == "OFF":
