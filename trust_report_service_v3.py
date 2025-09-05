@@ -53,6 +53,8 @@ from ingredient_classifier_v3 import (
 
 # renderer
 from report_renderer_v3 import generate_trust_report_html
+import json
+from pathlib import Path
 
 def _cache_off_ingredients(gtin: str, raw: dict):
     """Fire-and-forget upsert of OFF ingredients cache to Supabase."""
@@ -315,6 +317,18 @@ classified_ingredient_dict = load_classified_ingredient_dict()  # data/classifie
 alias_dict = load_alias_dict()                               # data/ingredient_aliases.json
 unified_alias_map = load_unified_alias_map()                 # data/unified_ingredient_alias_map.json
 
+# ✅ Optional enrichment for additive expanders (read-only, non-blocking)
+_ENRICHMENT = {}
+try:
+    _data_dir = Path(__file__).resolve().parent / "data"
+    _enrich_path = _data_dir / "fda_additive_enriched.json"
+    if _enrich_path.exists():
+        with open(_enrich_path, "r", encoding="utf-8") as f:
+            _ENRICHMENT = json.load(f) or {}
+except Exception:
+    # Never block runtime on enrichment
+    _ENRICHMENT = {}
+
 # NEW: build a lowercase lookup set for OFF path (canonical names + aliases)
 _fda_additive_lookup = set()
 for _name, _data in fda_additive_dict.items():
@@ -477,7 +491,8 @@ def gtin_lookup():
         product_name=product_meta["product_name"],
         classification=classification,
         brand=(product_meta.get("brand_name") or product_meta.get("brand_owner")),
-        gtin=gtin
+        gtin=gtin,
+        additive_enrichment=_ENRICHMENT  # optional; renderer handles {}
     )
 
     # --- Response: keep your existing fields + include classification for testing ---

@@ -24,6 +24,7 @@ a complete HTML report following our Tailwind UI spec.
 """
 
 from html import escape as _html_escape
+import re, unicodedata
 
 FOOTER_COPY = "Built from sources like FDA/USDA. We’re improving every day. The more you use it, the better we get!"
 
@@ -43,7 +44,46 @@ def _render_segments(segments):
             out.append(txt)
     return "".join(out)
 
-def generate_trust_report_html(product_name, classification, brand=None, gtin=None):
+# --- Add these helper functions **before** generate_trust_report_html ---
+def _slugify(s: str) -> str:
+    s = unicodedata.normalize("NFKD", s).encode("ascii","ignore").decode("ascii")
+    s = re.sub(r"[^\w\s-]", "", s).strip().lower()
+    s = re.sub(r"\s+", "-", s)
+    s = re.sub(r"-{2,}", "-", s)
+    return s
+
+def _ul(items):
+    return "<ul>" + "".join(f"<li>{_html_escape(str(x))}</li>" for x in items) + "</ul>"
+
+def _render_additive_row(name: str, enrichment: dict) -> str:
+    safe = _html_escape(name or "")
+    e = enrichment.get(name) or {}
+    slug = e.get("slug") or _slugify(name or "")
+    other = e.get("other_names") or [name]
+    used  = e.get("used_for") or []
+    used_html = _ul(used) if used else '<p class="text-sm text-gray-500">No additional details yet.</p>'
+    return (
+      "<li class='py-3 px-4 bg-white rounded-xl border border-amber-200'>"
+      "  <div class='flex items-center justify-between'>"
+      f"    <span class='font-medium'>{safe}</span>"
+      f"    <button type='button' class='sgl-expand text-lg leading-none select-none' "
+      f"            data-additive-toggle aria-expanded='false' aria-controls='add-{slug}-panel'>+</button>"
+      "  </div>"
+      f"  <div id='add-{slug}-panel' class='additive-panel mt-2 pl-6' hidden>"
+      "    <div class='other-names mb-2'>"
+      "      <h4 class='text-sm font-semibold'>Other names</h4>"
+      f"      {_ul(other)}"
+      "    </div>"
+      "    <div class='used-for'>"
+      "      <h4 class='text-sm font-semibold'>Used for</h4>"
+      f"      {used_html}"
+      "    </div>"
+      "  </div>"
+      "</li>"
+    )
+
+def generate_trust_report_html(product_name, classification, brand=None, gtin=None, *, additive_enrichment=None):
+    additive_enrichment = additive_enrichment or {}
     counts = classification.get("counts", {}) or {}
     nova = classification.get("nova_group")
     fda = classification.get("fda_additives", []) or []
@@ -53,6 +93,7 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
     data_score = classification.get("data_score") or {"matched":0,"total":0,"percent":0}
     brand_display = _html_escape(brand) if brand else "—"
     gtin_display  = _html_escape(gtin) if gtin else "—"
+
 
 
     # NOVA dots (fill up to nova 1..4)
@@ -88,12 +129,10 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
         for it in items:
             name = _html_escape((it.get("display") if isinstance(it, dict) else str(it)) or "")
             if data_class == "fda_additive":
-                lis.append(
-                    "<li class='py-3 px-4 bg-white rounded-xl border border-amber-200 flex items-center justify-between'>"
-                    f"<span class='font-medium'>{name}</span>"
-                    "<button class='sgl-expand text-lg leading-none select-none' aria-expanded='false'>+</button>"
-                    "</li>"
-                )
+                # Use raw display string for enrichment lookup
+                raw_name = (it.get("display") if isinstance(it, dict) else str(it)) or ""
+                lis.append(_render_additive_row(raw_name, additive_enrichment))
+
             else:
                 border_cls = "border-green-200" if data_class == "classified_ingredient" else "border-blue-200"
                 lis.append(
