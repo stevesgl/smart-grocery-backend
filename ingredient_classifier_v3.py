@@ -331,7 +331,18 @@ def build_classification_payload(
         }
 
         if cls == "fda_additive":
+            # add slug bridge for enrichment join
+            import unicodedata, re
+            def _slugify(s: str) -> str:
+                s = unicodedata.normalize("NFKD", s).encode("ascii","ignore").decode("ascii")
+                s = re.sub(r"[^\w\s-]", "", s).strip().lower()
+                s = re.sub(r"\s+", "-", s)
+                s = re.sub(r"-{2,}", "-", s)
+                return s
+
+            item["slug"] = _slugify(item.get("canonical") or item.get("display") or "")
             fda_additives.append(item)
+
         elif cls == "classified_ingredient":
             classified_ingredients.append(item)
         else:

@@ -55,11 +55,14 @@ def _slugify(s: str) -> str:
 def _ul(items):
     return "<ul>" + "".join(f"<li>{_html_escape(str(x))}</li>" for x in items) + "</ul>"
 
-def _render_additive_row(name: str, enrichment: dict, norm_map: dict) -> str:
+def _render_additive_row(name: str, enrichment: dict, norm_map: dict, slug: str | None = None) -> str:
     safe = _html_escape(name or "")
-    # exact -> stripped -> normalized (lowercased) fallback
-    e = enrichment.get(name) or enrichment.get((name or "").strip()) or norm_map.get((name or "").strip().lower()) or {}
-    slug = e.get("slug") or _slugify(name or "")
+    e = {}
+    if slug and slug in enrichment:
+        e = enrichment[slug]
+    else:
+        e = enrichment.get(name) or enrichment.get((name or "").strip()) or norm_map.get((name or "").strip().lower()) or {}
+    slug = slug or e.get("slug") or _slugify(name or "")
     other = e.get("other_names") or [name]
     used  = e.get("used_for") or []
     used_html = _ul(used) if used else '<p class="text-sm text-gray-500">No additional details yet.</p>'
@@ -133,7 +136,7 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
             if data_class == "fda_additive":
                 # Use raw display string for enrichment lookup (with tolerant fallback)
                 raw_name = (it.get("display") if isinstance(it, dict) else str(it)) or ""
-                lis.append(_render_additive_row(raw_name, additive_enrichment, norm_map))
+                lis.append(_render_additive_row(raw_name, additive_enrichment, norm_map, it.get("slug")))
 
             else:
                 border_cls = "border-green-200" if data_class == "classified_ingredient" else "border-blue-200"
