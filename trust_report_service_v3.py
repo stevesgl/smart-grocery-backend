@@ -507,7 +507,10 @@ def gtin_lookup():
         "parsed_ingredients": parsed_ingredients,   # per-token list (unchanged)
         "classification": classification,           # NEW: counts/score/segments/nova_group
         "trust_report_html": trust_report_html,
-        # NEW: compact product metadata for frontend toast (non-breaking)
+        "meta": {
+            "enrichment_loaded": bool(_ENRICHMENT),
+            "enrichment_size": len(_ENRICHMENT) if _ENRICHMENT else 0
+        },
         "product": {
             "name": product_meta["product_name"] or None,
             "brand": (product_meta["brand_name"] or product_meta["brand_owner"]) or None

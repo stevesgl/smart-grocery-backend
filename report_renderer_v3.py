@@ -55,9 +55,10 @@ def _slugify(s: str) -> str:
 def _ul(items):
     return "<ul>" + "".join(f"<li>{_html_escape(str(x))}</li>" for x in items) + "</ul>"
 
-def _render_additive_row(name: str, enrichment: dict) -> str:
+def _render_additive_row(name: str, enrichment: dict, norm_map: dict) -> str:
     safe = _html_escape(name or "")
-    e = enrichment.get(name) or {}
+    # exact -> stripped -> normalized (lowercased) fallback
+    e = enrichment.get(name) or enrichment.get((name or "").strip()) or norm_map.get((name or "").strip().lower()) or {}
     slug = e.get("slug") or _slugify(name or "")
     other = e.get("other_names") or [name]
     used  = e.get("used_for") or []
@@ -94,7 +95,8 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
     brand_display = _html_escape(brand) if brand else "—"
     gtin_display  = _html_escape(gtin) if gtin else "—"
 
-
+    # build once per render: a case-insensitive fallback
+    norm_map = { (k or "").strip().lower(): v for k, v in (additive_enrichment or {}).items() }
 
     # NOVA dots (fill up to nova 1..4)
     def _nova_badge(n):
@@ -129,9 +131,9 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
         for it in items:
             name = _html_escape((it.get("display") if isinstance(it, dict) else str(it)) or "")
             if data_class == "fda_additive":
-                # Use raw display string for enrichment lookup
+                # Use raw display string for enrichment lookup (with tolerant fallback)
                 raw_name = (it.get("display") if isinstance(it, dict) else str(it)) or ""
-                lis.append(_render_additive_row(raw_name, additive_enrichment))
+                lis.append(_render_additive_row(raw_name, additive_enrichment, norm_map))
 
             else:
                 border_cls = "border-green-200" if data_class == "classified_ingredient" else "border-blue-200"
