@@ -150,7 +150,7 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
             if data_class == "fda_additive":
                 # Use raw display string for enrichment lookup (with tolerant fallback)
                 raw_canonical = (it.get("canonical") if isinstance(it, dict) else None) or ""
-                lis.append(_render_additive_row(raw_canonical or name, additive_enrichment, norm_map, it.get("slug"), slug_index))
+                lis.append(_render_additive_row(name, additive_enrichment, norm_map, it.get("slug"), slug_index))
 
             else:
                 border_cls = "border-green-200" if data_class == "classified_ingredient" else "border-blue-200"
