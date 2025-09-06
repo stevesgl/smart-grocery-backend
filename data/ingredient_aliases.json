@@ -6,10 +6,12 @@
   "fdc blue 1": "FD&C Blue No. 1",
   "blue number 1": "FD&C Blue No. 1",
   "blue1": "FD&C Blue No. 1",
-  "blue 1 lake": "FD&C Blue No. 1",
-  "blue1 lake": "FD&C Blue No. 1",
-  "blue 1 aluminum lake": "FD&C Blue No. 1",
-  "blue1 aluminum lake": "FD&C Blue No. 1",
+
+  "blue 1 lake": "FD&C Blue No. 1, Aluminum Lake",
+  "blue1 lake": "FD&C Blue No. 1, Aluminum Lake",
+  "blue 1 aluminum lake": "FD&C Blue No. 1, Aluminum Lake",
+  "blue1 aluminum lake": "FD&C Blue No. 1, Aluminum Lake",
+
 
   "blue 2": "FD&C Blue No. 2",
   "blue no. 2": "FD&C Blue No. 2",
@@ -18,10 +20,11 @@
   "fdc blue 2": "FD&C Blue No. 2",
   "blue number 2": "FD&C Blue No. 2",
   "blue2": "FD&C Blue No. 2",
-  "blue 2 lake": "FD&C Blue No. 2",
-  "blue2 lake": "FD&C Blue No. 2",
-  "blue 2 aluminum lake": "FD&C Blue No. 2",
-  "blue2 aluminum lake": "FD&C Blue No. 2",
+  
+  "blue 2 lake": "FD&C Blue No. 2, Aluminum Lake",
+  "blue2 lake": "FD&C Blue No. 2, Aluminum Lake",
+  "blue 2 aluminum lake": "FD&C Blue No. 2, Aluminum Lake",
+  "blue2 aluminum lake": "FD&C Blue No. 2, Aluminum Lake",
 
   "green 3": "FD&C Green No. 3",
   "green no. 3": "FD&C Green No. 3",
@@ -30,8 +33,9 @@
   "fdc green 3": "FD&C Green No. 3",
   "green number 3": "FD&C Green No. 3",
   "green3": "FD&C Green No. 3",
-  "green 3 lake": "FD&C Green No. 3",
-  "green3 lake": "FD&C Green No. 3",
+  
+  "green 3 lake": "FD&C Green No. 3, Aluminum Lake",
+  "green3 lake": "FD&C Green No. 3, Aluminum Lake",
 
   "orange b": "Orange B",
   "orangeb": "Orange B",
@@ -54,7 +58,8 @@
   "fdc red 3": "FD&C Red No. 3",
   "red number 3": "FD&C Red No. 3",
   "red3": "FD&C Red No. 3",
-  "red 3 lake": "FD&C Red No. 3",
+
+  "red 3 lake": "FD&C Red No. 3, Aluminum Lake",
 
   "red 40": "FD&C Red No. 40",
   "red no. 40": "FD&C Red No. 40",
@@ -63,10 +68,11 @@
   "fdc red 40": "FD&C Red No. 40",
   "red number 40": "FD&C Red No. 40",
   "red40": "FD&C Red No. 40",
-  "red 40 lake": "FD&C Red No. 40",
-  "red40 lake": "FD&C Red No. 40",
-  "red 40 aluminum lake": "FD&C Red No. 40",
-  "red40 aluminum lake": "FD&C Red No. 40",
+
+  "red 40 lake": "FD&C Red No. 40, Aluminum Lake",
+  "red40 lake": "FD&C Red No. 40, Aluminum Lake",
+  "red 40 aluminum lake": "FD&C Red No. 40, Aluminum Lake",
+  "red40 aluminum lake": "FD&C Red No. 40, Aluminum Lake",
 
   "yellow 5": "FD&C Yellow No. 5",
   "yellow no. 5": "FD&C Yellow No. 5",
@@ -76,9 +82,10 @@
   "tartrazine": "FD&C Yellow No. 5",
   "yellow number 5": "FD&C Yellow No. 5",
   "yellow5": "FD&C Yellow No. 5",
-  "yellow 5 lake": "FD&C Yellow No. 5",
-  "yellow 5 aluminum lake": "FD&C Yellow No. 5",
-  "yellow5 aluminum lake": "FD&C Yellow No. 5",
+  
+  "yellow 5 lake": "FD&C Yellow No. 5, Aluminum Lake",
+  "yellow 5 aluminum lake": "FD&C Yellow No. 5, Aluminum Lake",
+  "yellow5 aluminum lake": "FD&C Yellow No. 5, Aluminum Lake",
 
   "yellow 6": "FD&C Yellow No. 6",
   "yellow no. 6": "FD&C Yellow No. 6",
@@ -88,10 +95,11 @@
   "sunset yellow fcf": "FD&C Yellow No. 6",
   "yellow number 6": "FD&C Yellow No. 6",
   "yellow6": "FD&C Yellow No. 6",
-  "yellow 6 lake": "FD&C Yellow No. 6",
-  "yellow6 lake": "FD&C Yellow No. 6",
-  "yellow 6 aluminum lake": "FD&C Yellow No. 6",
-  "yellow6 aluminum lake": "FD&C Yellow No. 6",
+  
+  "yellow 6 lake": "FD&C Yellow No. 6, Aluminum Lake",
+  "yellow6 lake": "FD&C Yellow No. 6, Aluminum Lake",
+  "yellow 6 aluminum lake": "FD&C Yellow No. 6, Aluminum Lake",
+  "yellow6 aluminum lake": "FD&C Yellow No. 6, Aluminum Lake",
 
   "annatto": "Annatto extract",
   "annatto extract": "Annatto extract",

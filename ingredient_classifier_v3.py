@@ -26,6 +26,8 @@ import json
 import os
 import re
 from html import escape as _html_escape
+import unicodedata
+
 
 SENTINEL_GENERIC_COLOR = "__generic_color__"
 DISPLAY_GENERIC_COLOR = "Artificial color (unspecified)"
@@ -186,6 +188,15 @@ def _build_segments_from_text(ingredients_text, fda_set, classified_set, splitte
     parts = parse_ingredient_string(ingredients_text)  # robust tokenizer
     return _build_segments_from_list(parts, fda_set, classified_set)
 
+ 
+# --- Slugify used by renderer/enrichment bridge ---
+def _slugify(s: str) -> str:
+    s = unicodedata.normalize("NFKD", s).encode("ascii","ignore").decode("ascii")
+    s = re.sub(r"[^\w\s-]", "", s).strip().lower()
+    s = re.sub(r"\s+", "-", s)
+    s = re.sub(r"-{2,}", "-", s)
+    return s
+
 # ======================
 #  Tokenizer
 # ======================
@@ -331,15 +342,7 @@ def build_classification_payload(
         }
 
         if cls == "fda_additive":
-            # add slug bridge for enrichment join
-            import unicodedata, re
-            def _slugify(s: str) -> str:
-                s = unicodedata.normalize("NFKD", s).encode("ascii","ignore").decode("ascii")
-                s = re.sub(r"[^\w\s-]", "", s).strip().lower()
-                s = re.sub(r"\s+", "-", s)
-                s = re.sub(r"-{2,}", "-", s)
-                return s
-
+            # add slug bridge for enrichment join (uses top-level _slugify)
             item["slug"] = _slugify(item.get("canonical") or item.get("display") or "")
             fda_additives.append(item)
 
