@@ -55,10 +55,13 @@ def _slugify(s: str) -> str:
 def _ul(items):
     return "<ul>" + "".join(f"<li>{_html_escape(str(x))}</li>" for x in items) + "</ul>"
 
-def _render_additive_row(name: str, enrichment: dict, norm_map: dict, slug: str | None = None) -> str:
+def _render_additive_row(name: str, enrichment: dict, norm_map: dict, slug: str | None = None, slug_index: dict | None = None) -> str:
     safe = _html_escape(name or "")
     e = {}
-    if slug and slug in enrichment:
+    # Prefer slug-index first (exact), then legacy slug-in-enrichment, then name matches
+    if slug and slug_index and slug in slug_index:
+        e = slug_index[slug]
+    elif slug and slug in enrichment:
         e = enrichment[slug]
     else:
         e = enrichment.get(name) or enrichment.get((name or "").strip()) or norm_map.get((name or "").strip().lower()) or {}
@@ -98,6 +101,17 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
     brand_display = _html_escape(brand) if brand else "—"
     gtin_display  = _html_escape(gtin) if gtin else "—"
 
+    # Build a quick index so we can resolve by slug too
+    slug_index = {}
+    try:
+        for _k, _v in (additive_enrichment or {}).items():
+            if isinstance(_v, dict):
+                s = (_v.get("slug") or "").strip()
+                if s:
+                    slug_index[s] = _v
+    except Exception:
+        slug_index = {}
+
     # build once per render: a case-insensitive fallback
     norm_map = { (k or "").strip().lower(): v for k, v in (additive_enrichment or {}).items() }
 
@@ -135,8 +149,8 @@ def generate_trust_report_html(product_name, classification, brand=None, gtin=No
             name = _html_escape((it.get("display") if isinstance(it, dict) else str(it)) or "")
             if data_class == "fda_additive":
                 # Use raw display string for enrichment lookup (with tolerant fallback)
-                raw_name = (it.get("display") if isinstance(it, dict) else str(it)) or ""
-                lis.append(_render_additive_row(raw_name, additive_enrichment, norm_map, it.get("slug")))
+                raw_canonical = (it.get("canonical") if isinstance(it, dict) else None) or ""
+                lis.append(_render_additive_row(raw_canonical or name, additive_enrichment, norm_map, it.get("slug"), slug_index))
 
             else:
                 border_cls = "border-green-200" if data_class == "classified_ingredient" else "border-blue-200"
